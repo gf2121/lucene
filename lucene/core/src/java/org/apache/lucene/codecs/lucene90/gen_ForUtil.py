@@ -19,7 +19,7 @@ from fractions import gcd
 
 """Code generation for ForUtil.java"""
 
-BLOCK_SIZE = 256
+BLOCK_SIZE = 64
 MAX_SPECIALIZED_BITS_PER_VALUE = 24
 OUTPUT_FILE = "ForUtil.java"
 PRIMITIVE_SIZE = [8, 16, 32]
