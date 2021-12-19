@@ -111,7 +111,7 @@ public class TermQuery extends Query {
       LeafSimScorer scorer =
           new LeafSimScorer(simScorer, context.reader(), term.field(), scoreMode.needsScores());
       if (scoreMode == ScoreMode.TOP_SCORES) {
-        return new TermScorer(this, termsEnum.impacts(PostingsEnum.FREQS), scorer);
+        return new TermScorer(this, termsEnum.impacts(PostingsEnum.FREQS), Math.max(0, termsEnum.docFreq() - context.reader().numDeletedDocs()), scorer);
       } else {
         return new TermScorer(
             this,

@@ -32,6 +32,7 @@ public final class TermScorer extends Scorer {
   private final DocIdSetIterator iterator;
   private final LeafSimScorer docScorer;
   private final ImpactsDISI impactsDisi;
+  private final long minHits;
 
   /** Construct a {@link TermScorer} that will iterate all documents. */
   public TermScorer(Weight weight, PostingsEnum postingsEnum, LeafSimScorer docScorer) {
@@ -40,6 +41,7 @@ public final class TermScorer extends Scorer {
     impactsEnum = new SlowImpactsEnum(postingsEnum);
     impactsDisi = new ImpactsDISI(impactsEnum, impactsEnum, docScorer.getSimScorer());
     this.docScorer = docScorer;
+    minHits = 0;
   }
 
   /**
@@ -52,6 +54,20 @@ public final class TermScorer extends Scorer {
     impactsDisi = new ImpactsDISI(impactsEnum, impactsEnum, docScorer.getSimScorer());
     iterator = impactsDisi;
     this.docScorer = docScorer;
+    minHits = 0;
+  }
+
+  /**
+   * Construct a {@link TermScorer} that will use impacts to skip blocks of non-competitive
+   * documents.
+   */
+  TermScorer(Weight weight, ImpactsEnum impactsEnum, long minHits, LeafSimScorer docScorer) {
+    super(weight);
+    postingsEnum = this.impactsEnum = impactsEnum;
+    impactsDisi = new ImpactsDISI(impactsEnum, impactsEnum, docScorer.getSimScorer());
+    iterator = impactsDisi;
+    this.docScorer = docScorer;
+    this.minHits = minHits;
   }
 
   @Override
@@ -78,6 +94,11 @@ public final class TermScorer extends Scorer {
   @Override
   public float smoothingScore(int docId) throws IOException {
     return docScorer.score(docId, 0);
+  }
+
+  @Override
+  public long minScoreDocs() {
+    return minHits;
   }
 
   @Override

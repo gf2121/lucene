@@ -61,6 +61,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
         @Override
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
+          hitsThresholdChecker.acceptMinTotalHits(scorer.minScoreDocs());
           if (minScoreAcc == null) {
             updateMinCompetitiveScore(scorer);
           } else {

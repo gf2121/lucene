@@ -62,6 +62,7 @@ abstract class HitsThresholdChecker {
   private static class LocalHitsThresholdChecker extends HitsThresholdChecker {
     private final int totalHitsThreshold;
     private int hitCount;
+    private boolean hintThresholdReached = false;
 
     public LocalHitsThresholdChecker(int totalHitsThreshold) {
 
@@ -79,8 +80,13 @@ abstract class HitsThresholdChecker {
     }
 
     @Override
+    public void acceptMinTotalHits(long hits) {
+      this.hintThresholdReached = hits >= totalHitsThreshold;
+    }
+
+    @Override
     public boolean isThresholdReached() {
-      return hitCount > totalHitsThreshold;
+      return hintThresholdReached || hitCount > totalHitsThreshold;
     }
 
     @Override
@@ -106,6 +112,10 @@ abstract class HitsThresholdChecker {
    */
   public static HitsThresholdChecker createShared(final int totalHitsThreshold) {
     return new GlobalHitsThresholdChecker(totalHitsThreshold);
+  }
+
+  public void acceptMinTotalHits(long hits) {
+    //default do nothing
   }
 
   public abstract void incrementHitCount();

@@ -27,6 +27,10 @@ public abstract class Scorable {
   /** Returns the score of the current document matching the query. */
   public abstract float score() throws IOException;
 
+  public long minScoreDocs() {
+    return 0;
+  }
+
   /**
    * Returns the smoothing score of the current document matching the query. This score is used when
    * the query/term does not appear in the document, and behaves like an idf. The smoothing score is
