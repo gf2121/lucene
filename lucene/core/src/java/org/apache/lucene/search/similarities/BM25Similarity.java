@@ -223,6 +223,7 @@ public class BM25Similarity extends Similarity {
     private final float avgdl;
     /** precomputed norm[256] with k1 * ((1 - b) + b * dl / avgdl) */
     private final float[] cache;
+    private final float[] freqCache;
     /** weight (idf * boost) */
     private final float weight;
 
@@ -234,6 +235,10 @@ public class BM25Similarity extends Similarity {
       this.b = b;
       this.cache = cache;
       this.weight = boost * idf.getValue().floatValue();
+      this.freqCache = new float[cache.length];
+      for (int i = 0; i < cache.length; i++) {
+        freqCache[i] = weight - weight / (1f + cache[i]);
+      }
     }
 
     @Override
@@ -247,6 +252,9 @@ public class BM25Similarity extends Similarity {
       // x -> 1 + x and x -> 1 - 1/x.
       // Finally we expand weight * (1 - 1 / (1 + freq * 1/norm)) to
       // weight - weight / (1 + freq * 1/norm), which runs slightly faster.
+      if (freq == 1f) {
+        return freqCache[((byte) encodedNorm) & 0xFF];
+      }
       float normInverse = cache[((byte) encodedNorm) & 0xFF];
       return weight - weight / (1f + freq * normInverse);
     }
