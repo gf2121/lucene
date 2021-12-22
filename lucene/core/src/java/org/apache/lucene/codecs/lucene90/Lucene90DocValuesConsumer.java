@@ -56,7 +56,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.packed.BlockWriter;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
-import org.apache.lucene.util.packed.DirectWriter;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** writer for {@link Lucene90DocValuesFormat} */
 final class Lucene90DocValuesConsumer extends DocValuesConsumer {
@@ -175,7 +175,7 @@ final class Lucene90DocValuesConsumer extends DocValuesConsumer {
     /** Update the required space. */
     void finish() {
       if (max > min) {
-        spaceInBits += DirectWriter.unsignedBitsRequired(max - min) * numValues;
+        spaceInBits += PackedInts.unsignedBitsRequired(max - min) * numValues;
       }
     }
 
@@ -281,9 +281,9 @@ final class Lucene90DocValuesConsumer extends DocValuesConsumer {
     } else {
       if (uniqueValues != null
           && uniqueValues.size() > 1
-          && DirectWriter.unsignedBitsRequired(uniqueValues.size() - 1)
-              < DirectWriter.unsignedBitsRequired((max - min) / gcd)) {
-        numBitsPerValue = DirectWriter.unsignedBitsRequired(uniqueValues.size() - 1);
+          && PackedInts.unsignedBitsRequired(uniqueValues.size() - 1)
+              < PackedInts.unsignedBitsRequired((max - min) / gcd)) {
+        numBitsPerValue = PackedInts.unsignedBitsRequired(uniqueValues.size() - 1);
         final Long[] sortedUniqueValues = uniqueValues.toArray(new Long[0]);
         Arrays.sort(sortedUniqueValues);
         meta.writeInt(sortedUniqueValues.length); // tablesize
@@ -305,11 +305,11 @@ final class Lucene90DocValuesConsumer extends DocValuesConsumer {
           numBitsPerValue = 0xFF;
           meta.writeInt(-2 - NUMERIC_BLOCK_SHIFT); // tablesize
         } else {
-          numBitsPerValue = DirectWriter.unsignedBitsRequired((max - min) / gcd);
+          numBitsPerValue = PackedInts.unsignedBitsRequired((max - min) / gcd);
           if (gcd == 1
               && min > 0
-              && DirectWriter.unsignedBitsRequired(max)
-                  == DirectWriter.unsignedBitsRequired(max - min)) {
+              && PackedInts.unsignedBitsRequired(max)
+                  == PackedInts.unsignedBitsRequired(max - min)) {
             min = 0;
           }
           meta.writeInt(-1); // tablesize
@@ -406,7 +406,7 @@ final class Lucene90DocValuesConsumer extends DocValuesConsumer {
       data.writeByte((byte) 0);
       data.writeLong(min);
     } else {
-      final int bitsPerValue = DirectWriter.unsignedBitsRequired((max - min) / gcd);
+      final int bitsPerValue = PackedInts.unsignedBitsRequired((max - min) / gcd);
       buffer.reset();
       assert buffer.size() == 0;
 //      final DirectWriter w = DirectWriter.getInstance(buffer, length, bitsPerValue);

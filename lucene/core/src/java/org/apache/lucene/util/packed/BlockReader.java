@@ -4,8 +4,6 @@ package org.apache.lucene.util.packed;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongValues;
 
-import java.io.IOException;
-
 public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
