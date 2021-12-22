@@ -19,7 +19,7 @@ from fractions import gcd
 
 """Code generation for ForUtil.java"""
 
-BLOCK_SIZE = 128
+BLOCK_SIZE = 64
 MAX_SPECIALIZED_BITS_PER_VALUE = 64
 OUTPUT_FILE = "ForUtil.java"
 PRIMITIVE_SIZE = [8, 16, 32, 64]
@@ -55,9 +55,9 @@ import org.apache.lucene.util.MathUtil;
 // else we pack 2 ints per long
 final class ForUtil {
 
-  static final int BLOCK_SIZE = 128;
-  static final int BLOCK_SIZE_DIV_2 = BLOCK_SIZE >> 1;
-  static final int BLOCK_SIZE_DIV_2_MASK = BLOCK_SIZE_DIV_2 - 1;
+  static final int BLOCK_SIZE = """ + str(BLOCK_SIZE) + """;
+  static final int BLOCK_SIZE_LOG2 = MathUtil.log(BLOCK_SIZE, 2);
+  private static final int BLOCK_SIZE_DIV_2 = BLOCK_SIZE >> 1;
   private static final int BLOCK_SIZE_DIV_4 = BLOCK_SIZE >> 2;
   private static final int BLOCK_SIZE_DIV_8 = BLOCK_SIZE >> 3;
   private static final int BLOCK_SIZE_DIV_64 = BLOCK_SIZE >> 6;
@@ -68,9 +68,7 @@ final class ForUtil {
   private static final int BLOCK_SIZE_DIV_8_MUL_5 = BLOCK_SIZE_DIV_8 * 5;
   private static final int BLOCK_SIZE_DIV_8_MUL_6 = BLOCK_SIZE_DIV_8 * 6;
   private static final int BLOCK_SIZE_DIV_8_MUL_7 = BLOCK_SIZE_DIV_8 * 7;
-  private static final int BLOCK_SIZE_LOG2 = MathUtil.log(BLOCK_SIZE, 2);
   private static final int BLOCK_SIZE_LOG2_MIN_3 = BLOCK_SIZE_LOG2 - 3;
-  static final int BLOCK_SIZE_LOG2_MIN_1 = BLOCK_SIZE_LOG2 - 1;
 
   private static long expandMask32(long mask32) {
     return mask32 | (mask32 << 32);
@@ -180,7 +178,7 @@ final class ForUtil {
     }
   }
 
-  private final long[] tmp = new long[BLOCK_SIZE_DIV_2];
+  private final long[] tmp = new long[BLOCK_SIZE];
 
   /** Encode 128 integers from {@code longs} into {@code out}. */
   void encode(long[] longs, int bitsPerValue, DataOutput out) throws IOException {

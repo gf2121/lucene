@@ -22,13 +22,9 @@ public class BlockReader extends LongValues {
   }
 
   public BlockReader(IndexInput input, int bpv, long offset) {
-    this(input, bpv, offset, new long[BLOCK_SIZE], new long[BLOCK_SIZE]);
-  }
-
-  public BlockReader(IndexInput input, int bpv, long offset, long[] tmp, long[] buffer) {
     this.bpv = bpv;
-    this.forUtil = new ForUtil(tmp);
-    this.buffer = buffer;
+    this.forUtil = new ForUtil();
+    this.buffer = new long[ForUtil.BLOCK_SIZE];
     this.input = input;
     this.blockBytes = forUtil.numBytes(bpv);
     this.offset = offset;
