@@ -48,6 +48,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.compress.LZ4;
+import org.apache.lucene.util.packed.BlockReader;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
 import org.apache.lucene.util.packed.DirectReader;
 
@@ -469,12 +470,13 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
   }
 
   private LongValues getDirectReaderInstance(
-      RandomAccessInput slice, int bitsPerValue, long offset, long numValues) {
-    if (merging) {
-      return DirectReader.getMergeInstance(slice, bitsPerValue, offset, numValues);
-    } else {
-      return DirectReader.getInstance(slice, bitsPerValue, offset);
-    }
+      IndexInput slice, int bitsPerValue, long offset, long numValues) {
+//    if (merging) {
+//      return DirectReader.getMergeInstance(slice, bitsPerValue, offset, numValues);
+//    } else {
+//      return DirectReader.getInstance(slice, bitsPerValue, offset);
+//    }
+    return new BlockReader(slice, bitsPerValue, offset);
   }
 
   private NumericDocValues getNumeric(NumericEntry entry) throws IOException {
@@ -491,8 +493,9 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
           }
         };
       } else {
-        final RandomAccessInput slice =
-            data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
+        final IndexInput slice =
+                data.slice("", entry.valuesOffset, entry.valuesLength);
+//            data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
         if (entry.blockShift >= 0) {
           // dense but split into blocks of different bits per value
           return new DenseNumericDocValues(maxDoc) {
@@ -552,8 +555,9 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
           }
         };
       } else {
-        final RandomAccessInput slice =
-            data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
+        final IndexInput slice =
+                data.slice("", entry.valuesOffset, entry.valuesLength);
+//            data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
         if (entry.blockShift >= 0) {
           // sparse and split into blocks of different bits per value
           return new SparseNumericDocValues(disi) {
@@ -607,8 +611,9 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
         }
       };
     } else {
-      final RandomAccessInput slice =
-          data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
+      final IndexInput slice =
+              data.slice("", entry.valuesOffset, entry.valuesLength);
+//          data.randomAccessSlice(entry.valuesOffset, entry.valuesLength);
       if (entry.blockShift >= 0) {
         return new LongValues() {
           final VaryingBPVReader vBPVReader = new VaryingBPVReader(entry, slice);
@@ -836,8 +841,9 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
         throw new IllegalStateException("Ordinals shouldn't use GCD, offset or table compression");
       }
 
-      final RandomAccessInput slice =
-          data.randomAccessSlice(ordsEntry.valuesOffset, ordsEntry.valuesLength);
+      final IndexInput slice =
+              data.slice("", ordsEntry.valuesOffset, ordsEntry.valuesLength);
+//          data.randomAccessSlice(ordsEntry.valuesOffset, ordsEntry.valuesLength);
       final LongValues values =
           getDirectReaderInstance(slice, ordsEntry.bitsPerValue, 0L, ordsEntry.numValues);
 
@@ -1480,7 +1486,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
   // Note 2: The rankSlice is only used if an advance of > 1 block is called. Its construction could
   // be lazy
   private class VaryingBPVReader {
-    final RandomAccessInput slice; // 2 slices to avoid cache thrashing when using rank
+    final IndexInput slice; // 2 slices to avoid cache thrashing when using rank
     final RandomAccessInput rankSlice;
     final NumericEntry entry;
     final int shift;
@@ -1493,7 +1499,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
     long blockEndOffset;
     LongValues values;
 
-    VaryingBPVReader(NumericEntry entry, RandomAccessInput slice) throws IOException {
+    VaryingBPVReader(NumericEntry entry, IndexInput slice) throws IOException {
       this.entry = entry;
       this.slice = slice;
       this.rankSlice =
@@ -1518,13 +1524,15 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
             this.block = block - 1;
           }
           offset = blockEndOffset;
-          bitsPerValue = slice.readByte(offset++);
-          delta = slice.readLong(offset);
+          slice.seek(offset++);
+          bitsPerValue = slice.readByte();
+          delta = slice.readLong();
           offset += Long.BYTES;
           if (bitsPerValue == 0) {
             blockEndOffset = offset;
           } else {
-            final int length = slice.readInt(offset);
+            slice.seek(offset);
+            final int length = slice.readInt();
             offset += Integer.BYTES;
             blockEndOffset = offset + length;
           }
@@ -1536,6 +1544,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
             bitsPerValue == 0
                 ? LongValues.ZEROES
                 : getDirectReaderInstance(slice, bitsPerValue, offset, numValues);
+
       }
       return mul * values.get(index & mask) + delta;
     }

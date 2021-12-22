@@ -54,6 +54,7 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.compress.LZ4;
+import org.apache.lucene.util.packed.BlockWriter;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 import org.apache.lucene.util.packed.DirectWriter;
 
@@ -341,7 +342,8 @@ final class Lucene90DocValuesConsumer extends DocValuesConsumer {
       long gcd,
       Map<Long, Integer> encode)
       throws IOException {
-    DirectWriter writer = DirectWriter.getInstance(data, numValues, numBitsPerValue);
+    BlockWriter writer = new BlockWriter(data, numBitsPerValue);
+//    DirectWriter writer = DirectWriter.getInstance(data, numValues, numBitsPerValue);
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
       for (int i = 0, count = values.docValueCount(); i < count; ++i) {
         long v = values.nextValue();
@@ -407,7 +409,8 @@ final class Lucene90DocValuesConsumer extends DocValuesConsumer {
       final int bitsPerValue = DirectWriter.unsignedBitsRequired((max - min) / gcd);
       buffer.reset();
       assert buffer.size() == 0;
-      final DirectWriter w = DirectWriter.getInstance(buffer, length, bitsPerValue);
+//      final DirectWriter w = DirectWriter.getInstance(buffer, length, bitsPerValue);
+      final BlockWriter w = new BlockWriter(buffer, bitsPerValue);
       for (int i = 0; i < length; ++i) {
         w.add((values[i] - min) / gcd);
       }
