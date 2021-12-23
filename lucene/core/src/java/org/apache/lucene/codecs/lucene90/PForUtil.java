@@ -126,9 +126,11 @@ final class PForUtil {
     } else {
       forUtil.decode(bitsPerValue, in, longs);
     }
+    in.readBytes(exceptionBuff, 0, numExceptions * 2);
     for (int i = 0; i < numExceptions; ++i) {
-      longs[Byte.toUnsignedInt(in.readByte())] |=
-          Byte.toUnsignedLong(in.readByte()) << bitsPerValue;
+      int ii = i << 1;
+      longs[exceptionBuff[ii] & 0xff] |=
+              (exceptionBuff[ii + 1] & 0xffL) << bitsPerValue;
     }
   }
 
