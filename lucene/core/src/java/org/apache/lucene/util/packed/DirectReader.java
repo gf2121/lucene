@@ -18,6 +18,7 @@ package org.apache.lucene.util.packed;
 
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.LongsRef;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -190,15 +191,16 @@ public class DirectReader {
   }
 
   private static abstract class ForwardWarmUpDirectReader extends LongValues {
-    private final long[] buffer = new long[BLOCK_SIZE];
-    private boolean checking = true;
-    private boolean warm = false;
-    private long firstIndex;
-    private long lastIndex;
-    private int counter = -1;
+//    private final long[] buffer = new long[BLOCK_SIZE];
+//    private boolean checking = true;
+//    private boolean warm = false;
+//    private long firstIndex;
+//    private long lastIndex;
+//    private int counter = -1;
+//    long currentBlock = -1;
     final RandomAccessInput in;
     final long offset;
-    long currentBlock = -1;
+
 
     public ForwardWarmUpDirectReader(RandomAccessInput in, long offset) {
       this.in = in;
@@ -255,7 +257,7 @@ public class DirectReader {
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     public DirectPackedReader1(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -291,7 +293,7 @@ public class DirectReader {
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     public DirectPackedReader2(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -327,7 +329,7 @@ public class DirectReader {
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     public DirectPackedReader4(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -363,7 +365,7 @@ public class DirectReader {
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     public DirectPackedReader8(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -397,7 +399,7 @@ public class DirectReader {
     static final int BPV = 12;
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     public DirectPackedReader12(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -444,7 +446,7 @@ public class DirectReader {
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     public DirectPackedReader16(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -478,7 +480,7 @@ public class DirectReader {
     static final int BPV = 20;
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     DirectPackedReader20(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -523,7 +525,7 @@ public class DirectReader {
     static final int BPV = 24;
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     DirectPackedReader24(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -559,7 +561,7 @@ public class DirectReader {
     static final int BPV = 28;
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     DirectPackedReader28(RandomAccessInput in, long offset) {
       super(in, offset);
@@ -606,7 +608,7 @@ public class DirectReader {
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
-    final long[] tmp = new long[TMP_LENGTH];
+    final long[] tmp = LongsRef.EMPTY_LONGS;
 
     public DirectPackedReader32(RandomAccessInput in, long offset) {
       super(in, offset);
