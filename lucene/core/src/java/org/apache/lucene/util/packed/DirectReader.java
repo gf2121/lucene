@@ -300,11 +300,11 @@ public class DirectReader {
         firstIndex = index;
       }
       if (index >= lastIndex) {
-        warm = false;
+        checking = false;
       } else {
         lastIndex = index;
         if (++counter == WARM_UP_SAMPLE_TIME) {
-          warm = warm && index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
+          warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
           checking = false;
         }
       }
