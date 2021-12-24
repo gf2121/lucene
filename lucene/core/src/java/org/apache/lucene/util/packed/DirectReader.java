@@ -196,7 +196,7 @@ public class DirectReader {
     private boolean warm = false;
     private long firstIndex;
     private long lastIndex;
-    private int counter = -1;
+    private int counter = 0;
     final RandomAccessInput in;
     final long offset;
     long currentBlock = -1;
@@ -209,16 +209,16 @@ public class DirectReader {
     @Override
     public long get(long index) {
       if (checking) {
-        if (counter == -1) {
+        if (counter == 0) {
           firstIndex = index;
-        }
-        if (++counter == WARM_UP_SAMPLE_TIME) {
+        } else if (index < lastIndex) {
+          checking = false;
+        } else if (++counter == WARM_UP_SAMPLE_TIME) {
           warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
           checking = false;
         }
+        lastIndex = index;
       }
-      warm = warm && index >= lastIndex;
-      lastIndex = index;
       try {
         if (warm) {
           final long block = index >> BLOCK_SHIFT;
@@ -238,16 +238,6 @@ public class DirectReader {
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-    }
-
-    private boolean fillBufferCorrect(long block) {
-      long blockStart = block << BLOCK_SHIFT;
-      for (int i = 0; i < BLOCK_SIZE; i++) {
-        if (get(blockStart + i) != buffer[i]) {
-          return false;
-        }
-      }
-      return true;
     }
 
     abstract long doGet(long index) throws IOException;
