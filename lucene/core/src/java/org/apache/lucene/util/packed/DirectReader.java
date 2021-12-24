@@ -237,13 +237,27 @@ public class DirectReader {
         currentBlock = block;
         try {
           fillBuffer(block, buffer);
-        } catch (@SuppressWarnings("unused") Exception e) {
+        } catch (@SuppressWarnings("unused") RemainderException e) {
           //probably EOF for remainder case
           warm = false;
           return doGet(index);
         }
       }
       return buffer[(int) (index & BLOCK_MASK)];
+    }
+
+    protected void readLongs(long pos, long[] dst, int off, int len) throws IOException {
+      try {
+        in.readLongs(pos, dst, off, len);
+      } catch (Exception e) {
+        throw new RemainderException(e);
+      }
+    }
+
+    private static class RemainderException extends IOException {
+      private RemainderException(Exception e) {
+        super(e);
+      }
     }
 
     abstract long doGet(long index) throws IOException;
@@ -270,7 +284,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       for (int i = 0; i < TMP_LENGTH; i++) {
         long l = tmp[i];
         int pos = i << 6;
@@ -302,7 +316,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       for (int i = 0; i < TMP_LENGTH; i++) {
         long l = tmp[i];
         int pos = i << 5;
@@ -334,7 +348,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       for (int i = 0; i < TMP_LENGTH; i++) {
         long l = tmp[i];
         int pos = i << 4;
@@ -365,7 +379,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       for (int i = 0; i < TMP_LENGTH; i++) {
         long l = tmp[i];
         int pos = i << 3;
@@ -397,7 +411,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
         buffer[pos++] = tmp[++tmpIndex] & 0xFFFL;
@@ -438,7 +452,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       for (int i = 0; i < TMP_LENGTH; i++) {
         long l = tmp[i];
         int pos = i << 2;
@@ -470,12 +484,13 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
         buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFL;
         buffer[pos++] = (tmp[tmpIndex] >>> 20) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0XFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 4);
+        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0XFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 60) & 0XFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 4);
         buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFL;
         buffer[pos++] = (tmp[tmpIndex] >>> 36) & 0xFFFFFL;
         buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0xFFFFFL | ((tmp[++tmpIndex] & 0xFFFL) << 8);
@@ -509,7 +524,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
         buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFL;
@@ -543,7 +558,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
         buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFFL;
@@ -585,7 +600,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       for (int i = 0; i < TMP_LENGTH; i++) {
         long l = tmp[i];
         int pos = i << 1;
@@ -670,7 +685,7 @@ public class DirectReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      in.readLongs(offset + BLOCK_BYTES * block, buffer, 0, BLOCK_SIZE);
+      readLongs(offset + BLOCK_BYTES * block, buffer, 0, BLOCK_SIZE);
     }
   }
 }
