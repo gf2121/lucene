@@ -207,8 +207,8 @@ public class DirectReader {
       this.offset = offset;
     }
 
-    @Override
-    public long get(long index) {
+//    @Override
+//    public long get(long index) {
 //      if (checking) {
 //        if (counter == -1) {
 //          firstIndex = index;
@@ -224,7 +224,7 @@ public class DirectReader {
 //        }
 //      }
 
-      return doGet(index);
+//      return get(index);
 
 //      try {
 //        if (warm) {
@@ -236,18 +236,18 @@ public class DirectReader {
 //            } catch (@SuppressWarnings("unused") Exception e) {
 //              //probably EOF for remainder case
 //              warm = false;
-//              return doGet(index);
+//              return get(index);
 //            }
 //          }
 //          return buffer[(int) (index & BLOCK_MASK)];
 //        }
-//        return doGet(index);
+//        return get(index);
 //      } catch (IOException e) {
 //        throw new RuntimeException(e);
 //      }
-    }
+//    }
 
-    abstract long doGet(long index);
+//    abstract long doGet(long index);
 
     abstract void fillBuffer(long block, long[] buffer) throws IOException;
   }
@@ -264,7 +264,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    public long get(long index) {
       try {
         int shift = (int) (index & 7);
         return (in.readByte(offset + (index >>> 3)) >>> shift) & 0x1;
@@ -300,7 +300,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    public long get(long index) {
       try {
         int shift = ((int) (index & 3)) << 1;
         return (in.readByte(offset + (index >>> 2)) >>> shift) & 0x3;
@@ -336,7 +336,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    public long get(long index) {
       try {
         int shift = (int) (index & 1) << 2;
         return (in.readByte(offset + (index >>> 1)) >>> shift) & 0xF;
@@ -372,7 +372,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    public long get(long index) {
       try {
         return in.readByte(offset + index) & 0xFF;
       } catch (IOException e) {
@@ -406,7 +406,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    public long get(long index) {
       try {
         long offset = (index * 12) >>> 3;
         int shift = (int) (index & 1) << 2;
@@ -453,7 +453,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    public long get(long index) {
       try {
         return in.readShort(offset + (index << 1)) & 0xFFFF;
       } catch (IOException e) {
@@ -487,7 +487,7 @@ public class DirectReader {
     }
 
     @Override
-    public long doGet(long index) {
+    public long get(long index) {
       try {
         long offset = (index * 20) >>> 3;
         int shift = (int) (index & 1) << 2;
@@ -532,7 +532,7 @@ public class DirectReader {
     }
 
     @Override
-    public long doGet(long index) {
+    public long get(long index) {
       try {
         return in.readInt(this.offset + index * 3) & 0xFFFFFF;
       } catch (IOException e) {
@@ -568,7 +568,7 @@ public class DirectReader {
     }
 
     @Override
-    public long doGet(long index) {
+    public long get(long index) {
       try {
         long offset = (index * 28) >>> 3;
         int shift = (int) (index & 1) << 2;
@@ -615,7 +615,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    long get(long index) {
       try {
         return in.readInt(this.offset + (index << 2)) & 0xFFFFFFFFL;
       } catch (IOException e) {
@@ -704,7 +704,7 @@ public class DirectReader {
     }
 
     @Override
-    long doGet(long index) {
+    public long get(long index) {
       try {
         return in.readLong(offset + (index << 3));
       } catch (IOException e) {
