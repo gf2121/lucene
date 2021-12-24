@@ -214,7 +214,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -299,7 +299,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -385,7 +385,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -470,7 +470,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -650,7 +650,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -734,7 +734,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -829,7 +829,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -915,7 +915,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -1013,7 +1013,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
@@ -1154,7 +1154,7 @@ public class DirectReader {
       if (counter == -1) {
         firstIndex = index;
       }
-      if (index >= lastIndex) {
+      if (index < lastIndex) {
         checking = false;
       } else {
         lastIndex = index;
