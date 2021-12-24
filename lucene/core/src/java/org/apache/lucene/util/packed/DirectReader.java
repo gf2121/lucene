@@ -44,8 +44,8 @@ public class DirectReader {
   static final int BLOCK_SHIFT = 7;
   private static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
   private static final int BLOCK_MASK = BLOCK_SIZE - 1;
-  private static final int WARM_UP_SAMPLE_TIME = BLOCK_SIZE << 1;
-  private static final int WARM_UP_DELTA_THRESHOLD = WARM_UP_SAMPLE_TIME << 2;
+  private static final int WARM_UP_SAMPLE_TIME = BLOCK_SIZE;
+  private static final int WARM_UP_DELTA_THRESHOLD = WARM_UP_SAMPLE_TIME << 1;
 
   /**
    * Retrieves an instance from the specified slice written decoding {@code bitsPerValue} for each
@@ -209,36 +209,41 @@ public class DirectReader {
     @Override
     public long get(long index) {
       if (checking) {
-        if (counter == 0) {
-          firstIndex = index;
-        } else if (index < lastIndex) {
-          checking = false;
-        } else if (counter == WARM_UP_SAMPLE_TIME) {
-          warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
-          checking = false;
-        }
-        counter++;
-        lastIndex = index;
+        check(index);
       }
       try {
-        if (warm) {
-          final long block = index >> BLOCK_SHIFT;
-          if (block != currentBlock) {
-            currentBlock = block;
-            try {
-              fillBuffer(block, buffer);
-            } catch (@SuppressWarnings("unused") Exception e) {
-              //probably EOF for remainder case
-              warm = false;
-              return doGet(index);
-            }
-          }
-          return buffer[(int) (index & BLOCK_MASK)];
-        }
-        return doGet(index);
+        return warm ? warm(index) : doGet(index);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+
+    private void check(long index) {
+      if (counter == 0) {
+        firstIndex = index;
+      } else if (index < lastIndex) {
+        checking = false;
+      } else if (counter == WARM_UP_SAMPLE_TIME) {
+        warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
+        checking = false;
+      }
+      counter++;
+      lastIndex = index;
+    }
+
+    private long warm(long index) throws IOException {
+      final long block = index >> BLOCK_SHIFT;
+      if (block != currentBlock) {
+        currentBlock = block;
+        try {
+          fillBuffer(block, buffer);
+        } catch (@SuppressWarnings("unused") Exception e) {
+          //probably EOF for remainder case
+          warm = false;
+          return doGet(index);
+        }
+      }
+      return buffer[(int) (index & BLOCK_MASK)];
     }
 
     abstract long doGet(long index) throws IOException;
