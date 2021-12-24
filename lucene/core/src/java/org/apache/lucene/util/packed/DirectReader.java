@@ -16,10 +16,11 @@
  */
 package org.apache.lucene.util.packed;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.LongValues;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 /**
  * Retrieves an instance previously written by {@link DirectWriter}
@@ -39,9 +40,11 @@ import org.apache.lucene.util.LongValues;
  */
 public class DirectReader {
 
-  static final int MERGE_BUFFER_SHIFT = 7;
-  private static final int MERGE_BUFFER_SIZE = 1 << MERGE_BUFFER_SHIFT;
-  private static final int MERGE_BUFFER_MASK = MERGE_BUFFER_SIZE - 1;
+  static final int BLOCK_SHIFT = 6;
+  private static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
+  private static final int BLOCK_MASK = BLOCK_SIZE - 1;
+  private static final int WARM_UP_SAMPLE_TIME = BLOCK_SIZE << 2;
+  private static final int WARM_UP_DELTA_THRESHOLD = WARM_UP_SAMPLE_TIME << 1;
 
   /**
    * Retrieves an instance from the specified slice written decoding {@code bitsPerValue} for each
@@ -95,7 +98,7 @@ public class DirectReader {
    * access but slower at random access.
    */
   public static LongValues getMergeInstance(
-      RandomAccessInput slice, int bitsPerValue, long numValues) {
+          RandomAccessInput slice, int bitsPerValue, long numValues) {
     return getMergeInstance(slice, bitsPerValue, 0L, numValues);
   }
 
@@ -104,30 +107,30 @@ public class DirectReader {
    * access.
    */
   public static LongValues getMergeInstance(
-      RandomAccessInput slice, int bitsPerValue, long baseOffset, long numValues) {
+          RandomAccessInput slice, int bitsPerValue, long baseOffset, long numValues) {
     return new LongValues() {
 
-      private final long[] buffer = new long[MERGE_BUFFER_SIZE];
+      private final long[] buffer = new long[BLOCK_SIZE];
       private long blockIndex = -1;
 
       @Override
       public long get(long index) {
         assert index < numValues;
-        final long blockIndex = index >>> MERGE_BUFFER_SHIFT;
+        final long blockIndex = index >>> BLOCK_SHIFT;
         if (this.blockIndex != blockIndex) {
           try {
-            fillBuffer(blockIndex << MERGE_BUFFER_SHIFT);
+            fillBuffer(blockIndex << BLOCK_SHIFT);
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
           this.blockIndex = blockIndex;
         }
-        return buffer[(int) (index & MERGE_BUFFER_MASK)];
+        return buffer[(int) (index & BLOCK_MASK)];
       }
 
       private void fillBuffer(long index) throws IOException {
         // NOTE: we're not allowed to read more than 3 bytes past the last value
-        if (index >= numValues - MERGE_BUFFER_SIZE) {
+        if (index >= numValues - BLOCK_SIZE) {
           // 128 values left or less
           final LongValues slowInstance = getInstance(slice, bitsPerValue, baseOffset);
           final int numValuesLastBlock = Math.toIntExact(numValues - index);
@@ -139,7 +142,7 @@ public class DirectReader {
           final int bytesPerValue = bitsPerValue / Byte.SIZE;
           final long mask = bitsPerValue == 64 ? ~0L : (1L << bitsPerValue) - 1;
           long offset = baseOffset + (index * bitsPerValue) / 8;
-          for (int i = 0; i < MERGE_BUFFER_SIZE; ++i) {
+          for (int i = 0; i < BLOCK_SIZE; ++i) {
             if (bitsPerValue > Integer.SIZE) {
               buffer[i] = slice.readLong(offset) & mask;
             } else if (bitsPerValue > Short.SIZE) {
@@ -170,7 +173,7 @@ public class DirectReader {
           final int numBytesFor2Values = bitsPerValue * 2 / Byte.SIZE;
           final long mask = (1L << bitsPerValue) - 1;
           long offset = baseOffset + (index * bitsPerValue) / 8;
-          for (int i = 0; i < MERGE_BUFFER_SIZE; i += 2) {
+          for (int i = 0; i < BLOCK_SIZE; i += 2) {
             final long l;
             if (numBytesFor2Values > Integer.BYTES) {
               l = slice.readLong(offset);
@@ -186,17 +189,80 @@ public class DirectReader {
     };
   }
 
-  static final class DirectPackedReader1 extends LongValues {
+  private static abstract class ForwardWarmUpDirectReader extends LongValues {
+    private final long[] buffer = new long[BLOCK_SIZE];
+    private boolean checking = true;
+    private boolean warm = false;
+    private long firstIndex;
+    private long lastIndex;
+    private int counter = -1;
     final RandomAccessInput in;
     final long offset;
+    long currentBlock = -1;
 
-    DirectPackedReader1(RandomAccessInput in, long offset) {
+    public ForwardWarmUpDirectReader(RandomAccessInput in, long offset) {
       this.in = in;
       this.offset = offset;
     }
 
     @Override
     public long get(long index) {
+//      if (checking) {
+//        if (counter == -1) {
+//          firstIndex = index;
+//        }
+//        if (index >= lastIndex) {
+//          warm = false;
+//        } else {
+//          lastIndex = index;
+//          if (++counter == WARM_UP_SAMPLE_TIME) {
+//            warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
+//            checking = false;
+//          }
+//        }
+//      }
+
+      return doGet(index);
+
+//      try {
+//        if (warm) {
+//          final long block = index >> BLOCK_SHIFT;
+//          if (block != currentBlock) {
+//            currentBlock = block;
+//            try {
+//              fillBuffer(block, buffer);
+//            } catch (@SuppressWarnings("unused") Exception e) {
+//              //probably EOF for remainder case
+//              warm = false;
+//              return doGet(index);
+//            }
+//          }
+//          return buffer[(int) (index & BLOCK_MASK)];
+//        }
+//        return doGet(index);
+//      } catch (IOException e) {
+//        throw new RuntimeException(e);
+//      }
+    }
+
+    abstract long doGet(long index);
+
+    abstract void fillBuffer(long block, long[] buffer) throws IOException;
+  }
+
+  static final class DirectPackedReader1 extends ForwardWarmUpDirectReader {
+    static final int BPV = 1;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
+    final long[] tmp = new long[TMP_LENGTH];
+
+    public DirectPackedReader1(RandomAccessInput in, long offset) {
+      super(in, offset);
+    }
+
+    @Override
+    long doGet(long index) {
       try {
         int shift = (int) (index & 7);
         return (in.readByte(offset + (index >>> 3)) >>> shift) & 0x1;
@@ -204,19 +270,35 @@ public class DirectReader {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      for (int i = 0; i < TMP_LENGTH; i++) {
+        long l = tmp[i];
+        int pos = i << 6;
+        int end = pos + NUM_VALUES_PER_LONG;
+        while (pos < end) {
+          buffer[pos++] = l & 1L;
+          l >>>= BPV;
+        }
+      }
+    }
   }
 
-  static final class DirectPackedReader2 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader2 extends ForwardWarmUpDirectReader {
+    static final int BPV = 2;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectPackedReader2(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    public DirectPackedReader2(RandomAccessInput in, long offset) {
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    long doGet(long index) {
       try {
         int shift = ((int) (index & 3)) << 1;
         return (in.readByte(offset + (index >>> 2)) >>> shift) & 0x3;
@@ -224,20 +306,35 @@ public class DirectReader {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      for (int i = 0; i < TMP_LENGTH; i++) {
+        long l = tmp[i];
+        int pos = i << 5;
+        int end = pos + NUM_VALUES_PER_LONG;
+        while (pos < end) {
+          buffer[pos++] = l & 3L;
+          l >>>= BPV;
+        }
+      }
+    }
   }
 
-  static final class DirectPackedReader4 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader4 extends ForwardWarmUpDirectReader {
+    static final int BPV = 4;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectPackedReader4(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
-      ;
+    public DirectPackedReader4(RandomAccessInput in, long offset) {
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    long doGet(long index) {
       try {
         int shift = (int) (index & 1) << 2;
         return (in.readByte(offset + (index >>> 1)) >>> shift) & 0xF;
@@ -245,38 +342,69 @@ public class DirectReader {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      for (int i = 0; i < TMP_LENGTH; i++) {
+        long l = tmp[i];
+        int pos = i << 4;
+        int end = pos + NUM_VALUES_PER_LONG;
+        while (pos < end) {
+          buffer[pos++] = l & 0xFL;
+          l >>>= BPV;
+        }
+      }
+    }
   }
 
-  static final class DirectPackedReader8 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader8 extends ForwardWarmUpDirectReader {
+    static final int BPV = 8;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectPackedReader8(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    public DirectPackedReader8(RandomAccessInput in, long offset) {
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    long doGet(long index) {
       try {
         return in.readByte(offset + index) & 0xFF;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      for (int i = 0; i < TMP_LENGTH; i++) {
+        long l = tmp[i];
+        int pos = i << 3;
+        int end = pos + NUM_VALUES_PER_LONG;
+        while (pos < end) {
+          buffer[pos++] = l & 0xFFL;
+          l >>>= BPV;
+        }
+      }
+    }
   }
 
-  static final class DirectPackedReader12 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader12 extends ForwardWarmUpDirectReader {
+    static final int BPV = 12;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectPackedReader12(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    public DirectPackedReader12(RandomAccessInput in, long offset) {
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    long doGet(long index) {
       try {
         long offset = (index * 12) >>> 3;
         int shift = (int) (index & 1) << 2;
@@ -285,38 +413,79 @@ public class DirectReader {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        buffer[pos++] = tmp[++tmpIndex] & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 12) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0XFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 36) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFL;
+        buffer[pos++] = ((tmp[tmpIndex] >>> 60) & 0xFFFL) | ((tmp[++tmpIndex] & 0xFFL) << 4);
+        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 20) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 44) & 0xFFFL;
+        buffer[pos++] = ((tmp[tmpIndex] >>> 56) & 0xFFFL) | ((tmp[++tmpIndex] & 0xFL) << 8);
+        buffer[pos++] = (tmp[tmpIndex] >>> 4) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 28) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0xFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 52) & 0xFFFL;
+      }
+    }
   }
 
-  static final class DirectPackedReader16 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader16 extends ForwardWarmUpDirectReader {
+    static final int BPV = 16;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectPackedReader16(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    public DirectPackedReader16(RandomAccessInput in, long offset) {
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    long doGet(long index) {
       try {
         return in.readShort(offset + (index << 1)) & 0xFFFF;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      for (int i = 0; i < TMP_LENGTH; i++) {
+        long l = tmp[i];
+        int pos = i << 2;
+        int end = pos + NUM_VALUES_PER_LONG;
+        while (pos < end) {
+          buffer[pos++] = l & 0xFFFFL;
+          l >>>= BPV;
+        }
+      }
+    }
   }
 
-  static final class DirectPackedReader20 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader20 extends ForwardWarmUpDirectReader {
+    static final int BPV = 20;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    final long[] tmp = new long[TMP_LENGTH];
 
     DirectPackedReader20(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    public long doGet(long index) {
       try {
         long offset = (index * 20) >>> 3;
         int shift = (int) (index & 1) << 2;
@@ -325,38 +494,79 @@ public class DirectReader {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 20) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0XFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 4);
+        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 36) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0xFFFFFL | ((tmp[++tmpIndex] & 0xFFFL) << 8);
+        buffer[pos++] = (tmp[tmpIndex] >>> 12) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 52) & 0xFFFFFL | ((tmp[++tmpIndex] & 0xFFL) << 12);
+        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 28) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFFFL | ((tmp[++tmpIndex] & 0xFL) << 16);
+        buffer[pos++] = (tmp[tmpIndex] >>> 4) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0xFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 44) & 0xFFFFFL;
+      }
+    }
   }
 
-  static final class DirectPackedReader24 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader24 extends ForwardWarmUpDirectReader {
+    static final int BPV = 24;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    final long[] tmp = new long[TMP_LENGTH];
 
     DirectPackedReader24(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    public long doGet(long index) {
       try {
         return in.readInt(this.offset + index * 3) & 0xFFFFFF;
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0xFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0XFFFFFFL | ((tmp[++tmpIndex] & 0xFFL) << 16);
+        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0xFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 8);
+        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0xFFFFFFL;
+      }
+    }
   }
 
-  static final class DirectPackedReader28 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader28 extends ForwardWarmUpDirectReader {
+    static final int BPV = 28;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    final long[] tmp = new long[TMP_LENGTH];
 
     DirectPackedReader28(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    public long doGet(long index) {
       try {
         long offset = (index * 28) >>> 3;
         int shift = (int) (index & 1) << 2;
@@ -365,23 +575,63 @@ public class DirectReader {
         throw new RuntimeException(e);
       }
     }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 28) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0XFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFL) << 8);
+        buffer[pos++] = (tmp[tmpIndex] >>> 20) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFL) << 16);
+        buffer[pos++] = (tmp[tmpIndex] >>> 12) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0xFFFFFFFL | ((tmp[++tmpIndex] & 0xFL) << 24);
+        buffer[pos++] = (tmp[tmpIndex] >>> 4) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 60) & 0xFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFL) << 4);
+        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 52) & 0xFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 12);
+        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 44) & 0xFFFFFFFL | ((tmp[++tmpIndex] & 0xFFL) << 20);
+        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 36) & 0xFFFFFFFL;
+      }
+    }
   }
 
-  static final class DirectPackedReader32 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader32 extends ForwardWarmUpDirectReader {
+    static final int BPV = 32;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectPackedReader32(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    public DirectPackedReader32(RandomAccessInput in, long offset) {
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    long doGet(long index) {
       try {
         return in.readInt(this.offset + (index << 2)) & 0xFFFFFFFFL;
       } catch (IOException e) {
         throw new RuntimeException(e);
+      }
+    }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      for (int i = 0; i < TMP_LENGTH; i++) {
+        long l = tmp[i];
+        int pos = i << 1;
+        int end = pos + NUM_VALUES_PER_LONG;
+        while (pos < end) {
+          buffer[pos++] = l & 0xFFFFFFFFL;
+          l >>>= BPV;
+        }
       }
     }
   }
@@ -443,22 +693,26 @@ public class DirectReader {
     }
   }
 
-  static final class DirectPackedReader64 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectPackedReader64 extends ForwardWarmUpDirectReader {
+    static final int BPV = 64;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
 
-    DirectPackedReader64(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    public DirectPackedReader64(RandomAccessInput in, long offset) {
+      super(in, offset);
     }
 
     @Override
-    public long get(long index) {
+    long doGet(long index) {
       try {
         return in.readLong(offset + (index << 3));
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
+    }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      in.readLongs(offset + BLOCK_BYTES * block, buffer, 0, BLOCK_SIZE);
     }
   }
 }

@@ -114,7 +114,7 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
         readers[i] = EMPTY;
       } else if (merging
           && i < meta.numBlocks - 1 // we only know the number of values for the last block
-          && meta.blockShift >= DirectReader.MERGE_BUFFER_SHIFT) {
+          && meta.blockShift >= DirectReader.BLOCK_SHIFT) {
         readers[i] =
             DirectReader.getMergeInstance(
                 data, meta.bpvs[i], meta.offsets[i], 1L << meta.blockShift);

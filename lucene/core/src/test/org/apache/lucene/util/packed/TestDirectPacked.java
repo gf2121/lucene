@@ -139,14 +139,14 @@ public class TestDirectPacked extends LuceneTestCase {
                 input.randomAccessSlice(0, input.length()), bitsRequired, offset);
       }
       for (int j = 0; j < original.length; j++) {
-        assertEquals("bpv=" + bpv, original[j], reader.get(j));
+        assertEquals("bpv=" + bpv + ", j=" + j, original[j], reader.get(j));
       }
       input.close();
     }
   }
 
   private long[] randomLongs(MyRandom random, int bpv) {
-    int amount = random.nextInt(5000);
+    int amount = random.nextInt(5000) + 1000;
     long[] longs = new long[amount];
     for (int i = 0; i < longs.length; i++) {
       longs[i] = random.nextLong(bpv);
