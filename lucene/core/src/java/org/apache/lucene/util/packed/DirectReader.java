@@ -44,7 +44,7 @@ public class DirectReader {
   private static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
   private static final int BLOCK_MASK = BLOCK_SIZE - 1;
   private static final int WARM_UP_SAMPLE_TIME = BLOCK_SIZE << 1;
-  private static final int WARM_UP_DELTA_THRESHOLD = (WARM_UP_SAMPLE_TIME * 3) >> 1;
+  private static final int WARM_UP_DELTA_THRESHOLD = WARM_UP_SAMPLE_TIME << 1;
 
   /**
    * Retrieves an instance from the specified slice written decoding {@code bitsPerValue} for each
