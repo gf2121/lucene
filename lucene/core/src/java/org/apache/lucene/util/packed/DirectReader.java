@@ -615,7 +615,7 @@ public class DirectReader {
     }
 
     @Override
-    long get(long index) {
+    public long get(long index) {
       try {
         return in.readInt(this.offset + (index << 2)) & 0xFFFFFFFFL;
       } catch (IOException e) {
