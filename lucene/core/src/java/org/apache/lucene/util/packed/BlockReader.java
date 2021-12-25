@@ -47,7 +47,7 @@ public class BlockReader extends LongValues {
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
   private static final int SAMPLE_TIME = 16;
-  private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 5;
+  private static final int SAMPLE_DELTA_THRESHOLD = Integer.MAX_VALUE;
 
   private final int bpv;
   private final int blockBytes;
@@ -90,6 +90,9 @@ public class BlockReader extends LongValues {
   @Override
   public long get(long index) {
     assert index >= 0 && index < numValues;
+    assert index >= lastIndex;
+    lastIndex = index;
+
     if (checking) {
       check(index);
     }
@@ -104,9 +107,6 @@ public class BlockReader extends LongValues {
   }
 
   private void check(long index) {
-    assert index >= lastIndex;
-    lastIndex = index;
-
     if (counter == 0) {
       firstIndex = index;
     }
