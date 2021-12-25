@@ -96,7 +96,11 @@ public class BlockReader extends LongValues {
     if (checking) {
       check(index);
     }
+
     try {
+      if (index >= remainderIndex) {
+        return readRemainder(index);
+      }
       return doWarm ? warm(index) : doGet(index);
     } catch (IOException e) {
       throw new RuntimeException(e);
