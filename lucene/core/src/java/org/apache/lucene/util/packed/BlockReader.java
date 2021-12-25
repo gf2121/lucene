@@ -46,8 +46,8 @@ public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
-  private static final int SAMPLE_TIME = 16;
-  private static final int SAMPLE_DELTA_THRESHOLD = Integer.MAX_VALUE;
+  private static final int SAMPLE_TIME = 32;
+  private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 6;
 
   private final int bpv;
   private final int blockBytes;
@@ -97,10 +97,7 @@ public class BlockReader extends LongValues {
       check(index);
     }
     try {
-      if (index >= remainderIndex) {
-        return readRemainder(index);
-      }
-      return doGet(index);
+      return doWarm ? warm(index) : doGet(index);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
