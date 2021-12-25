@@ -46,8 +46,8 @@ public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
-  private static final int SAMPLE_TIME = BLOCK_SIZE;
-  private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 6;
+  private static final int SAMPLE_TIME = 32;
+  private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 5;
 
   private final int bpv;
   private final int blockBytes;
@@ -112,6 +112,7 @@ public class BlockReader extends LongValues {
     }
     if (counter == SAMPLE_TIME) {
       if (index - firstIndex > SAMPLE_DELTA_THRESHOLD) {
+        System.out.printf("index: %d, first index: %d, threshold: %d\n", index, firstIndex, SAMPLE_DELTA_THRESHOLD);
         doWarm = false;
       }
       checking = false;
