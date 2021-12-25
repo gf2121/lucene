@@ -92,14 +92,22 @@ public class BlockReader extends LongValues {
   @Override
   public long get(long index) {
     assert index >= 0 && index < numValues;
-    if (checking) {
-      check(index);
-    }
+//    if (checking) {
+//      check(index);
+//    }
     try {
-      return doWarm ? warm(index) : doGet(index);
+      if (index > remainderIndex) {
+        return readRemainder(index);
+      }
+      return warm(index);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+//    try {
+//      return doWarm ? warm(index) : doGet(index);
+//    } catch (IOException e) {
+//      throw new RuntimeException(e);
+//    }
   }
 
   private void check(long index) {
@@ -112,7 +120,7 @@ public class BlockReader extends LongValues {
     }
     lastIndex = index;
     if (counter == SAMPLE_TIME) {
-      doWarm = index - firstIndex < SAMPLE_DELTA_THRESHOLD;
+      doWarm = index - firstIndex <= SAMPLE_DELTA_THRESHOLD;
       checking = false;
     }
     counter++;
