@@ -46,8 +46,8 @@ public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
-  private static final int SAMPLE_TIME = BLOCK_SIZE;
-  private static final int SAMPLE_DELTA_THRESHOLD = BLOCK_SIZE << 1;
+  private static final int SAMPLE_TIME = 32;
+  private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 2;
 
   private final int bpv;
   private final int blockBytes;
@@ -92,22 +92,17 @@ public class BlockReader extends LongValues {
   @Override
   public long get(long index) {
     assert index >= 0 && index < numValues;
-//    if (checking) {
-//      check(index);
-//    }
+    if (checking) {
+      check(index);
+    }
     try {
       if (index > remainderIndex) {
         return readRemainder(index);
       }
-      return warm(index);
+      return doWarm ? warm(index) : doGet(index);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-//    try {
-//      return doWarm ? warm(index) : doGet(index);
-//    } catch (IOException e) {
-//      throw new RuntimeException(e);
-//    }
   }
 
   private void check(long index) {
@@ -127,19 +122,12 @@ public class BlockReader extends LongValues {
   }
 
   private long doGet(long index) throws IOException {
-    if (index < remainderIndex) {
-      long block = index >>> ForUtil.BLOCK_SIZE_LOG2;
-      return decoder.get(input, (int) (index & BLOCK_MASK), offset + block * blockBytes);
-    } else {
-      return readRemainder(index);
-    }
+    long block = index >>> ForUtil.BLOCK_SIZE_LOG2;
+    return decoder.get(input, (int) (index & BLOCK_MASK), offset + block * blockBytes);
   }
 
   private long warm(long index) throws IOException {
     long block = index >>> ForUtil.BLOCK_SIZE_LOG2;
-    if (block == remainderBlock) {
-      return readRemainder(index);
-    }
     if (block != currentBlock) {
       input.seek(offset + block * blockBytes);
       decoder.decode(input, buffer);
