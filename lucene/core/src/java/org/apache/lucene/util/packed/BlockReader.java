@@ -46,7 +46,7 @@ public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
-  private static final int SAMPLE_TIME = 32;
+  private static final int SAMPLE_TIME = BLOCK_SIZE;
   private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 6;
 
   private final int bpv;
@@ -82,8 +82,7 @@ public class BlockReader extends LongValues {
     this.blockBytes = forUtil.numBytes(bpv);
     this.offset = offset;
     this.numValues = numValues;
-    int remainderSize = (int) (numValues & BLOCK_MASK);
-    this.remainderIndex = numValues - remainderSize;
+    this.remainderIndex = numValues - (int) (numValues & BLOCK_MASK);
     this.decoder = forUtil.decoder(bpv);
   }
 
