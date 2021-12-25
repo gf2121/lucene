@@ -47,7 +47,7 @@ public class BlockReader extends LongValues {
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
   private static final int SAMPLE_TIME = 32;
-  private static final int SAMPLE_DELTA_THRESHOLD = Integer.MAX_VALUE;
+  private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 3;
 
   private final int bpv;
   private final int blockBytes;
@@ -56,7 +56,6 @@ public class BlockReader extends LongValues {
   private final long[] buffer;
   private final long offset;
   private final long numValues;
-  private final long remainderBlock;
   private final long remainderIndex;
 
   private LongValues remainderReader;
@@ -84,7 +83,6 @@ public class BlockReader extends LongValues {
     this.offset = offset;
     this.numValues = numValues;
     int remainderSize = (int) (numValues & BLOCK_MASK);
-    this.remainderBlock = remainderSize == 0 ? -1 : (numValues - 1) >> ForUtil.BLOCK_SIZE_LOG2;
     this.remainderIndex = numValues - remainderSize;
     this.decoder = forUtil.decoder(bpv);
   }
@@ -106,10 +104,10 @@ public class BlockReader extends LongValues {
   }
 
   private void check(long index) {
-//    if (index < lastIndex) {
-//      checking = false;
-//      return;
-//    }
+    if (index < lastIndex) {
+      checking = false;
+      return;
+    }
     if (counter == 0) {
       firstIndex = index;
     }
