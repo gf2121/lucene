@@ -62,7 +62,7 @@ public class BlockReader extends LongValues {
   private LongValues remainderReader;
   private long currentBlock = -1;
   private boolean checking = true;
-  private boolean doWarm = false;
+  private boolean doWarm = true;
   private long firstIndex;
   private long lastIndex = -1;
   private int counter = 0;
