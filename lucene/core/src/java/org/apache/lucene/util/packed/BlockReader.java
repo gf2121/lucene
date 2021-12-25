@@ -26,7 +26,7 @@ import java.io.IOException;
  *
  * <p>The difference between {@link BlockReader} and {@link DirectReader} is that a block with a
  * size of 128 is pre-read, which is very helpful for dense reading, However the overhead for sparse
- * reading is not very high, thanks to efficient {@link ForUtil}.
+ * reading is not very high, thanks to the efficient {@link ForUtil}.
  *
  * <p>Example usage:
  *
@@ -100,7 +100,7 @@ public class BlockReader extends LongValues {
       if (index >= remainderIndex) {
         return readRemainder(index);
       }
-      return doWarm ? warm(index) : doGet(index);
+      return doGet(index);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
