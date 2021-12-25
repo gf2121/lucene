@@ -106,10 +106,10 @@ public class BlockReader extends LongValues {
   }
 
   private void check(long index) {
-    if (index < lastIndex) {
-      checking = false;
-      return;
-    }
+//    if (index < lastIndex) {
+//      checking = false;
+//      return;
+//    }
     if (counter == 0) {
       firstIndex = index;
     }
