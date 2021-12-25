@@ -96,7 +96,7 @@ public class BlockReader extends LongValues {
       check(index);
     }
     try {
-      if (index > remainderIndex) {
+      if (index >= remainderIndex) {
         return readRemainder(index);
       }
       return doWarm ? warm(index) : doGet(index);
