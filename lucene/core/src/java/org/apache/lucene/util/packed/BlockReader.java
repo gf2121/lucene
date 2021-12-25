@@ -91,16 +91,11 @@ public class BlockReader extends LongValues {
     assert index >= 0 && index < numValues;
     assert index >= lastIndex;
     lastIndex = index;
-
-    if (checking) {
-      check(index);
-    }
-
     try {
       if (index >= remainderIndex) {
         return readRemainder(index);
       }
-      return doWarm ? warm(index) : doGet(index);
+      return warm(index);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -112,7 +107,6 @@ public class BlockReader extends LongValues {
     }
     if (counter == SAMPLE_TIME) {
       if (index - firstIndex > SAMPLE_DELTA_THRESHOLD) {
-        System.out.printf("index: %d, first index: %d, threshold: %d\n", index, firstIndex, SAMPLE_DELTA_THRESHOLD);
         new Exception().printStackTrace();
         doWarm = false;
       }
