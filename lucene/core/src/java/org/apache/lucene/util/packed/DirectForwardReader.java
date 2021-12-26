@@ -88,7 +88,7 @@ public class DirectForwardReader {
     private final long[] buffer = new long[BLOCK_SIZE];
     private final long remainderIndex;
     private boolean checking = true;
-    private boolean warm = false;
+    private boolean warm = true;
     private long firstIndex;
     private int counter = 0;
     final RandomAccessInput in;
@@ -103,25 +103,25 @@ public class DirectForwardReader {
 
     @Override
     public long get(long index) {
-      if (checking) {
-        check(index);
-      }
+//      if (checking) {
+//        check(index);
+//      }
       try {
-        return (warm && index < remainderIndex) ? warm(index) : doGet(index);
+        return index < remainderIndex ? warm(index) : doGet(index);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
 
-    private void check(long index) {
-      if (counter == 0) {
-        firstIndex = index;
-      } else if (counter == WARM_UP_SAMPLE_TIME) {
-        warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
-        checking = false;
-      }
-      counter++;
-    }
+//    private void check(long index) {
+//      if (counter == 0) {
+//        firstIndex = index;
+//      } else if (counter == WARM_UP_SAMPLE_TIME) {
+//        warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
+//        checking = false;
+//      }
+//      counter++;
+//    }
 
     private long warm(long index) throws IOException {
       final long block = index >> BLOCK_SHIFT;
