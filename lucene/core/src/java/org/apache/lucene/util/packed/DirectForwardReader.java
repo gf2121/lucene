@@ -39,10 +39,10 @@ import java.io.IOException;
  */
 public class DirectForwardReader {
 
-  static final int BLOCK_SHIFT = 7;
+  static final int BLOCK_SHIFT = 8;
   private static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
   private static final int BLOCK_MASK = BLOCK_SIZE - 1;
-  private static final int WARM_UP_SAMPLE_TIME = BLOCK_SIZE;
+  private static final int WARM_UP_SAMPLE_TIME = 128;
   private static final int WARM_UP_DELTA_THRESHOLD = WARM_UP_SAMPLE_TIME << 3;
 
   /**
@@ -72,11 +72,11 @@ public class DirectForwardReader {
       case 32:
         return new DirectForwardReader32(slice, offset, numValues);
       case 40:
-        return new DirectForwardReader40(slice, offset);
+        return new DirectForwardReader40(slice, offset, numValues);
       case 48:
-        return new DirectForwardReader48(slice, offset);
+        return new DirectForwardReader48(slice, offset, numValues);
       case 56:
-        return new DirectForwardReader56(slice, offset);
+        return new DirectForwardReader56(slice, offset, numValues);
       case 64:
         return new DirectForwardReader64(slice, offset, numValues);
       default:
@@ -488,59 +488,94 @@ public class DirectForwardReader {
     }
   }
 
-  static final class DirectForwardReader40 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectForwardReader40 extends ForwardWarmUpDirectReader {
+    static final int BPV = 40;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE ;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectForwardReader40(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    DirectForwardReader40(RandomAccessInput in, long offset, long numValues) {
+      super(in, offset, numValues);
     }
 
     @Override
-    public long get(long index) {
-      try {
-        return in.readLong(this.offset + index * 5) & 0xFFFFFFFFFFL;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    public long doGet(long index) throws IOException {
+      return in.readLong(this.offset + index * 5) & 0xFFFFFFFFFFL;
+    }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0xFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 24);
+        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0xFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFFFL) << 8);
+        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFL) << 32);
+        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFL) << 16);
+        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0xFFFFFFFFFFL;
       }
     }
   }
 
-  static final class DirectForwardReader48 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectForwardReader48 extends ForwardWarmUpDirectReader {
+    static final int BPV = 48;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE ;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectForwardReader48(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    DirectForwardReader48(RandomAccessInput in, long offset, long numValues) {
+      super(in, offset, numValues);
     }
 
     @Override
-    public long get(long index) {
-      try {
-        return in.readLong(this.offset + index * 6) & 0xFFFFFFFFFFFFL;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    public long doGet(long index) throws IOException {
+      return in.readLong(this.offset + index * 6) & 0xFFFFFFFFFFFFL;
+    }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFFFL) << 16);
+        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 32);
+        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFFFFFFFFL;
       }
     }
   }
 
-  static final class DirectForwardReader56 extends LongValues {
-    final RandomAccessInput in;
-    final long offset;
+  static final class DirectForwardReader56 extends ForwardWarmUpDirectReader {
+    static final int BPV = 56;
+    static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE ;
+    static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
+    final long[] tmp = new long[TMP_LENGTH];
 
-    DirectForwardReader56(RandomAccessInput in, long offset) {
-      this.in = in;
-      this.offset = offset;
+    DirectForwardReader56(RandomAccessInput in, long offset, long numValues) {
+      super(in, offset, numValues);
     }
 
     @Override
-    public long get(long index) {
-      try {
-        return in.readLong(this.offset + index * 7) & 0xFFFFFFFFFFFFFFL;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+    public long doGet(long index) throws IOException {
+      return in.readLong(this.offset + index * 7) & 0xFFFFFFFFFFFFFFL;
+    }
+
+    @Override
+    void fillBuffer(long block, long[] buffer) throws IOException {
+      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFFFFFFFFFL;
+        buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0xFFFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFFFFFFFL) << 8);
+        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFFFFFL) << 16);
+        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0xFFFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFFFL) << 24);
+        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFFFL) << 32);
+        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0xFFFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 40);
+        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFFFFFFFFFFL | ((tmp[++tmpIndex] & 0xFFL) << 48);
+        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFFFFFFFFFFFFL;
       }
     }
   }
