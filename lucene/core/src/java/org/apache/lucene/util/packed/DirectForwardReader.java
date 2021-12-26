@@ -39,7 +39,7 @@ import java.io.IOException;
  */
 public class DirectForwardReader {
 
-  static final int BLOCK_SHIFT = 6;
+  static final int BLOCK_SHIFT = 7;
   private static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
   private static final int BLOCK_MASK = BLOCK_SIZE - 1;
   private static final int WARM_UP_SAMPLE_TIME = BLOCK_SIZE;
@@ -50,6 +50,7 @@ public class DirectForwardReader {
    * bitsPerValue} for each value
    */
   public static LongValues getInstance(RandomAccessInput slice, int bitsPerValue, long offset, long numValues) {
+    System.out.println(bitsPerValue);
     switch (bitsPerValue) {
       case 1:
         return new DirectForwardReader1(slice, offset, numValues);
@@ -103,9 +104,9 @@ public class DirectForwardReader {
 
     @Override
     public long get(long index) {
-//      if (checking) {
-//        check(index);
-//      }
+      if (checking) {
+        check(index);
+      }
       try {
         return (warm && index < remainderIndex) ? warm(index) : doGet(index);
       } catch (IOException e) {
