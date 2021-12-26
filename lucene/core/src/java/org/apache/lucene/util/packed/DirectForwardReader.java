@@ -268,14 +268,17 @@ public class DirectForwardReader {
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
-      for (int i = 0; i < TMP_LENGTH; i++) {
-        long l = tmp[i];
-        int pos = i << 3;
-        int end = pos + NUM_VALUES_PER_LONG;
-        while (pos < end) {
-          buffer[pos++] = l & 0xFFL;
-          l >>>= BPV;
-        }
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        final long l = tmp[++tmpIndex];
+        buffer[pos++] = l & 0xFFL;
+        buffer[pos++] = (l >>> 8) & 0xFFL;
+        buffer[pos++] = (l >>> 16) & 0xFFL;
+        buffer[pos++] = (l >>> 24) & 0xFFL;
+        buffer[pos++] = (l >>> 32) & 0xFFL;
+        buffer[pos++] = (l >>> 40) & 0xFFL;
+        buffer[pos++] = (l >>> 48) & 0xFFL;
+        buffer[pos++] = (l >>> 56) & 0xFFL;
       }
     }
   }
@@ -302,22 +305,25 @@ public class DirectForwardReader {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
-        buffer[pos++] = tmp[++tmpIndex] & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 12) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0XFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 36) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFL;
-        buffer[pos++] = ((tmp[tmpIndex]>>> 60) & 0xFFFL) | ((tmp[++tmpIndex] & 0xFFL) << 4);
-        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 20) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 44) & 0xFFFL;
-        buffer[pos++] = ((tmp[tmpIndex] >>> 56) & 0xFFFL) | ((tmp[++tmpIndex] & 0xFL) << 8);
-        buffer[pos++] = (tmp[tmpIndex] >>> 4) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 28) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0xFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 52) & 0xFFFL;
+        final long l1 = tmp[++tmpIndex];
+        final long l2 = tmp[++tmpIndex];
+        final long l3 = tmp[++tmpIndex];
+        buffer[pos++] = l1 & 0xFFFL;
+        buffer[pos++] = (l1 >>> 12) & 0xFFFL;
+        buffer[pos++] = (l1 >>> 24) & 0XFFFL;
+        buffer[pos++] = (l1 >>> 36) & 0xFFFL;
+        buffer[pos++] = (l1 >>> 48) & 0xFFFL;
+        buffer[pos++] = ((l1 >>> 60) & 0xFFFL) | ((l2 & 0xFFL) << 4);
+        buffer[pos++] = (l2 >>> 8) & 0xFFFL;
+        buffer[pos++] = (l2 >>> 20) & 0xFFFL;
+        buffer[pos++] = (l2 >>> 32) & 0xFFFL;
+        buffer[pos++] = (l2 >>> 44) & 0xFFFL;
+        buffer[pos++] = ((l2 >>> 56) & 0xFFFL) | ((l3 & 0xFL) << 8);
+        buffer[pos++] = (l3 >>> 4) & 0xFFFL;
+        buffer[pos++] = (l3 >>> 16) & 0xFFFL;
+        buffer[pos++] = (l3 >>> 28) & 0xFFFL;
+        buffer[pos++] = (l3 >>> 40) & 0xFFFL;
+        buffer[pos++] = (l3 >>> 52) & 0xFFFL;
       }
     }
   }
@@ -341,14 +347,13 @@ public class DirectForwardReader {
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
-      for (int i = 0; i < TMP_LENGTH; i++) {
-        long l = tmp[i];
-        int pos = i << 2;
-        int end = pos + NUM_VALUES_PER_LONG;
-        while (pos < end) {
-          buffer[pos++] = l & 0xFFFFL;
-          l >>>= BPV;
-        }
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        final long l = tmp[++tmpIndex];
+        buffer[pos++] = l & 0xFFFFL;
+        buffer[pos++] = (l >>> 16) & 0xFFFFL;
+        buffer[pos++] = (l >>> 32) & 0xFFFFL;
+        buffer[pos++] = (l >>> 48) & 0xFFFFL;
       }
     }
   }
@@ -375,22 +380,27 @@ public class DirectForwardReader {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
-        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 20) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0XFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 60) & 0XFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 4);
-        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 36) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0xFFFFFL | ((tmp[++tmpIndex] & 0xFFFL) << 8);
-        buffer[pos++] = (tmp[tmpIndex] >>> 12) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 52) & 0xFFFFFL | ((tmp[++tmpIndex] & 0xFFL) << 12);
-        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 28) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0xFFFFFL | ((tmp[++tmpIndex] & 0xFL) << 16);
-        buffer[pos++] = (tmp[tmpIndex] >>> 4) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0xFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 44) & 0xFFFFFL;
+        final long l1 = tmp[++tmpIndex];
+        final long l2 = tmp[++tmpIndex];
+        final long l3 = tmp[++tmpIndex];
+        final long l4 = tmp[++tmpIndex];
+        final long l5 = tmp[++tmpIndex];
+        buffer[pos++] = l1 & 0xFFFFFL;
+        buffer[pos++] = (l1 >>> 20) & 0xFFFFFL;
+        buffer[pos++] = (l1 >>> 40) & 0XFFFFFL;
+        buffer[pos++] = (l1 >>> 60) & 0XFFFFFL | ((l2 & 0xFFFFL) << 4);
+        buffer[pos++] = (l2 >>> 16) & 0xFFFFFL;
+        buffer[pos++] = (l2 >>> 36) & 0xFFFFFL;
+        buffer[pos++] = (l2 >>> 56) & 0xFFFFFL | ((l3 & 0xFFFL) << 8);
+        buffer[pos++] = (l3 >>> 12) & 0xFFFFFL;
+        buffer[pos++] = (l3 >>> 32) & 0xFFFFFL;
+        buffer[pos++] = (l3 >>> 52) & 0xFFFFFL | ((l4 & 0xFFL) << 12);
+        buffer[pos++] = (l4 >>> 8) & 0xFFFFFL;
+        buffer[pos++] = (l4 >>> 28) & 0xFFFFFL;
+        buffer[pos++] = (l4 >>> 48) & 0xFFFFFL | ((l5 & 0xFL) << 16);
+        buffer[pos++] = (l5 >>> 4) & 0xFFFFFL;
+        buffer[pos++] = (l5 >>> 24) & 0xFFFFFL;
+        buffer[pos++] = (l5 >>> 44) & 0xFFFFFL;
       }
     }
   }
