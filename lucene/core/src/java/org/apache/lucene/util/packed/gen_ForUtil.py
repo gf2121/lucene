@@ -21,7 +21,7 @@ import math
 
 """Code generation for ForUtil.java"""
 
-BLOCK_SIZE = 128
+BLOCK_SIZE = 64
 BITS_PER_VALUES = [1, 2, 4, 8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64]
 OUTPUT_FILE = "ForUtil.java"
 PRIMITIVE_SIZE = [8, 16, 32, 64]
