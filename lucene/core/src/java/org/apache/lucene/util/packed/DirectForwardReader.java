@@ -50,7 +50,6 @@ public class DirectForwardReader {
    * bitsPerValue} for each value
    */
   public static LongValues getInstance(RandomAccessInput slice, int bitsPerValue, long offset, long numValues) {
-    System.out.println(bitsPerValue);
     switch (bitsPerValue) {
       case 1:
         return new DirectForwardReader1(slice, offset, numValues);
