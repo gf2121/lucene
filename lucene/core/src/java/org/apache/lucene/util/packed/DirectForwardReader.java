@@ -424,14 +424,17 @@ public class DirectForwardReader {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
-        buffer[pos++] = tmp[++tmpIndex] & 0xFFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 24) & 0xFFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 48) & 0XFFFFFFL | ((tmp[++tmpIndex] & 0xFFL) << 16);
-        buffer[pos++] = (tmp[tmpIndex] >>> 8) & 0xFFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 32) & 0xFFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 56) & 0xFFFFFFL | ((tmp[++tmpIndex] & 0xFFFFL) << 8);
-        buffer[pos++] = (tmp[tmpIndex] >>> 16) & 0xFFFFFFL;
-        buffer[pos++] = (tmp[tmpIndex] >>> 40) & 0xFFFFFFL;
+        final long l1 = tmp[++tmpIndex];
+        final long l2 = tmp[++tmpIndex];
+        final long l3 = tmp[++tmpIndex];
+        buffer[pos++] = l1 & 0xFFFFFFL;
+        buffer[pos++] = (l1 >>> 24) & 0xFFFFFFL;
+        buffer[pos++] = (l1 >>> 48) & 0XFFFFFFL | ((l2 & 0xFFL) << 16);
+        buffer[pos++] = (l2 >>> 8) & 0xFFFFFFL;
+        buffer[pos++] = (l2 >>> 32) & 0xFFFFFFL;
+        buffer[pos++] = (l2 >>> 56) & 0xFFFFFFL | ((l3 & 0xFFFFL) << 8);
+        buffer[pos++] = (l3 >>> 16) & 0xFFFFFFL;
+        buffer[pos++] = (l3 >>> 40) & 0xFFFFFFL;
       }
     }
   }
@@ -482,7 +485,6 @@ public class DirectForwardReader {
     static final int BPV = 32;
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE ;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
-    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
     final long[] tmp = new long[TMP_LENGTH];
 
     public DirectForwardReader32(RandomAccessInput in, long offset, long numValues) {
@@ -497,14 +499,11 @@ public class DirectForwardReader {
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
-      for (int i = 0; i < TMP_LENGTH; i++) {
-        long l = tmp[i];
-        int pos = i << 1;
-        int end = pos + NUM_VALUES_PER_LONG;
-        while (pos < end) {
-          buffer[pos++] = l & 0xFFFFFFFFL;
-          l >>>= BPV;
-        }
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        final long l = tmp[++tmpIndex];
+        buffer[pos++] = l & 0xFFFFFFFFL;
+        buffer[pos++] = (l >>> 32) & 0xFFFFFFFFL;
       }
     }
   }
