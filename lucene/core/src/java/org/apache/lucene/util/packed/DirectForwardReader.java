@@ -43,7 +43,7 @@ public class DirectForwardReader {
   private static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
   private static final int BLOCK_MASK = BLOCK_SIZE - 1;
   private static final int WARM_UP_SAMPLE_TIME = BLOCK_SIZE;
-  private static final int WARM_UP_DELTA_THRESHOLD = WARM_UP_SAMPLE_TIME << 3;
+  private static final int WARM_UP_DELTA_THRESHOLD = WARM_UP_SAMPLE_TIME << 2;
 
   /**
    * Retrieves an instance from the specified {@code offset} of the given slice decoding {@code
@@ -88,7 +88,7 @@ public class DirectForwardReader {
     private final long[] buffer = new long[BLOCK_SIZE];
     private final long remainderIndex;
     private boolean checking = true;
-    private boolean warm = true;
+    private boolean warm = false;
     private long firstIndex;
     private int counter = 0;
     final RandomAccessInput in;
