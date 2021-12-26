@@ -226,14 +226,25 @@ public class DirectForwardReader {
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
-      for (int i = 0; i < TMP_LENGTH; i++) {
-        long l = tmp[i];
-        int pos = i << 4;
-        int end = pos + NUM_VALUES_PER_LONG;
-        while (pos < end) {
-          buffer[pos++] = l & 0xFL;
-          l >>>= BPV;
-        }
+      int pos = 0, tmpIndex = -1;
+      while (pos < BLOCK_SIZE) {
+        final long l = tmp[++tmpIndex];
+        buffer[pos++] = l & 0xFL;
+        buffer[pos++] = (l >>> 4) & 0xFL;
+        buffer[pos++] = (l >>> 8) & 0xFL;
+        buffer[pos++] = (l >>> 12) & 0xFL;
+        buffer[pos++] = (l >>> 16) & 0xFL;
+        buffer[pos++] = (l >>> 20) & 0xFL;
+        buffer[pos++] = (l >>> 24) & 0xFL;
+        buffer[pos++] = (l >>> 28) & 0xFL;
+        buffer[pos++] = (l >>> 32) & 0xFL;
+        buffer[pos++] = (l >>> 36) & 0xFL;
+        buffer[pos++] = (l >>> 40) & 0xFL;
+        buffer[pos++] = (l >>> 44) & 0xFL;
+        buffer[pos++] = (l >>> 48) & 0xFL;
+        buffer[pos++] = (l >>> 52) & 0xFL;
+        buffer[pos++] = (l >>> 56) & 0xFL;
+        buffer[pos++] = (l >>> 60) & 0xFL;
       }
     }
   }
