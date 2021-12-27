@@ -373,12 +373,14 @@ final class ForUtil {
   static class Decoder4 implements Decoder {
 
     private static final long[] SHIFT_CACHE = new long[BLOCK_SIZE];
+    private static final long[] POINTER_CACHE = new long[BLOCK_SIZE];
 
     static {
       for(int i=0; i < BLOCK_SIZE; i++) {
         int posBeforeExpand = i & 15;
         int shift1 = ((15 ^ posBeforeExpand) >>> 3) << 2;
         SHIFT_CACHE[i] = shift1 + EXPAND_8_SHIFT[i];
+        POINTER_CACHE[i] = (i & 7) << 3;
       }
     }
 
@@ -390,7 +392,7 @@ final class ForUtil {
 
     @Override
     public long get(IndexInput in, int blockIndex, long blockStartPointer) throws IOException {
-      in.seek(blockStartPointer + ((blockIndex & 7) << 3));
+      in.seek(blockStartPointer + POINTER_CACHE[blockIndex]);
       return (in.readLong() >>> SHIFT_CACHE[blockIndex]) & MASK64_4;
     }
 
@@ -402,6 +404,7 @@ final class ForUtil {
   }
 
   static class Decoder8 implements Decoder {
+
     private final long[] tmp;
 
     private Decoder8(long[] tmp) {
@@ -424,10 +427,17 @@ final class ForUtil {
   static class Decoder12 implements Decoder {
 
     private static final long[] SHIFT_CACHE = new long[BLOCK_SIZE];
+    private static final long[] POINTER_CACHE = new long[BLOCK_SIZE];
 
     static {
       for(int i=0; i < BLOCK_SIZE; i++) {
         SHIFT_CACHE[i] = EXPAND_16_SHIFT[i] + 4;
+        int posBeforeExpand = i & 31;
+        if (posBeforeExpand < 24) {
+          POINTER_CACHE[i] = posBeforeExpand << 3;
+        } else {
+          POINTER_CACHE[i] = (posBeforeExpand - 24) * 24;
+        }
       }
     }
 
@@ -440,11 +450,10 @@ final class ForUtil {
     @Override
     public long get(IndexInput in, int blockIndex, long blockStartPointer) throws IOException {
       int posBeforeExpand = blockIndex & 31;
+      in.seek(blockStartPointer + POINTER_CACHE[blockIndex]);
       if (posBeforeExpand < 24) {
-        in.seek(blockStartPointer + (posBeforeExpand << 3));
         return (in.readLong() >>> SHIFT_CACHE[blockIndex]) & MASK64_12;
       } else {
-        in.seek(blockStartPointer + (posBeforeExpand - 24) * 24);
         in.readLongs(tmp, 0, 3);
         long beforeExpand = ((tmp[0] & MASK16_4) << 8) | ((tmp[1] & MASK16_4) << 4) | (tmp[2] & MASK16_4);
         return (beforeExpand >> EXPAND_16_SHIFT[blockIndex]) & MASK64_12;
@@ -459,6 +468,14 @@ final class ForUtil {
   }
 
   static class Decoder16 implements Decoder {
+    private static final long[] POINTER_CACHE = new long[BLOCK_SIZE];
+
+    static {
+      for(int i=0; i < BLOCK_SIZE; i++) {
+        POINTER_CACHE[i] = (i & 31) << 3;
+      }
+    }
+
     private final long[] tmp;
 
     private Decoder16(long[] tmp) {
@@ -467,7 +484,7 @@ final class ForUtil {
 
     @Override
     public long get(IndexInput in, int blockIndex, long blockStartPointer) throws IOException {
-      in.seek(blockStartPointer + ((blockIndex & 31) << 3));
+      in.seek(blockStartPointer + POINTER_CACHE[blockIndex]);
       return (in.readLong() >>> EXPAND_16_SHIFT[blockIndex]) & MASK64_16;
     }
 
@@ -515,10 +532,17 @@ final class ForUtil {
   static class Decoder24 implements Decoder {
 
     private static final long[] SHIFT_CACHE = new long[BLOCK_SIZE];
+    private static final long[] POINTER_CACHE = new long[BLOCK_SIZE];
 
     static {
       for(int i=0; i < BLOCK_SIZE; i++) {
         SHIFT_CACHE[i] = EXPAND_32_SHIFT[i] + 8;
+        int posBeforeExpand = i & 63;
+        if (posBeforeExpand < 48) {
+          POINTER_CACHE[i] = posBeforeExpand << 3;
+        } else {
+          POINTER_CACHE[i] = (posBeforeExpand - 48) * 24;
+        }
       }
     }
 
@@ -531,11 +555,10 @@ final class ForUtil {
     @Override
     public long get(IndexInput in, int blockIndex, long blockStartPointer) throws IOException {
       int posBeforeExpand = blockIndex & 63;
+      in.seek(blockStartPointer + POINTER_CACHE[blockIndex]);
       if (posBeforeExpand < 48) {
-        in.seek(blockStartPointer + (posBeforeExpand << 3));
         return (in.readLong() >>> SHIFT_CACHE[blockIndex]) & MASK64_24;
       } else {
-        in.seek(blockStartPointer + (posBeforeExpand - 48) * 24);
         in.readLongs(tmp, 0, 3);
         long beforeExpand = ((tmp[0] & MASK32_8) << 16) | ((tmp[1] & MASK32_8) << 8) | (tmp[2] & MASK32_8);
         return (beforeExpand >> EXPAND_32_SHIFT[blockIndex]) & MASK64_24;
