@@ -63,7 +63,6 @@ public class BlockReader extends LongValues {
   private boolean checking = true;
   private boolean doWarm = true;
   private long firstIndex;
-  private long lastIndex = -1;
   private int counter = 0;
 
   public BlockReader(IndexInput input, int bpv, long numValues) {
@@ -76,6 +75,7 @@ public class BlockReader extends LongValues {
 
   public BlockReader(
           IndexInput input, int bpv, long offset, ForUtil forUtil, long[] buffer, long numValues) {
+    System.out.println(bpv);
     this.bpv = bpv;
     this.buffer = buffer;
     this.input = input;
@@ -89,13 +89,14 @@ public class BlockReader extends LongValues {
   @Override
   public long get(long index) {
     assert index >= 0 && index < numValues;
-    assert index >= lastIndex;
-    lastIndex = index;
     try {
+      if (checking) {
+        check(index);
+      }
       if (index >= remainderIndex) {
         return readRemainder(index);
       }
-      return warm(index);
+      return doWarm ? warm(index) : doGet(index);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -107,7 +108,7 @@ public class BlockReader extends LongValues {
     }
     if (counter == SAMPLE_TIME) {
       if (index - firstIndex > SAMPLE_DELTA_THRESHOLD) {
-        new Exception().printStackTrace();
+        System.out.println(index);
         doWarm = false;
       }
       checking = false;
