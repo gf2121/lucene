@@ -72,7 +72,7 @@ public class BlockReader extends LongValues {
 
   public BlockReader(
           IndexInput input, int bpv, long offset, ForUtil forUtil, long[] buffer, long numValues) {
-    System.out.println("bpv: " + bpv);
+//    System.out.println("bpv: " + bpv);
     this.buffer = buffer;
     this.input = input;
     this.blockBytes = forUtil.numBytes(bpv);
@@ -100,7 +100,7 @@ public class BlockReader extends LongValues {
     }
     if (counter == SAMPLE_TIME) {
       if (index - firstIndex > SAMPLE_DELTA_THRESHOLD) {
-        System.out.printf("first index: %d last index: %d \n", firstIndex, index);
+//        System.out.printf("first index: %d last index: %d \n", firstIndex, index);
         doWarm = false;
       }
       checking = false;
