@@ -48,8 +48,8 @@ public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
-  // if we only get less than 4 times in the first block, we assume it is a sparse reading and do not warm up.
-  private static final int SAMPLE_THRESHOLD = 4;
+  // if we only do less than 8 times in the first block, we assume it is a sparse reading and do not warm up.
+  private static final int SAMPLE_THRESHOLD = ForUtil.BLOCK_SIZE >>> 4;
 
   private final int blockBytes;
   private final ForUtil.Decoder decoder;
@@ -72,7 +72,7 @@ public class BlockReader extends LongValues {
     this(input, bpv, offset, new ForUtil(), new long[BLOCK_SIZE], numValues);
   }
 
-  public BlockReader(
+  BlockReader(
           IndexInput input, int bpv, long offset, ForUtil forUtil, long[] buffer, long numValues) {
     this.buffer = buffer;
     this.input = input;
