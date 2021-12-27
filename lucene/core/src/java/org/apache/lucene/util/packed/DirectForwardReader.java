@@ -50,6 +50,7 @@ public class DirectForwardReader {
    * bitsPerValue} for each value
    */
   public static LongValues getInstance(RandomAccessInput slice, int bitsPerValue, long offset, long numValues) {
+    System.out.println(bitsPerValue);
     switch (bitsPerValue) {
       case 1:
         return new DirectForwardReader1(slice, offset, numValues);
@@ -103,25 +104,27 @@ public class DirectForwardReader {
 
     @Override
     public long get(long index) {
-//      if (checking) {
-//        check(index);
-//      }
+      if (checking) {
+        check(index);
+      }
       try {
-        return index < remainderIndex ? warm(index) : doGet(index);
+        return (warm && index < remainderIndex) ? warm(index) : doGet(index);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
 
-//    private void check(long index) {
-//      if (counter == 0) {
-//        firstIndex = index;
-//      } else if (counter == WARM_UP_SAMPLE_TIME) {
-//        warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
-//        checking = false;
-//      }
-//      counter++;
-//    }
+    private void check(long index) {
+      System.out.print(index + " ");
+      if (counter == 0) {
+        firstIndex = index;
+      } else if (counter == WARM_UP_SAMPLE_TIME) {
+        warm = index - firstIndex <= WARM_UP_DELTA_THRESHOLD;
+        checking = false;
+        System.out.println();
+      }
+      counter++;
+    }
 
     private long warm(long index) throws IOException {
       final long block = index >> BLOCK_SHIFT;
