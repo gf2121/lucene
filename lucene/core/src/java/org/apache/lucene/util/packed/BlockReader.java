@@ -74,6 +74,7 @@ public class BlockReader extends LongValues {
 
   public BlockReader(
           IndexInput input, int bpv, long offset, ForUtil forUtil, long[] buffer, long numValues) {
+    System.out.println("bpv:" + bpv);
     this.buffer = buffer;
     this.input = input;
     this.blockBytes = forUtil.numBytes(bpv);
