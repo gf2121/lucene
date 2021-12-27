@@ -74,7 +74,6 @@ public class BlockReader extends LongValues {
 
   public BlockReader(
           IndexInput input, int bpv, long offset, ForUtil forUtil, long[] buffer, long numValues) {
-    System.out.println("bpv:" + bpv);
     this.buffer = buffer;
     this.input = input;
     this.blockBytes = forUtil.numBytes(bpv);
@@ -101,9 +100,7 @@ public class BlockReader extends LongValues {
       maxCheckIndex = index + BLOCK_SIZE;
     }
     if (index >= maxCheckIndex) {
-      System.out.println(counter);
       if (counter < SAMPLE_THRESHOLD) {
-        System.out.println("error!!!" + counter);
         doWarm = false;
       }
       checking = false;
