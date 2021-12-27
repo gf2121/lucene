@@ -49,16 +49,13 @@ public class BlockReader extends LongValues {
   private static final int SAMPLE_TIME = 32;
   private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 6;
 
-  private final int bpv;
   private final int blockBytes;
   private final ForUtil.Decoder decoder;
   private final IndexInput input;
   private final long[] buffer;
   private final long offset;
   private final long numValues;
-  private final long remainderIndex;
 
-  private LongValues remainderReader;
   private long currentBlock = -1;
   private boolean checking = true;
   private boolean doWarm = true;
@@ -75,14 +72,12 @@ public class BlockReader extends LongValues {
 
   public BlockReader(
           IndexInput input, int bpv, long offset, ForUtil forUtil, long[] buffer, long numValues) {
-    System.out.println(bpv);
-    this.bpv = bpv;
+    System.out.println("bpv: " + bpv);
     this.buffer = buffer;
     this.input = input;
     this.blockBytes = forUtil.numBytes(bpv);
     this.offset = offset;
     this.numValues = numValues;
-    this.remainderIndex = numValues - (int) (numValues & BLOCK_MASK);
     this.decoder = forUtil.decoder(bpv);
   }
 
@@ -92,9 +87,6 @@ public class BlockReader extends LongValues {
     try {
       if (checking) {
         check(index);
-      }
-      if (index >= remainderIndex) {
-        return readRemainder(index);
       }
       return doWarm ? warm(index) : doGet(index);
     } catch (IOException e) {
@@ -108,7 +100,7 @@ public class BlockReader extends LongValues {
     }
     if (counter == SAMPLE_TIME) {
       if (index - firstIndex > SAMPLE_DELTA_THRESHOLD) {
-        System.out.println(index);
+        System.out.printf("first index: %d last index: %d \n", firstIndex, index);
         doWarm = false;
       }
       checking = false;
@@ -129,12 +121,5 @@ public class BlockReader extends LongValues {
       this.currentBlock = block;
     }
     return buffer[(int) (index & BLOCK_MASK)];
-  }
-
-  private long readRemainder(long index) throws IOException {
-    if (remainderReader == null) {
-      remainderReader = DirectReader.getInstance(input.randomAccessSlice(0, input.length()), bpv);
-    }
-    return remainderReader.get(index);
   }
 }

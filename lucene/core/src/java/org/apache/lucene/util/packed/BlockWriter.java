@@ -100,10 +100,6 @@ public class BlockWriter {
     if (bufferIndex == 0) {
       return;
     }
-    DirectWriter directWriter = DirectWriter.getInstance(output, bufferIndex, bpv);
-    for (int i=0; i<bufferIndex; i++) {
-      directWriter.add(buffer[i]);
-    }
-    directWriter.finish();
+    forUtil.encode(buffer, bpv, output);
   }
 }
