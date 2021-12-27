@@ -28,6 +28,8 @@ import java.io.IOException;
  * size of 128 is pre-read, which is very helpful for dense reading, However the overhead for sparse
  * reading is not very high, thanks to the efficient {@link ForUtil}.
  *
+ * NOTE: this reader need to be used in forward reading case.
+ *
  * <p>Example usage:
  *
  * <pre class="prettyprint">
@@ -46,8 +48,8 @@ public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
-  private static final int SAMPLE_TIME = 32;
-  private static final int SAMPLE_DELTA_THRESHOLD = SAMPLE_TIME << 6;
+  // if we only get less than 4 times in the first block, we assume it is a sparse reading and do not warm up.
+  private static final int SAMPLE_THRESHOLD = 4;
 
   private final int blockBytes;
   private final ForUtil.Decoder decoder;
@@ -60,6 +62,7 @@ public class BlockReader extends LongValues {
   private boolean checking = true;
   private boolean doWarm = true;
   private long firstIndex;
+  private long maxCheckIndex;
   private int counter = 0;
 
   public BlockReader(IndexInput input, int bpv, long numValues) {
@@ -72,7 +75,6 @@ public class BlockReader extends LongValues {
 
   public BlockReader(
           IndexInput input, int bpv, long offset, ForUtil forUtil, long[] buffer, long numValues) {
-//    System.out.println("bpv: " + bpv);
     this.buffer = buffer;
     this.input = input;
     this.blockBytes = forUtil.numBytes(bpv);
@@ -96,16 +98,15 @@ public class BlockReader extends LongValues {
 
   private void check(long index) {
     if (counter == 0) {
-      firstIndex = index;
+      maxCheckIndex = index + BLOCK_SIZE;
     }
-    if (counter == SAMPLE_TIME) {
-      if (index - firstIndex > SAMPLE_DELTA_THRESHOLD) {
-//        System.out.printf("first index: %d last index: %d \n", firstIndex, index);
+    counter++;
+    if (index >= maxCheckIndex) {
+      if (counter < SAMPLE_THRESHOLD) {
         doWarm = false;
       }
       checking = false;
     }
-    counter++;
   }
 
   private long doGet(long index) throws IOException {
