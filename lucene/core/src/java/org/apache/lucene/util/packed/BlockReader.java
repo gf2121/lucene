@@ -100,8 +100,9 @@ public class BlockReader extends LongValues {
       maxCheckIndex = index + BLOCK_SIZE;
     }
     if (index >= maxCheckIndex) {
+      System.out.println(counter);
       if (counter > SAMPLE_THRESHOLD) {
-        System.out.println(counter);
+        System.out.println("error!!!" + counter);
         doWarm = false;
       }
       checking = false;
