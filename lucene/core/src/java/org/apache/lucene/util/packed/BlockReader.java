@@ -48,8 +48,8 @@ public class BlockReader extends LongValues {
 
   public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
   private static final int BLOCK_MASK = ForUtil.BLOCK_SIZE - 1;
-  // if we only get less than 2 times in the first block, we assume it is a sparse reading and do not warm up.
-  private static final int SAMPLE_THRESHOLD = 0;
+  // if we only get less than 4 times in the first block, we assume it is a sparse reading and do not warm up.
+  private static final int SAMPLE_THRESHOLD = 4;
 
   private final int blockBytes;
   private final ForUtil.Decoder decoder;
@@ -100,7 +100,9 @@ public class BlockReader extends LongValues {
       maxCheckIndex = index + BLOCK_SIZE;
     }
     if (index >= maxCheckIndex) {
-      doWarm = counter > SAMPLE_THRESHOLD;
+      if (counter > SAMPLE_THRESHOLD) {
+        doWarm = false;
+      }
       checking = false;
     }
   }
