@@ -38,11 +38,11 @@ import org.apache.lucene.util.LongValues;
  */
 public class DirectForwardReader {
 
-  static final int BLOCK_SHIFT = 7;
+  static final int BLOCK_SHIFT = 9;
   private static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
   private static final int BLOCK_MASK = BLOCK_SIZE - 1;
   // only warm up if we read more than 3/4 times in the first block
-  private static final int WARM_UP_THRESHOLD = BLOCK_SIZE / 4 * 3;
+  private static final int WARM_UP_THRESHOLD = BLOCK_SIZE / 8 * 7;
 
   /**
    * Retrieves an instance from the specified {@code offset} of the given slice decoding {@code
@@ -50,7 +50,6 @@ public class DirectForwardReader {
    */
   public static LongValues getInstance(
       RandomAccessInput slice, int bitsPerValue, long offset, long numValues) {
-    System.out.println("bpv:" + bitsPerValue + ", numValues:" + numValues);
     switch (bitsPerValue) {
       case 1:
         return new DirectForwardReader1(slice, offset, numValues);
@@ -104,9 +103,6 @@ public class DirectForwardReader {
 
     @Override
     public long get(long index) {
-      if (index % 10000 == 0) {
-        System.out.println("index: " + index);
-      }
       if (checking) {
         if (counter++ == 0) {
           maxIndex = index + BLOCK_SIZE;
@@ -215,23 +211,12 @@ public class DirectForwardReader {
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     final long[] tmp = new long[TMP_LENGTH];
 
-    private int doGetCount;
-    private int fillCount;
-
     public DirectForwardReader4(RandomAccessInput in, long offset, long numValues) {
       super(in, offset, numValues);
     }
 
-    private void print() {
-      if (doGetCount % 10000 == 0 || fillCount % 10000 == 0) {
-        System.out.printf("get: %d times, fill %d times\n", doGetCount, fillCount);
-      }
-    }
-
     @Override
     long doGet(long index) throws IOException {
-      doGetCount++;
-      print();
       int shift = (int) (index & 1) << 2;
       return (in.readByte(offset + (index >>> 1)) >>> shift) & 0xF;
     }
@@ -239,8 +224,6 @@ public class DirectForwardReader {
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
-      fillCount++;
-      print();
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
         final long l = tmp[++tmpIndex];
