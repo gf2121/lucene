@@ -108,6 +108,7 @@ public class DirectForwardReader {
           maxIndex = index + BLOCK_SIZE;
         }
         if (index >= maxIndex) {
+          System.out.println(counter);
           warm = counter >= WARM_UP_THRESHOLD;
           checking = false;
         }
