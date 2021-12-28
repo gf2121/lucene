@@ -104,6 +104,9 @@ public class DirectForwardReader {
 
     @Override
     public long get(long index) {
+      if (index % 10000 == 0) {
+        System.out.println("index: " + index);
+      }
       if (checking) {
         if (counter++ == 0) {
           maxIndex = index + BLOCK_SIZE;
