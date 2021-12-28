@@ -114,7 +114,6 @@ public class DirectForwardReader {
         }
       }
       try {
-        System.out.printf("index: %d, remainder: %d, warm: %s, checking: %s\n", index, remainderBlock, warm, checking);
         if (warm) {
           final long block = index >> BLOCK_SHIFT;
           if (block == currentBlock) {
@@ -213,12 +212,23 @@ public class DirectForwardReader {
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
     final long[] tmp = new long[TMP_LENGTH];
 
+    private int doGetCount;
+    private int fillCount;
+
     public DirectForwardReader4(RandomAccessInput in, long offset, long numValues) {
       super(in, offset, numValues);
     }
 
+    private void print() {
+      if (doGetCount % 10000 == 0 || fillCount % 10000 == 0) {
+        System.out.printf("get: %d times, fill %d times\n", doGetCount, fillCount);
+      }
+    }
+
     @Override
     long doGet(long index) throws IOException {
+      doGetCount++;
+      print();
       int shift = (int) (index & 1) << 2;
       return (in.readByte(offset + (index >>> 1)) >>> shift) & 0xF;
     }
@@ -226,6 +236,8 @@ public class DirectForwardReader {
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
       readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      fillCount++;
+      print();
       int pos = 0, tmpIndex = -1;
       while (pos < BLOCK_SIZE) {
         final long l = tmp[++tmpIndex];
