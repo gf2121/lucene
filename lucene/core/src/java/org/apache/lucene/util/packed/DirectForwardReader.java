@@ -219,6 +219,7 @@ public class DirectForwardReader {
 
     @Override
     long doGet(long index) throws IOException {
+      new Exception().printStackTrace();
       int shift = (int) (index & 1) << 2;
       return (in.readByte(offset + (index >>> 1)) >>> shift) & 0xF;
     }
