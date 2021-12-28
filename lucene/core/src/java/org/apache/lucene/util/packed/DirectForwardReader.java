@@ -50,7 +50,7 @@ public class DirectForwardReader {
    */
   public static LongValues getInstance(
       RandomAccessInput slice, int bitsPerValue, long offset, long numValues) {
-    System.out.println(bitsPerValue);
+    System.out.println("bpv:" + bitsPerValue + ", numValues:" + numValues);
     switch (bitsPerValue) {
       case 1:
         return new DirectForwardReader1(slice, offset, numValues);
@@ -109,12 +109,12 @@ public class DirectForwardReader {
           maxIndex = index + BLOCK_SIZE;
         }
         if (index >= maxIndex) {
-          System.out.println(counter);
           warm = counter >= WARM_UP_THRESHOLD;
           checking = false;
         }
       }
       try {
+        System.out.printf("index: %d, remainder: %d, warm: %s, checking: %s\n", index, remainderBlock, warm, checking);
         if (warm) {
           final long block = index >> BLOCK_SHIFT;
           if (block == currentBlock) {
@@ -219,7 +219,6 @@ public class DirectForwardReader {
 
     @Override
     long doGet(long index) throws IOException {
-      new Exception().printStackTrace();
       int shift = (int) (index & 1) << 2;
       return (in.readByte(offset + (index >>> 1)) >>> shift) & 0xF;
     }
