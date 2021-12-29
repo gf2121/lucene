@@ -89,53 +89,70 @@ public class DirectForwardReader {
   private abstract static class ForwardWarmUpDirectReader extends LongValues {
     private final long[] buffer = new long[BLOCK_SIZE];
     private final int remainderBlock;
-    private boolean checking = true;
-    private boolean warm = false;
-    private long maxIndex;
-    private int counter = 0;
+    private LongValues reader = new CheckReader();
     final RandomAccessInput in;
     final long offset;
-    long currentBlock = -1;
 
     public ForwardWarmUpDirectReader(RandomAccessInput in, long offset, long numValues) {
       this.in = in;
       this.offset = offset;
-      this.remainderBlock = (numValues & BLOCK_MASK) == 0 ? -1 : (int) (numValues >>> BLOCK_SHIFT);
+      this.remainderBlock = (int) (numValues >>> BLOCK_SHIFT);
     }
+    
+    private class CheckReader extends LongValues {
+      private long maxIndex;
+      private int counter = 0;
 
-    @Override
-    public long get(long index) {
-      if (checking) {
+      @Override
+      public long get(long index) {
         if (counter++ == 0) {
           maxIndex = index + BLOCK_SIZE;
         }
         if (index >= maxIndex) {
-          warm = counter >= WARM_UP_THRESHOLD;
-          checking = false;
+          reader = counter >= WARM_UP_THRESHOLD ? new DenseReader() : new SparseReader();
         }
-      }
-      try {
-        if (warm) {
-          final long block = index >> BLOCK_SHIFT;
-          if (block == currentBlock) {
-            return buffer[(int) (index & BLOCK_MASK)];
-          } else if (block == remainderBlock) {
-            return doGet(index);
-          } else {
-            fillBuffer(block, buffer);
-            currentBlock = block;
-            return buffer[(int) (index & BLOCK_MASK)];
-          }
-        } else {
+        try {
           return doGet(index);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
         }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
       }
     }
 
-    protected void readLongs(long pos, long[] dst, int off, int len) throws IOException {
-      in.readLongs(pos, dst, off, len);
+    private class DenseReader extends LongValues {
+      long currentBlock = -1;
+      @Override
+      public long get(long index) {
+        try {
+          final long block = index >> BLOCK_SHIFT;
+          if (block != currentBlock) {
+            if (block == remainderBlock) {
+              return doGet(index);
+            }
+            fillBuffer(block, buffer);
+            currentBlock = block;
+          }
+          return buffer[(int) (index & BLOCK_MASK)];
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+
+    private class SparseReader extends LongValues {
+      @Override
+      public long get(long index) {
+        try {
+          return doGet(index);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+
+    @Override
+    public long get(long index) {
+      return reader.get(index);
     }
 
     abstract long doGet(long index) throws IOException;
@@ -147,7 +164,6 @@ public class DirectForwardReader {
     static final int BPV = 1;
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
-    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
     final long[] tmp = new long[TMP_LENGTH];
 
     public DirectForwardReader1(RandomAccessInput in, long offset, long numValues) {
@@ -162,7 +178,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode1(tmp, buffer);
     }
   }
@@ -171,7 +187,6 @@ public class DirectForwardReader {
     static final int BPV = 2;
     static final int BLOCK_BYTES = BLOCK_SIZE * BPV / Byte.SIZE;
     static final int TMP_LENGTH = BLOCK_BYTES / Long.BYTES;
-    static final int NUM_VALUES_PER_LONG = Long.SIZE / BPV;
     final long[] tmp = new long[TMP_LENGTH];
 
     public DirectForwardReader2(RandomAccessInput in, long offset, long numValues) {
@@ -186,7 +201,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode2(tmp, buffer);
     }
   }
@@ -209,7 +224,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode4(tmp, buffer);
     }
   }
@@ -231,7 +246,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode8(tmp, buffer);
     }
   }
@@ -255,7 +270,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode12(tmp, buffer);
     }
   }
@@ -277,7 +292,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode16(tmp, buffer);
     }
   }
@@ -301,7 +316,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode20(tmp, buffer);
     }
   }
@@ -323,7 +338,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode24(tmp, buffer);
     }
   }
@@ -347,7 +362,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode28(tmp, buffer);
     }
   }
@@ -369,7 +384,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode32(tmp, buffer);
     }
   }
@@ -391,7 +406,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode40(tmp, buffer);
     }
   }
@@ -413,7 +428,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode48(tmp, buffer);
     }
   }
@@ -435,7 +450,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
+      in.readLongs(offset + BLOCK_BYTES * block, tmp, 0, TMP_LENGTH);
       decode56(tmp, buffer);
     }
   }
@@ -455,7 +470,7 @@ public class DirectForwardReader {
 
     @Override
     void fillBuffer(long block, long[] buffer) throws IOException {
-      readLongs(offset + BLOCK_BYTES * block, buffer, 0, BLOCK_SIZE);
+      in.readLongs(offset + BLOCK_BYTES * block, buffer, 0, BLOCK_SIZE);
     }
   }
 }
