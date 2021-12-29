@@ -57,12 +57,17 @@ def write_decoder(bpv, f):
   f.write('\n  static void decode%d(long[] src, long[] dst) {\n' % bpv)
   for round in range(0, total_round):
     write_round(bpv, long_per_round, round)
+  mask = 2**bpv - 1
+  f.write('\n')
+  f.write('    for (int i = 0; i < %d; i++) {\n' % BLOCK_SIZE)
+  f.write('      dst[i] = dst[i] & %dL;\n' % mask)
+  f.write('    }\n')
   f.write('  }\n')
 
 def write_round(bpv, long_per_round, round):
   f.write('    {\n')
   for i in range(0, long_per_round):
-    f.write('      long l%d = src[%d];\n' % (i, i + round * long_per_round))
+    f.write('      final long l%d = src[%d];\n' % (i, i + round * long_per_round))
   total_bits = long_per_round * 64
   dst_base = total_bits / bpv * round
   dst_pos = 0
@@ -70,18 +75,17 @@ def write_round(bpv, long_per_round, round):
   remaining_bits = 64
   while total_bits > 0:
     shift = bpv * dst_pos % 64
-    mask = 2**bpv - 1
 
     if remaining_bits > bpv:
       if shift == 0:
-        f.write('      dst[%d] = l%d & %dL;\n' % (dst_pos + dst_base, src_pos, mask))
+        f.write('      dst[%d] = l%d;\n' % (dst_pos + dst_base, src_pos))
       else:
-        f.write('      dst[%d] = (l%d >>> %d) & %dL;\n' % (dst_pos + dst_base, src_pos, shift, mask))
+        f.write('      dst[%d] = (l%d >>> %d);\n' % (dst_pos + dst_base, src_pos, shift))
       remaining_bits = remaining_bits - bpv
     elif remaining_bits == bpv:
       f.write('      dst[%d] = l%d >>> %d;\n' % (dst_pos + dst_base, src_pos, shift))
     else:
-      f.write('      dst[%d] = (l%d >>> %d) | ((l%d & %dL) << %d);\n' % (dst_pos + dst_base, src_pos, shift, src_pos + 1, pow(2, bpv - remaining_bits) - 1, remaining_bits))
+      f.write('      dst[%d] = (l%d >>> %d) | (l%d << %d);\n' % (dst_pos + dst_base, src_pos, shift, src_pos + 1, remaining_bits))
       src_pos += 1
       remaining_bits = 64 - (bpv - remaining_bits)
     total_bits -= bpv
