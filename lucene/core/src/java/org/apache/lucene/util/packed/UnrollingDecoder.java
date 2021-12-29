@@ -23,7 +23,7 @@ class UnrollingDecoder {
 
   static void decode1(long[] src, long[] dst) {
     {
-      long l0 = src[0];
+      final long l0 = src[0];
       dst[0] = l0;
       dst[1] = (l0 >>> 1);
       dst[2] = (l0 >>> 2);
@@ -90,7 +90,7 @@ class UnrollingDecoder {
       dst[63] = l0 >>> 63;
     }
     {
-      long l0 = src[1];
+      final long l0 = src[1];
       dst[64] = l0;
       dst[65] = (l0 >>> 1);
       dst[66] = (l0 >>> 2);
@@ -156,15 +156,12 @@ class UnrollingDecoder {
       dst[126] = (l0 >>> 62);
       dst[127] = l0 >>> 63;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 1L;
-    }
+    maskLongs(dst, 1L);
   }
 
   static void decode2(long[] src, long[] dst) {
     {
-      long l0 = src[0];
+      final long l0 = src[0];
       dst[0] = l0;
       dst[1] = (l0 >>> 2);
       dst[2] = (l0 >>> 4);
@@ -199,7 +196,7 @@ class UnrollingDecoder {
       dst[31] = l0 >>> 62;
     }
     {
-      long l0 = src[1];
+      final long l0 = src[1];
       dst[32] = l0;
       dst[33] = (l0 >>> 2);
       dst[34] = (l0 >>> 4);
@@ -234,7 +231,7 @@ class UnrollingDecoder {
       dst[63] = l0 >>> 62;
     }
     {
-      long l0 = src[2];
+      final long l0 = src[2];
       dst[64] = l0;
       dst[65] = (l0 >>> 2);
       dst[66] = (l0 >>> 4);
@@ -269,7 +266,7 @@ class UnrollingDecoder {
       dst[95] = l0 >>> 62;
     }
     {
-      long l0 = src[3];
+      final long l0 = src[3];
       dst[96] = l0;
       dst[97] = (l0 >>> 2);
       dst[98] = (l0 >>> 4);
@@ -303,15 +300,12 @@ class UnrollingDecoder {
       dst[126] = (l0 >>> 60);
       dst[127] = l0 >>> 62;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 3L;
-    }
+    maskLongs(dst, 3L);
   }
 
   static void decode4(long[] src, long[] dst) {
     {
-      long l0 = src[0];
+      final long l0 = src[0];
       dst[0] = l0;
       dst[1] = (l0 >>> 4);
       dst[2] = (l0 >>> 8);
@@ -330,7 +324,7 @@ class UnrollingDecoder {
       dst[15] = l0 >>> 60;
     }
     {
-      long l0 = src[1];
+      final long l0 = src[1];
       dst[16] = l0;
       dst[17] = (l0 >>> 4);
       dst[18] = (l0 >>> 8);
@@ -349,7 +343,7 @@ class UnrollingDecoder {
       dst[31] = l0 >>> 60;
     }
     {
-      long l0 = src[2];
+      final long l0 = src[2];
       dst[32] = l0;
       dst[33] = (l0 >>> 4);
       dst[34] = (l0 >>> 8);
@@ -368,7 +362,7 @@ class UnrollingDecoder {
       dst[47] = l0 >>> 60;
     }
     {
-      long l0 = src[3];
+      final long l0 = src[3];
       dst[48] = l0;
       dst[49] = (l0 >>> 4);
       dst[50] = (l0 >>> 8);
@@ -387,7 +381,7 @@ class UnrollingDecoder {
       dst[63] = l0 >>> 60;
     }
     {
-      long l0 = src[4];
+      final long l0 = src[4];
       dst[64] = l0;
       dst[65] = (l0 >>> 4);
       dst[66] = (l0 >>> 8);
@@ -406,7 +400,7 @@ class UnrollingDecoder {
       dst[79] = l0 >>> 60;
     }
     {
-      long l0 = src[5];
+      final long l0 = src[5];
       dst[80] = l0;
       dst[81] = (l0 >>> 4);
       dst[82] = (l0 >>> 8);
@@ -425,7 +419,7 @@ class UnrollingDecoder {
       dst[95] = l0 >>> 60;
     }
     {
-      long l0 = src[6];
+      final long l0 = src[6];
       dst[96] = l0;
       dst[97] = (l0 >>> 4);
       dst[98] = (l0 >>> 8);
@@ -444,7 +438,7 @@ class UnrollingDecoder {
       dst[111] = l0 >>> 60;
     }
     {
-      long l0 = src[7];
+      final long l0 = src[7];
       dst[112] = l0;
       dst[113] = (l0 >>> 4);
       dst[114] = (l0 >>> 8);
@@ -462,15 +456,12 @@ class UnrollingDecoder {
       dst[126] = (l0 >>> 56);
       dst[127] = l0 >>> 60;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 15L;
-    }
+    maskLongs(dst, 15L);
   }
 
   static void decode8(long[] src, long[] dst) {
     {
-      long l0 = src[0];
+      final long l0 = src[0];
       dst[0] = l0;
       dst[1] = (l0 >>> 8);
       dst[2] = (l0 >>> 16);
@@ -481,7 +472,7 @@ class UnrollingDecoder {
       dst[7] = l0 >>> 56;
     }
     {
-      long l0 = src[1];
+      final long l0 = src[1];
       dst[8] = l0;
       dst[9] = (l0 >>> 8);
       dst[10] = (l0 >>> 16);
@@ -492,7 +483,7 @@ class UnrollingDecoder {
       dst[15] = l0 >>> 56;
     }
     {
-      long l0 = src[2];
+      final long l0 = src[2];
       dst[16] = l0;
       dst[17] = (l0 >>> 8);
       dst[18] = (l0 >>> 16);
@@ -503,7 +494,7 @@ class UnrollingDecoder {
       dst[23] = l0 >>> 56;
     }
     {
-      long l0 = src[3];
+      final long l0 = src[3];
       dst[24] = l0;
       dst[25] = (l0 >>> 8);
       dst[26] = (l0 >>> 16);
@@ -514,7 +505,7 @@ class UnrollingDecoder {
       dst[31] = l0 >>> 56;
     }
     {
-      long l0 = src[4];
+      final long l0 = src[4];
       dst[32] = l0;
       dst[33] = (l0 >>> 8);
       dst[34] = (l0 >>> 16);
@@ -525,7 +516,7 @@ class UnrollingDecoder {
       dst[39] = l0 >>> 56;
     }
     {
-      long l0 = src[5];
+      final long l0 = src[5];
       dst[40] = l0;
       dst[41] = (l0 >>> 8);
       dst[42] = (l0 >>> 16);
@@ -536,7 +527,7 @@ class UnrollingDecoder {
       dst[47] = l0 >>> 56;
     }
     {
-      long l0 = src[6];
+      final long l0 = src[6];
       dst[48] = l0;
       dst[49] = (l0 >>> 8);
       dst[50] = (l0 >>> 16);
@@ -547,7 +538,7 @@ class UnrollingDecoder {
       dst[55] = l0 >>> 56;
     }
     {
-      long l0 = src[7];
+      final long l0 = src[7];
       dst[56] = l0;
       dst[57] = (l0 >>> 8);
       dst[58] = (l0 >>> 16);
@@ -558,7 +549,7 @@ class UnrollingDecoder {
       dst[63] = l0 >>> 56;
     }
     {
-      long l0 = src[8];
+      final long l0 = src[8];
       dst[64] = l0;
       dst[65] = (l0 >>> 8);
       dst[66] = (l0 >>> 16);
@@ -569,7 +560,7 @@ class UnrollingDecoder {
       dst[71] = l0 >>> 56;
     }
     {
-      long l0 = src[9];
+      final long l0 = src[9];
       dst[72] = l0;
       dst[73] = (l0 >>> 8);
       dst[74] = (l0 >>> 16);
@@ -580,7 +571,7 @@ class UnrollingDecoder {
       dst[79] = l0 >>> 56;
     }
     {
-      long l0 = src[10];
+      final long l0 = src[10];
       dst[80] = l0;
       dst[81] = (l0 >>> 8);
       dst[82] = (l0 >>> 16);
@@ -591,7 +582,7 @@ class UnrollingDecoder {
       dst[87] = l0 >>> 56;
     }
     {
-      long l0 = src[11];
+      final long l0 = src[11];
       dst[88] = l0;
       dst[89] = (l0 >>> 8);
       dst[90] = (l0 >>> 16);
@@ -602,7 +593,7 @@ class UnrollingDecoder {
       dst[95] = l0 >>> 56;
     }
     {
-      long l0 = src[12];
+      final long l0 = src[12];
       dst[96] = l0;
       dst[97] = (l0 >>> 8);
       dst[98] = (l0 >>> 16);
@@ -613,7 +604,7 @@ class UnrollingDecoder {
       dst[103] = l0 >>> 56;
     }
     {
-      long l0 = src[13];
+      final long l0 = src[13];
       dst[104] = l0;
       dst[105] = (l0 >>> 8);
       dst[106] = (l0 >>> 16);
@@ -624,7 +615,7 @@ class UnrollingDecoder {
       dst[111] = l0 >>> 56;
     }
     {
-      long l0 = src[14];
+      final long l0 = src[14];
       dst[112] = l0;
       dst[113] = (l0 >>> 8);
       dst[114] = (l0 >>> 16);
@@ -635,7 +626,7 @@ class UnrollingDecoder {
       dst[119] = l0 >>> 56;
     }
     {
-      long l0 = src[15];
+      final long l0 = src[15];
       dst[120] = l0;
       dst[121] = (l0 >>> 8);
       dst[122] = (l0 >>> 16);
@@ -645,17 +636,14 @@ class UnrollingDecoder {
       dst[126] = (l0 >>> 48);
       dst[127] = l0 >>> 56;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 255L;
-    }
+    maskLongs(dst, 255L);
   }
 
   static void decode12(long[] src, long[] dst) {
     {
-      long l0 = src[0];
-      long l1 = src[1];
-      long l2 = src[2];
+      final long l0 = src[0];
+      final long l1 = src[1];
+      final long l2 = src[2];
       dst[0] = l0;
       dst[1] = (l0 >>> 12);
       dst[2] = (l0 >>> 24);
@@ -674,9 +662,9 @@ class UnrollingDecoder {
       dst[15] = l2 >>> 52;
     }
     {
-      long l0 = src[3];
-      long l1 = src[4];
-      long l2 = src[5];
+      final long l0 = src[3];
+      final long l1 = src[4];
+      final long l2 = src[5];
       dst[16] = l0;
       dst[17] = (l0 >>> 12);
       dst[18] = (l0 >>> 24);
@@ -695,9 +683,9 @@ class UnrollingDecoder {
       dst[31] = l2 >>> 52;
     }
     {
-      long l0 = src[6];
-      long l1 = src[7];
-      long l2 = src[8];
+      final long l0 = src[6];
+      final long l1 = src[7];
+      final long l2 = src[8];
       dst[32] = l0;
       dst[33] = (l0 >>> 12);
       dst[34] = (l0 >>> 24);
@@ -716,9 +704,9 @@ class UnrollingDecoder {
       dst[47] = l2 >>> 52;
     }
     {
-      long l0 = src[9];
-      long l1 = src[10];
-      long l2 = src[11];
+      final long l0 = src[9];
+      final long l1 = src[10];
+      final long l2 = src[11];
       dst[48] = l0;
       dst[49] = (l0 >>> 12);
       dst[50] = (l0 >>> 24);
@@ -737,9 +725,9 @@ class UnrollingDecoder {
       dst[63] = l2 >>> 52;
     }
     {
-      long l0 = src[12];
-      long l1 = src[13];
-      long l2 = src[14];
+      final long l0 = src[12];
+      final long l1 = src[13];
+      final long l2 = src[14];
       dst[64] = l0;
       dst[65] = (l0 >>> 12);
       dst[66] = (l0 >>> 24);
@@ -758,9 +746,9 @@ class UnrollingDecoder {
       dst[79] = l2 >>> 52;
     }
     {
-      long l0 = src[15];
-      long l1 = src[16];
-      long l2 = src[17];
+      final long l0 = src[15];
+      final long l1 = src[16];
+      final long l2 = src[17];
       dst[80] = l0;
       dst[81] = (l0 >>> 12);
       dst[82] = (l0 >>> 24);
@@ -779,9 +767,9 @@ class UnrollingDecoder {
       dst[95] = l2 >>> 52;
     }
     {
-      long l0 = src[18];
-      long l1 = src[19];
-      long l2 = src[20];
+      final long l0 = src[18];
+      final long l1 = src[19];
+      final long l2 = src[20];
       dst[96] = l0;
       dst[97] = (l0 >>> 12);
       dst[98] = (l0 >>> 24);
@@ -800,9 +788,9 @@ class UnrollingDecoder {
       dst[111] = l2 >>> 52;
     }
     {
-      long l0 = src[21];
-      long l1 = src[22];
-      long l2 = src[23];
+      final long l0 = src[21];
+      final long l1 = src[22];
+      final long l2 = src[23];
       dst[112] = l0;
       dst[113] = (l0 >>> 12);
       dst[114] = (l0 >>> 24);
@@ -820,250 +808,244 @@ class UnrollingDecoder {
       dst[126] = (l2 >>> 40);
       dst[127] = l2 >>> 52;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 4095L;
-    }
+    maskLongs(dst, 4095L);
   }
 
   static void decode16(long[] src, long[] dst) {
     {
-      long l0 = src[0];
+      final long l0 = src[0];
       dst[0] = l0;
       dst[1] = (l0 >>> 16);
       dst[2] = (l0 >>> 32);
       dst[3] = l0 >>> 48;
     }
     {
-      long l0 = src[1];
+      final long l0 = src[1];
       dst[4] = l0;
       dst[5] = (l0 >>> 16);
       dst[6] = (l0 >>> 32);
       dst[7] = l0 >>> 48;
     }
     {
-      long l0 = src[2];
+      final long l0 = src[2];
       dst[8] = l0;
       dst[9] = (l0 >>> 16);
       dst[10] = (l0 >>> 32);
       dst[11] = l0 >>> 48;
     }
     {
-      long l0 = src[3];
+      final long l0 = src[3];
       dst[12] = l0;
       dst[13] = (l0 >>> 16);
       dst[14] = (l0 >>> 32);
       dst[15] = l0 >>> 48;
     }
     {
-      long l0 = src[4];
+      final long l0 = src[4];
       dst[16] = l0;
       dst[17] = (l0 >>> 16);
       dst[18] = (l0 >>> 32);
       dst[19] = l0 >>> 48;
     }
     {
-      long l0 = src[5];
+      final long l0 = src[5];
       dst[20] = l0;
       dst[21] = (l0 >>> 16);
       dst[22] = (l0 >>> 32);
       dst[23] = l0 >>> 48;
     }
     {
-      long l0 = src[6];
+      final long l0 = src[6];
       dst[24] = l0;
       dst[25] = (l0 >>> 16);
       dst[26] = (l0 >>> 32);
       dst[27] = l0 >>> 48;
     }
     {
-      long l0 = src[7];
+      final long l0 = src[7];
       dst[28] = l0;
       dst[29] = (l0 >>> 16);
       dst[30] = (l0 >>> 32);
       dst[31] = l0 >>> 48;
     }
     {
-      long l0 = src[8];
+      final long l0 = src[8];
       dst[32] = l0;
       dst[33] = (l0 >>> 16);
       dst[34] = (l0 >>> 32);
       dst[35] = l0 >>> 48;
     }
     {
-      long l0 = src[9];
+      final long l0 = src[9];
       dst[36] = l0;
       dst[37] = (l0 >>> 16);
       dst[38] = (l0 >>> 32);
       dst[39] = l0 >>> 48;
     }
     {
-      long l0 = src[10];
+      final long l0 = src[10];
       dst[40] = l0;
       dst[41] = (l0 >>> 16);
       dst[42] = (l0 >>> 32);
       dst[43] = l0 >>> 48;
     }
     {
-      long l0 = src[11];
+      final long l0 = src[11];
       dst[44] = l0;
       dst[45] = (l0 >>> 16);
       dst[46] = (l0 >>> 32);
       dst[47] = l0 >>> 48;
     }
     {
-      long l0 = src[12];
+      final long l0 = src[12];
       dst[48] = l0;
       dst[49] = (l0 >>> 16);
       dst[50] = (l0 >>> 32);
       dst[51] = l0 >>> 48;
     }
     {
-      long l0 = src[13];
+      final long l0 = src[13];
       dst[52] = l0;
       dst[53] = (l0 >>> 16);
       dst[54] = (l0 >>> 32);
       dst[55] = l0 >>> 48;
     }
     {
-      long l0 = src[14];
+      final long l0 = src[14];
       dst[56] = l0;
       dst[57] = (l0 >>> 16);
       dst[58] = (l0 >>> 32);
       dst[59] = l0 >>> 48;
     }
     {
-      long l0 = src[15];
+      final long l0 = src[15];
       dst[60] = l0;
       dst[61] = (l0 >>> 16);
       dst[62] = (l0 >>> 32);
       dst[63] = l0 >>> 48;
     }
     {
-      long l0 = src[16];
+      final long l0 = src[16];
       dst[64] = l0;
       dst[65] = (l0 >>> 16);
       dst[66] = (l0 >>> 32);
       dst[67] = l0 >>> 48;
     }
     {
-      long l0 = src[17];
+      final long l0 = src[17];
       dst[68] = l0;
       dst[69] = (l0 >>> 16);
       dst[70] = (l0 >>> 32);
       dst[71] = l0 >>> 48;
     }
     {
-      long l0 = src[18];
+      final long l0 = src[18];
       dst[72] = l0;
       dst[73] = (l0 >>> 16);
       dst[74] = (l0 >>> 32);
       dst[75] = l0 >>> 48;
     }
     {
-      long l0 = src[19];
+      final long l0 = src[19];
       dst[76] = l0;
       dst[77] = (l0 >>> 16);
       dst[78] = (l0 >>> 32);
       dst[79] = l0 >>> 48;
     }
     {
-      long l0 = src[20];
+      final long l0 = src[20];
       dst[80] = l0;
       dst[81] = (l0 >>> 16);
       dst[82] = (l0 >>> 32);
       dst[83] = l0 >>> 48;
     }
     {
-      long l0 = src[21];
+      final long l0 = src[21];
       dst[84] = l0;
       dst[85] = (l0 >>> 16);
       dst[86] = (l0 >>> 32);
       dst[87] = l0 >>> 48;
     }
     {
-      long l0 = src[22];
+      final long l0 = src[22];
       dst[88] = l0;
       dst[89] = (l0 >>> 16);
       dst[90] = (l0 >>> 32);
       dst[91] = l0 >>> 48;
     }
     {
-      long l0 = src[23];
+      final long l0 = src[23];
       dst[92] = l0;
       dst[93] = (l0 >>> 16);
       dst[94] = (l0 >>> 32);
       dst[95] = l0 >>> 48;
     }
     {
-      long l0 = src[24];
+      final long l0 = src[24];
       dst[96] = l0;
       dst[97] = (l0 >>> 16);
       dst[98] = (l0 >>> 32);
       dst[99] = l0 >>> 48;
     }
     {
-      long l0 = src[25];
+      final long l0 = src[25];
       dst[100] = l0;
       dst[101] = (l0 >>> 16);
       dst[102] = (l0 >>> 32);
       dst[103] = l0 >>> 48;
     }
     {
-      long l0 = src[26];
+      final long l0 = src[26];
       dst[104] = l0;
       dst[105] = (l0 >>> 16);
       dst[106] = (l0 >>> 32);
       dst[107] = l0 >>> 48;
     }
     {
-      long l0 = src[27];
+      final long l0 = src[27];
       dst[108] = l0;
       dst[109] = (l0 >>> 16);
       dst[110] = (l0 >>> 32);
       dst[111] = l0 >>> 48;
     }
     {
-      long l0 = src[28];
+      final long l0 = src[28];
       dst[112] = l0;
       dst[113] = (l0 >>> 16);
       dst[114] = (l0 >>> 32);
       dst[115] = l0 >>> 48;
     }
     {
-      long l0 = src[29];
+      final long l0 = src[29];
       dst[116] = l0;
       dst[117] = (l0 >>> 16);
       dst[118] = (l0 >>> 32);
       dst[119] = l0 >>> 48;
     }
     {
-      long l0 = src[30];
+      final long l0 = src[30];
       dst[120] = l0;
       dst[121] = (l0 >>> 16);
       dst[122] = (l0 >>> 32);
       dst[123] = l0 >>> 48;
     }
     {
-      long l0 = src[31];
+      final long l0 = src[31];
       dst[124] = l0;
       dst[125] = (l0 >>> 16);
       dst[126] = (l0 >>> 32);
       dst[127] = l0 >>> 48;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 65535L;
-    }
+    maskLongs(dst, 65535L);
   }
 
   static void decode20(long[] src, long[] dst) {
     {
-      long l0 = src[0];
-      long l1 = src[1];
-      long l2 = src[2];
-      long l3 = src[3];
-      long l4 = src[4];
+      final long l0 = src[0];
+      final long l1 = src[1];
+      final long l2 = src[2];
+      final long l3 = src[3];
+      final long l4 = src[4];
       dst[0] = l0;
       dst[1] = (l0 >>> 20);
       dst[2] = (l0 >>> 40);
@@ -1082,11 +1064,11 @@ class UnrollingDecoder {
       dst[15] = l4 >>> 44;
     }
     {
-      long l0 = src[5];
-      long l1 = src[6];
-      long l2 = src[7];
-      long l3 = src[8];
-      long l4 = src[9];
+      final long l0 = src[5];
+      final long l1 = src[6];
+      final long l2 = src[7];
+      final long l3 = src[8];
+      final long l4 = src[9];
       dst[16] = l0;
       dst[17] = (l0 >>> 20);
       dst[18] = (l0 >>> 40);
@@ -1105,11 +1087,11 @@ class UnrollingDecoder {
       dst[31] = l4 >>> 44;
     }
     {
-      long l0 = src[10];
-      long l1 = src[11];
-      long l2 = src[12];
-      long l3 = src[13];
-      long l4 = src[14];
+      final long l0 = src[10];
+      final long l1 = src[11];
+      final long l2 = src[12];
+      final long l3 = src[13];
+      final long l4 = src[14];
       dst[32] = l0;
       dst[33] = (l0 >>> 20);
       dst[34] = (l0 >>> 40);
@@ -1128,11 +1110,11 @@ class UnrollingDecoder {
       dst[47] = l4 >>> 44;
     }
     {
-      long l0 = src[15];
-      long l1 = src[16];
-      long l2 = src[17];
-      long l3 = src[18];
-      long l4 = src[19];
+      final long l0 = src[15];
+      final long l1 = src[16];
+      final long l2 = src[17];
+      final long l3 = src[18];
+      final long l4 = src[19];
       dst[48] = l0;
       dst[49] = (l0 >>> 20);
       dst[50] = (l0 >>> 40);
@@ -1151,11 +1133,11 @@ class UnrollingDecoder {
       dst[63] = l4 >>> 44;
     }
     {
-      long l0 = src[20];
-      long l1 = src[21];
-      long l2 = src[22];
-      long l3 = src[23];
-      long l4 = src[24];
+      final long l0 = src[20];
+      final long l1 = src[21];
+      final long l2 = src[22];
+      final long l3 = src[23];
+      final long l4 = src[24];
       dst[64] = l0;
       dst[65] = (l0 >>> 20);
       dst[66] = (l0 >>> 40);
@@ -1174,11 +1156,11 @@ class UnrollingDecoder {
       dst[79] = l4 >>> 44;
     }
     {
-      long l0 = src[25];
-      long l1 = src[26];
-      long l2 = src[27];
-      long l3 = src[28];
-      long l4 = src[29];
+      final long l0 = src[25];
+      final long l1 = src[26];
+      final long l2 = src[27];
+      final long l3 = src[28];
+      final long l4 = src[29];
       dst[80] = l0;
       dst[81] = (l0 >>> 20);
       dst[82] = (l0 >>> 40);
@@ -1197,11 +1179,11 @@ class UnrollingDecoder {
       dst[95] = l4 >>> 44;
     }
     {
-      long l0 = src[30];
-      long l1 = src[31];
-      long l2 = src[32];
-      long l3 = src[33];
-      long l4 = src[34];
+      final long l0 = src[30];
+      final long l1 = src[31];
+      final long l2 = src[32];
+      final long l3 = src[33];
+      final long l4 = src[34];
       dst[96] = l0;
       dst[97] = (l0 >>> 20);
       dst[98] = (l0 >>> 40);
@@ -1220,11 +1202,11 @@ class UnrollingDecoder {
       dst[111] = l4 >>> 44;
     }
     {
-      long l0 = src[35];
-      long l1 = src[36];
-      long l2 = src[37];
-      long l3 = src[38];
-      long l4 = src[39];
+      final long l0 = src[35];
+      final long l1 = src[36];
+      final long l2 = src[37];
+      final long l3 = src[38];
+      final long l4 = src[39];
       dst[112] = l0;
       dst[113] = (l0 >>> 20);
       dst[114] = (l0 >>> 40);
@@ -1242,17 +1224,14 @@ class UnrollingDecoder {
       dst[126] = (l4 >>> 24);
       dst[127] = l4 >>> 44;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 1048575L;
-    }
+    maskLongs(dst, 1048575L);
   }
 
   static void decode24(long[] src, long[] dst) {
     {
-      long l0 = src[0];
-      long l1 = src[1];
-      long l2 = src[2];
+      final long l0 = src[0];
+      final long l1 = src[1];
+      final long l2 = src[2];
       dst[0] = l0;
       dst[1] = (l0 >>> 24);
       dst[2] = (l0 >>> 48) | (l1 << 16);
@@ -1263,9 +1242,9 @@ class UnrollingDecoder {
       dst[7] = l2 >>> 40;
     }
     {
-      long l0 = src[3];
-      long l1 = src[4];
-      long l2 = src[5];
+      final long l0 = src[3];
+      final long l1 = src[4];
+      final long l2 = src[5];
       dst[8] = l0;
       dst[9] = (l0 >>> 24);
       dst[10] = (l0 >>> 48) | (l1 << 16);
@@ -1276,9 +1255,9 @@ class UnrollingDecoder {
       dst[15] = l2 >>> 40;
     }
     {
-      long l0 = src[6];
-      long l1 = src[7];
-      long l2 = src[8];
+      final long l0 = src[6];
+      final long l1 = src[7];
+      final long l2 = src[8];
       dst[16] = l0;
       dst[17] = (l0 >>> 24);
       dst[18] = (l0 >>> 48) | (l1 << 16);
@@ -1289,9 +1268,9 @@ class UnrollingDecoder {
       dst[23] = l2 >>> 40;
     }
     {
-      long l0 = src[9];
-      long l1 = src[10];
-      long l2 = src[11];
+      final long l0 = src[9];
+      final long l1 = src[10];
+      final long l2 = src[11];
       dst[24] = l0;
       dst[25] = (l0 >>> 24);
       dst[26] = (l0 >>> 48) | (l1 << 16);
@@ -1302,9 +1281,9 @@ class UnrollingDecoder {
       dst[31] = l2 >>> 40;
     }
     {
-      long l0 = src[12];
-      long l1 = src[13];
-      long l2 = src[14];
+      final long l0 = src[12];
+      final long l1 = src[13];
+      final long l2 = src[14];
       dst[32] = l0;
       dst[33] = (l0 >>> 24);
       dst[34] = (l0 >>> 48) | (l1 << 16);
@@ -1315,9 +1294,9 @@ class UnrollingDecoder {
       dst[39] = l2 >>> 40;
     }
     {
-      long l0 = src[15];
-      long l1 = src[16];
-      long l2 = src[17];
+      final long l0 = src[15];
+      final long l1 = src[16];
+      final long l2 = src[17];
       dst[40] = l0;
       dst[41] = (l0 >>> 24);
       dst[42] = (l0 >>> 48) | (l1 << 16);
@@ -1328,9 +1307,9 @@ class UnrollingDecoder {
       dst[47] = l2 >>> 40;
     }
     {
-      long l0 = src[18];
-      long l1 = src[19];
-      long l2 = src[20];
+      final long l0 = src[18];
+      final long l1 = src[19];
+      final long l2 = src[20];
       dst[48] = l0;
       dst[49] = (l0 >>> 24);
       dst[50] = (l0 >>> 48) | (l1 << 16);
@@ -1341,9 +1320,9 @@ class UnrollingDecoder {
       dst[55] = l2 >>> 40;
     }
     {
-      long l0 = src[21];
-      long l1 = src[22];
-      long l2 = src[23];
+      final long l0 = src[21];
+      final long l1 = src[22];
+      final long l2 = src[23];
       dst[56] = l0;
       dst[57] = (l0 >>> 24);
       dst[58] = (l0 >>> 48) | (l1 << 16);
@@ -1354,9 +1333,9 @@ class UnrollingDecoder {
       dst[63] = l2 >>> 40;
     }
     {
-      long l0 = src[24];
-      long l1 = src[25];
-      long l2 = src[26];
+      final long l0 = src[24];
+      final long l1 = src[25];
+      final long l2 = src[26];
       dst[64] = l0;
       dst[65] = (l0 >>> 24);
       dst[66] = (l0 >>> 48) | (l1 << 16);
@@ -1367,9 +1346,9 @@ class UnrollingDecoder {
       dst[71] = l2 >>> 40;
     }
     {
-      long l0 = src[27];
-      long l1 = src[28];
-      long l2 = src[29];
+      final long l0 = src[27];
+      final long l1 = src[28];
+      final long l2 = src[29];
       dst[72] = l0;
       dst[73] = (l0 >>> 24);
       dst[74] = (l0 >>> 48) | (l1 << 16);
@@ -1380,9 +1359,9 @@ class UnrollingDecoder {
       dst[79] = l2 >>> 40;
     }
     {
-      long l0 = src[30];
-      long l1 = src[31];
-      long l2 = src[32];
+      final long l0 = src[30];
+      final long l1 = src[31];
+      final long l2 = src[32];
       dst[80] = l0;
       dst[81] = (l0 >>> 24);
       dst[82] = (l0 >>> 48) | (l1 << 16);
@@ -1393,9 +1372,9 @@ class UnrollingDecoder {
       dst[87] = l2 >>> 40;
     }
     {
-      long l0 = src[33];
-      long l1 = src[34];
-      long l2 = src[35];
+      final long l0 = src[33];
+      final long l1 = src[34];
+      final long l2 = src[35];
       dst[88] = l0;
       dst[89] = (l0 >>> 24);
       dst[90] = (l0 >>> 48) | (l1 << 16);
@@ -1406,9 +1385,9 @@ class UnrollingDecoder {
       dst[95] = l2 >>> 40;
     }
     {
-      long l0 = src[36];
-      long l1 = src[37];
-      long l2 = src[38];
+      final long l0 = src[36];
+      final long l1 = src[37];
+      final long l2 = src[38];
       dst[96] = l0;
       dst[97] = (l0 >>> 24);
       dst[98] = (l0 >>> 48) | (l1 << 16);
@@ -1419,9 +1398,9 @@ class UnrollingDecoder {
       dst[103] = l2 >>> 40;
     }
     {
-      long l0 = src[39];
-      long l1 = src[40];
-      long l2 = src[41];
+      final long l0 = src[39];
+      final long l1 = src[40];
+      final long l2 = src[41];
       dst[104] = l0;
       dst[105] = (l0 >>> 24);
       dst[106] = (l0 >>> 48) | (l1 << 16);
@@ -1432,9 +1411,9 @@ class UnrollingDecoder {
       dst[111] = l2 >>> 40;
     }
     {
-      long l0 = src[42];
-      long l1 = src[43];
-      long l2 = src[44];
+      final long l0 = src[42];
+      final long l1 = src[43];
+      final long l2 = src[44];
       dst[112] = l0;
       dst[113] = (l0 >>> 24);
       dst[114] = (l0 >>> 48) | (l1 << 16);
@@ -1445,9 +1424,9 @@ class UnrollingDecoder {
       dst[119] = l2 >>> 40;
     }
     {
-      long l0 = src[45];
-      long l1 = src[46];
-      long l2 = src[47];
+      final long l0 = src[45];
+      final long l1 = src[46];
+      final long l2 = src[47];
       dst[120] = l0;
       dst[121] = (l0 >>> 24);
       dst[122] = (l0 >>> 48) | (l1 << 16);
@@ -1457,21 +1436,18 @@ class UnrollingDecoder {
       dst[126] = (l2 >>> 16);
       dst[127] = l2 >>> 40;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 16777215L;
-    }
+    maskLongs(dst, 16777215L);
   }
 
   static void decode28(long[] src, long[] dst) {
     {
-      long l0 = src[0];
-      long l1 = src[1];
-      long l2 = src[2];
-      long l3 = src[3];
-      long l4 = src[4];
-      long l5 = src[5];
-      long l6 = src[6];
+      final long l0 = src[0];
+      final long l1 = src[1];
+      final long l2 = src[2];
+      final long l3 = src[3];
+      final long l4 = src[4];
+      final long l5 = src[5];
+      final long l6 = src[6];
       dst[0] = l0;
       dst[1] = (l0 >>> 28);
       dst[2] = (l0 >>> 56) | (l1 << 8);
@@ -1490,13 +1466,13 @@ class UnrollingDecoder {
       dst[15] = l6 >>> 36;
     }
     {
-      long l0 = src[7];
-      long l1 = src[8];
-      long l2 = src[9];
-      long l3 = src[10];
-      long l4 = src[11];
-      long l5 = src[12];
-      long l6 = src[13];
+      final long l0 = src[7];
+      final long l1 = src[8];
+      final long l2 = src[9];
+      final long l3 = src[10];
+      final long l4 = src[11];
+      final long l5 = src[12];
+      final long l6 = src[13];
       dst[16] = l0;
       dst[17] = (l0 >>> 28);
       dst[18] = (l0 >>> 56) | (l1 << 8);
@@ -1515,13 +1491,13 @@ class UnrollingDecoder {
       dst[31] = l6 >>> 36;
     }
     {
-      long l0 = src[14];
-      long l1 = src[15];
-      long l2 = src[16];
-      long l3 = src[17];
-      long l4 = src[18];
-      long l5 = src[19];
-      long l6 = src[20];
+      final long l0 = src[14];
+      final long l1 = src[15];
+      final long l2 = src[16];
+      final long l3 = src[17];
+      final long l4 = src[18];
+      final long l5 = src[19];
+      final long l6 = src[20];
       dst[32] = l0;
       dst[33] = (l0 >>> 28);
       dst[34] = (l0 >>> 56) | (l1 << 8);
@@ -1540,13 +1516,13 @@ class UnrollingDecoder {
       dst[47] = l6 >>> 36;
     }
     {
-      long l0 = src[21];
-      long l1 = src[22];
-      long l2 = src[23];
-      long l3 = src[24];
-      long l4 = src[25];
-      long l5 = src[26];
-      long l6 = src[27];
+      final long l0 = src[21];
+      final long l1 = src[22];
+      final long l2 = src[23];
+      final long l3 = src[24];
+      final long l4 = src[25];
+      final long l5 = src[26];
+      final long l6 = src[27];
       dst[48] = l0;
       dst[49] = (l0 >>> 28);
       dst[50] = (l0 >>> 56) | (l1 << 8);
@@ -1565,13 +1541,13 @@ class UnrollingDecoder {
       dst[63] = l6 >>> 36;
     }
     {
-      long l0 = src[28];
-      long l1 = src[29];
-      long l2 = src[30];
-      long l3 = src[31];
-      long l4 = src[32];
-      long l5 = src[33];
-      long l6 = src[34];
+      final long l0 = src[28];
+      final long l1 = src[29];
+      final long l2 = src[30];
+      final long l3 = src[31];
+      final long l4 = src[32];
+      final long l5 = src[33];
+      final long l6 = src[34];
       dst[64] = l0;
       dst[65] = (l0 >>> 28);
       dst[66] = (l0 >>> 56) | (l1 << 8);
@@ -1590,13 +1566,13 @@ class UnrollingDecoder {
       dst[79] = l6 >>> 36;
     }
     {
-      long l0 = src[35];
-      long l1 = src[36];
-      long l2 = src[37];
-      long l3 = src[38];
-      long l4 = src[39];
-      long l5 = src[40];
-      long l6 = src[41];
+      final long l0 = src[35];
+      final long l1 = src[36];
+      final long l2 = src[37];
+      final long l3 = src[38];
+      final long l4 = src[39];
+      final long l5 = src[40];
+      final long l6 = src[41];
       dst[80] = l0;
       dst[81] = (l0 >>> 28);
       dst[82] = (l0 >>> 56) | (l1 << 8);
@@ -1615,13 +1591,13 @@ class UnrollingDecoder {
       dst[95] = l6 >>> 36;
     }
     {
-      long l0 = src[42];
-      long l1 = src[43];
-      long l2 = src[44];
-      long l3 = src[45];
-      long l4 = src[46];
-      long l5 = src[47];
-      long l6 = src[48];
+      final long l0 = src[42];
+      final long l1 = src[43];
+      final long l2 = src[44];
+      final long l3 = src[45];
+      final long l4 = src[46];
+      final long l5 = src[47];
+      final long l6 = src[48];
       dst[96] = l0;
       dst[97] = (l0 >>> 28);
       dst[98] = (l0 >>> 56) | (l1 << 8);
@@ -1640,13 +1616,13 @@ class UnrollingDecoder {
       dst[111] = l6 >>> 36;
     }
     {
-      long l0 = src[49];
-      long l1 = src[50];
-      long l2 = src[51];
-      long l3 = src[52];
-      long l4 = src[53];
-      long l5 = src[54];
-      long l6 = src[55];
+      final long l0 = src[49];
+      final long l1 = src[50];
+      final long l2 = src[51];
+      final long l3 = src[52];
+      final long l4 = src[53];
+      final long l5 = src[54];
+      final long l6 = src[55];
       dst[112] = l0;
       dst[113] = (l0 >>> 28);
       dst[114] = (l0 >>> 56) | (l1 << 8);
@@ -1664,346 +1640,340 @@ class UnrollingDecoder {
       dst[126] = (l6 >>> 8);
       dst[127] = l6 >>> 36;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 268435455L;
-    }
+    maskLongs(dst, 268435455L);
   }
 
   static void decode32(long[] src, long[] dst) {
     {
-      long l0 = src[0];
+      final long l0 = src[0];
       dst[0] = l0;
       dst[1] = l0 >>> 32;
     }
     {
-      long l0 = src[1];
+      final long l0 = src[1];
       dst[2] = l0;
       dst[3] = l0 >>> 32;
     }
     {
-      long l0 = src[2];
+      final long l0 = src[2];
       dst[4] = l0;
       dst[5] = l0 >>> 32;
     }
     {
-      long l0 = src[3];
+      final long l0 = src[3];
       dst[6] = l0;
       dst[7] = l0 >>> 32;
     }
     {
-      long l0 = src[4];
+      final long l0 = src[4];
       dst[8] = l0;
       dst[9] = l0 >>> 32;
     }
     {
-      long l0 = src[5];
+      final long l0 = src[5];
       dst[10] = l0;
       dst[11] = l0 >>> 32;
     }
     {
-      long l0 = src[6];
+      final long l0 = src[6];
       dst[12] = l0;
       dst[13] = l0 >>> 32;
     }
     {
-      long l0 = src[7];
+      final long l0 = src[7];
       dst[14] = l0;
       dst[15] = l0 >>> 32;
     }
     {
-      long l0 = src[8];
+      final long l0 = src[8];
       dst[16] = l0;
       dst[17] = l0 >>> 32;
     }
     {
-      long l0 = src[9];
+      final long l0 = src[9];
       dst[18] = l0;
       dst[19] = l0 >>> 32;
     }
     {
-      long l0 = src[10];
+      final long l0 = src[10];
       dst[20] = l0;
       dst[21] = l0 >>> 32;
     }
     {
-      long l0 = src[11];
+      final long l0 = src[11];
       dst[22] = l0;
       dst[23] = l0 >>> 32;
     }
     {
-      long l0 = src[12];
+      final long l0 = src[12];
       dst[24] = l0;
       dst[25] = l0 >>> 32;
     }
     {
-      long l0 = src[13];
+      final long l0 = src[13];
       dst[26] = l0;
       dst[27] = l0 >>> 32;
     }
     {
-      long l0 = src[14];
+      final long l0 = src[14];
       dst[28] = l0;
       dst[29] = l0 >>> 32;
     }
     {
-      long l0 = src[15];
+      final long l0 = src[15];
       dst[30] = l0;
       dst[31] = l0 >>> 32;
     }
     {
-      long l0 = src[16];
+      final long l0 = src[16];
       dst[32] = l0;
       dst[33] = l0 >>> 32;
     }
     {
-      long l0 = src[17];
+      final long l0 = src[17];
       dst[34] = l0;
       dst[35] = l0 >>> 32;
     }
     {
-      long l0 = src[18];
+      final long l0 = src[18];
       dst[36] = l0;
       dst[37] = l0 >>> 32;
     }
     {
-      long l0 = src[19];
+      final long l0 = src[19];
       dst[38] = l0;
       dst[39] = l0 >>> 32;
     }
     {
-      long l0 = src[20];
+      final long l0 = src[20];
       dst[40] = l0;
       dst[41] = l0 >>> 32;
     }
     {
-      long l0 = src[21];
+      final long l0 = src[21];
       dst[42] = l0;
       dst[43] = l0 >>> 32;
     }
     {
-      long l0 = src[22];
+      final long l0 = src[22];
       dst[44] = l0;
       dst[45] = l0 >>> 32;
     }
     {
-      long l0 = src[23];
+      final long l0 = src[23];
       dst[46] = l0;
       dst[47] = l0 >>> 32;
     }
     {
-      long l0 = src[24];
+      final long l0 = src[24];
       dst[48] = l0;
       dst[49] = l0 >>> 32;
     }
     {
-      long l0 = src[25];
+      final long l0 = src[25];
       dst[50] = l0;
       dst[51] = l0 >>> 32;
     }
     {
-      long l0 = src[26];
+      final long l0 = src[26];
       dst[52] = l0;
       dst[53] = l0 >>> 32;
     }
     {
-      long l0 = src[27];
+      final long l0 = src[27];
       dst[54] = l0;
       dst[55] = l0 >>> 32;
     }
     {
-      long l0 = src[28];
+      final long l0 = src[28];
       dst[56] = l0;
       dst[57] = l0 >>> 32;
     }
     {
-      long l0 = src[29];
+      final long l0 = src[29];
       dst[58] = l0;
       dst[59] = l0 >>> 32;
     }
     {
-      long l0 = src[30];
+      final long l0 = src[30];
       dst[60] = l0;
       dst[61] = l0 >>> 32;
     }
     {
-      long l0 = src[31];
+      final long l0 = src[31];
       dst[62] = l0;
       dst[63] = l0 >>> 32;
     }
     {
-      long l0 = src[32];
+      final long l0 = src[32];
       dst[64] = l0;
       dst[65] = l0 >>> 32;
     }
     {
-      long l0 = src[33];
+      final long l0 = src[33];
       dst[66] = l0;
       dst[67] = l0 >>> 32;
     }
     {
-      long l0 = src[34];
+      final long l0 = src[34];
       dst[68] = l0;
       dst[69] = l0 >>> 32;
     }
     {
-      long l0 = src[35];
+      final long l0 = src[35];
       dst[70] = l0;
       dst[71] = l0 >>> 32;
     }
     {
-      long l0 = src[36];
+      final long l0 = src[36];
       dst[72] = l0;
       dst[73] = l0 >>> 32;
     }
     {
-      long l0 = src[37];
+      final long l0 = src[37];
       dst[74] = l0;
       dst[75] = l0 >>> 32;
     }
     {
-      long l0 = src[38];
+      final long l0 = src[38];
       dst[76] = l0;
       dst[77] = l0 >>> 32;
     }
     {
-      long l0 = src[39];
+      final long l0 = src[39];
       dst[78] = l0;
       dst[79] = l0 >>> 32;
     }
     {
-      long l0 = src[40];
+      final long l0 = src[40];
       dst[80] = l0;
       dst[81] = l0 >>> 32;
     }
     {
-      long l0 = src[41];
+      final long l0 = src[41];
       dst[82] = l0;
       dst[83] = l0 >>> 32;
     }
     {
-      long l0 = src[42];
+      final long l0 = src[42];
       dst[84] = l0;
       dst[85] = l0 >>> 32;
     }
     {
-      long l0 = src[43];
+      final long l0 = src[43];
       dst[86] = l0;
       dst[87] = l0 >>> 32;
     }
     {
-      long l0 = src[44];
+      final long l0 = src[44];
       dst[88] = l0;
       dst[89] = l0 >>> 32;
     }
     {
-      long l0 = src[45];
+      final long l0 = src[45];
       dst[90] = l0;
       dst[91] = l0 >>> 32;
     }
     {
-      long l0 = src[46];
+      final long l0 = src[46];
       dst[92] = l0;
       dst[93] = l0 >>> 32;
     }
     {
-      long l0 = src[47];
+      final long l0 = src[47];
       dst[94] = l0;
       dst[95] = l0 >>> 32;
     }
     {
-      long l0 = src[48];
+      final long l0 = src[48];
       dst[96] = l0;
       dst[97] = l0 >>> 32;
     }
     {
-      long l0 = src[49];
+      final long l0 = src[49];
       dst[98] = l0;
       dst[99] = l0 >>> 32;
     }
     {
-      long l0 = src[50];
+      final long l0 = src[50];
       dst[100] = l0;
       dst[101] = l0 >>> 32;
     }
     {
-      long l0 = src[51];
+      final long l0 = src[51];
       dst[102] = l0;
       dst[103] = l0 >>> 32;
     }
     {
-      long l0 = src[52];
+      final long l0 = src[52];
       dst[104] = l0;
       dst[105] = l0 >>> 32;
     }
     {
-      long l0 = src[53];
+      final long l0 = src[53];
       dst[106] = l0;
       dst[107] = l0 >>> 32;
     }
     {
-      long l0 = src[54];
+      final long l0 = src[54];
       dst[108] = l0;
       dst[109] = l0 >>> 32;
     }
     {
-      long l0 = src[55];
+      final long l0 = src[55];
       dst[110] = l0;
       dst[111] = l0 >>> 32;
     }
     {
-      long l0 = src[56];
+      final long l0 = src[56];
       dst[112] = l0;
       dst[113] = l0 >>> 32;
     }
     {
-      long l0 = src[57];
+      final long l0 = src[57];
       dst[114] = l0;
       dst[115] = l0 >>> 32;
     }
     {
-      long l0 = src[58];
+      final long l0 = src[58];
       dst[116] = l0;
       dst[117] = l0 >>> 32;
     }
     {
-      long l0 = src[59];
+      final long l0 = src[59];
       dst[118] = l0;
       dst[119] = l0 >>> 32;
     }
     {
-      long l0 = src[60];
+      final long l0 = src[60];
       dst[120] = l0;
       dst[121] = l0 >>> 32;
     }
     {
-      long l0 = src[61];
+      final long l0 = src[61];
       dst[122] = l0;
       dst[123] = l0 >>> 32;
     }
     {
-      long l0 = src[62];
+      final long l0 = src[62];
       dst[124] = l0;
       dst[125] = l0 >>> 32;
     }
     {
-      long l0 = src[63];
+      final long l0 = src[63];
       dst[126] = l0;
       dst[127] = l0 >>> 32;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 4294967295L;
-    }
+    maskLongs(dst, 4294967295L);
   }
 
   static void decode40(long[] src, long[] dst) {
     {
-      long l0 = src[0];
-      long l1 = src[1];
-      long l2 = src[2];
-      long l3 = src[3];
-      long l4 = src[4];
+      final long l0 = src[0];
+      final long l1 = src[1];
+      final long l2 = src[2];
+      final long l3 = src[3];
+      final long l4 = src[4];
       dst[0] = l0;
       dst[1] = (l0 >>> 40) | (l1 << 24);
       dst[2] = (l1 >>> 16);
@@ -2014,11 +1984,11 @@ class UnrollingDecoder {
       dst[7] = l4 >>> 24;
     }
     {
-      long l0 = src[5];
-      long l1 = src[6];
-      long l2 = src[7];
-      long l3 = src[8];
-      long l4 = src[9];
+      final long l0 = src[5];
+      final long l1 = src[6];
+      final long l2 = src[7];
+      final long l3 = src[8];
+      final long l4 = src[9];
       dst[8] = l0;
       dst[9] = (l0 >>> 40) | (l1 << 24);
       dst[10] = (l1 >>> 16);
@@ -2029,11 +1999,11 @@ class UnrollingDecoder {
       dst[15] = l4 >>> 24;
     }
     {
-      long l0 = src[10];
-      long l1 = src[11];
-      long l2 = src[12];
-      long l3 = src[13];
-      long l4 = src[14];
+      final long l0 = src[10];
+      final long l1 = src[11];
+      final long l2 = src[12];
+      final long l3 = src[13];
+      final long l4 = src[14];
       dst[16] = l0;
       dst[17] = (l0 >>> 40) | (l1 << 24);
       dst[18] = (l1 >>> 16);
@@ -2044,11 +2014,11 @@ class UnrollingDecoder {
       dst[23] = l4 >>> 24;
     }
     {
-      long l0 = src[15];
-      long l1 = src[16];
-      long l2 = src[17];
-      long l3 = src[18];
-      long l4 = src[19];
+      final long l0 = src[15];
+      final long l1 = src[16];
+      final long l2 = src[17];
+      final long l3 = src[18];
+      final long l4 = src[19];
       dst[24] = l0;
       dst[25] = (l0 >>> 40) | (l1 << 24);
       dst[26] = (l1 >>> 16);
@@ -2059,11 +2029,11 @@ class UnrollingDecoder {
       dst[31] = l4 >>> 24;
     }
     {
-      long l0 = src[20];
-      long l1 = src[21];
-      long l2 = src[22];
-      long l3 = src[23];
-      long l4 = src[24];
+      final long l0 = src[20];
+      final long l1 = src[21];
+      final long l2 = src[22];
+      final long l3 = src[23];
+      final long l4 = src[24];
       dst[32] = l0;
       dst[33] = (l0 >>> 40) | (l1 << 24);
       dst[34] = (l1 >>> 16);
@@ -2074,11 +2044,11 @@ class UnrollingDecoder {
       dst[39] = l4 >>> 24;
     }
     {
-      long l0 = src[25];
-      long l1 = src[26];
-      long l2 = src[27];
-      long l3 = src[28];
-      long l4 = src[29];
+      final long l0 = src[25];
+      final long l1 = src[26];
+      final long l2 = src[27];
+      final long l3 = src[28];
+      final long l4 = src[29];
       dst[40] = l0;
       dst[41] = (l0 >>> 40) | (l1 << 24);
       dst[42] = (l1 >>> 16);
@@ -2089,11 +2059,11 @@ class UnrollingDecoder {
       dst[47] = l4 >>> 24;
     }
     {
-      long l0 = src[30];
-      long l1 = src[31];
-      long l2 = src[32];
-      long l3 = src[33];
-      long l4 = src[34];
+      final long l0 = src[30];
+      final long l1 = src[31];
+      final long l2 = src[32];
+      final long l3 = src[33];
+      final long l4 = src[34];
       dst[48] = l0;
       dst[49] = (l0 >>> 40) | (l1 << 24);
       dst[50] = (l1 >>> 16);
@@ -2104,11 +2074,11 @@ class UnrollingDecoder {
       dst[55] = l4 >>> 24;
     }
     {
-      long l0 = src[35];
-      long l1 = src[36];
-      long l2 = src[37];
-      long l3 = src[38];
-      long l4 = src[39];
+      final long l0 = src[35];
+      final long l1 = src[36];
+      final long l2 = src[37];
+      final long l3 = src[38];
+      final long l4 = src[39];
       dst[56] = l0;
       dst[57] = (l0 >>> 40) | (l1 << 24);
       dst[58] = (l1 >>> 16);
@@ -2119,11 +2089,11 @@ class UnrollingDecoder {
       dst[63] = l4 >>> 24;
     }
     {
-      long l0 = src[40];
-      long l1 = src[41];
-      long l2 = src[42];
-      long l3 = src[43];
-      long l4 = src[44];
+      final long l0 = src[40];
+      final long l1 = src[41];
+      final long l2 = src[42];
+      final long l3 = src[43];
+      final long l4 = src[44];
       dst[64] = l0;
       dst[65] = (l0 >>> 40) | (l1 << 24);
       dst[66] = (l1 >>> 16);
@@ -2134,11 +2104,11 @@ class UnrollingDecoder {
       dst[71] = l4 >>> 24;
     }
     {
-      long l0 = src[45];
-      long l1 = src[46];
-      long l2 = src[47];
-      long l3 = src[48];
-      long l4 = src[49];
+      final long l0 = src[45];
+      final long l1 = src[46];
+      final long l2 = src[47];
+      final long l3 = src[48];
+      final long l4 = src[49];
       dst[72] = l0;
       dst[73] = (l0 >>> 40) | (l1 << 24);
       dst[74] = (l1 >>> 16);
@@ -2149,11 +2119,11 @@ class UnrollingDecoder {
       dst[79] = l4 >>> 24;
     }
     {
-      long l0 = src[50];
-      long l1 = src[51];
-      long l2 = src[52];
-      long l3 = src[53];
-      long l4 = src[54];
+      final long l0 = src[50];
+      final long l1 = src[51];
+      final long l2 = src[52];
+      final long l3 = src[53];
+      final long l4 = src[54];
       dst[80] = l0;
       dst[81] = (l0 >>> 40) | (l1 << 24);
       dst[82] = (l1 >>> 16);
@@ -2164,11 +2134,11 @@ class UnrollingDecoder {
       dst[87] = l4 >>> 24;
     }
     {
-      long l0 = src[55];
-      long l1 = src[56];
-      long l2 = src[57];
-      long l3 = src[58];
-      long l4 = src[59];
+      final long l0 = src[55];
+      final long l1 = src[56];
+      final long l2 = src[57];
+      final long l3 = src[58];
+      final long l4 = src[59];
       dst[88] = l0;
       dst[89] = (l0 >>> 40) | (l1 << 24);
       dst[90] = (l1 >>> 16);
@@ -2179,11 +2149,11 @@ class UnrollingDecoder {
       dst[95] = l4 >>> 24;
     }
     {
-      long l0 = src[60];
-      long l1 = src[61];
-      long l2 = src[62];
-      long l3 = src[63];
-      long l4 = src[64];
+      final long l0 = src[60];
+      final long l1 = src[61];
+      final long l2 = src[62];
+      final long l3 = src[63];
+      final long l4 = src[64];
       dst[96] = l0;
       dst[97] = (l0 >>> 40) | (l1 << 24);
       dst[98] = (l1 >>> 16);
@@ -2194,11 +2164,11 @@ class UnrollingDecoder {
       dst[103] = l4 >>> 24;
     }
     {
-      long l0 = src[65];
-      long l1 = src[66];
-      long l2 = src[67];
-      long l3 = src[68];
-      long l4 = src[69];
+      final long l0 = src[65];
+      final long l1 = src[66];
+      final long l2 = src[67];
+      final long l3 = src[68];
+      final long l4 = src[69];
       dst[104] = l0;
       dst[105] = (l0 >>> 40) | (l1 << 24);
       dst[106] = (l1 >>> 16);
@@ -2209,11 +2179,11 @@ class UnrollingDecoder {
       dst[111] = l4 >>> 24;
     }
     {
-      long l0 = src[70];
-      long l1 = src[71];
-      long l2 = src[72];
-      long l3 = src[73];
-      long l4 = src[74];
+      final long l0 = src[70];
+      final long l1 = src[71];
+      final long l2 = src[72];
+      final long l3 = src[73];
+      final long l4 = src[74];
       dst[112] = l0;
       dst[113] = (l0 >>> 40) | (l1 << 24);
       dst[114] = (l1 >>> 16);
@@ -2224,11 +2194,11 @@ class UnrollingDecoder {
       dst[119] = l4 >>> 24;
     }
     {
-      long l0 = src[75];
-      long l1 = src[76];
-      long l2 = src[77];
-      long l3 = src[78];
-      long l4 = src[79];
+      final long l0 = src[75];
+      final long l1 = src[76];
+      final long l2 = src[77];
+      final long l3 = src[78];
+      final long l4 = src[79];
       dst[120] = l0;
       dst[121] = (l0 >>> 40) | (l1 << 24);
       dst[122] = (l1 >>> 16);
@@ -2238,316 +2208,310 @@ class UnrollingDecoder {
       dst[126] = (l3 >>> 48) | (l4 << 16);
       dst[127] = l4 >>> 24;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 1099511627775L;
-    }
+    maskLongs(dst, 1099511627775L);
   }
 
   static void decode48(long[] src, long[] dst) {
     {
-      long l0 = src[0];
-      long l1 = src[1];
-      long l2 = src[2];
+      final long l0 = src[0];
+      final long l1 = src[1];
+      final long l2 = src[2];
       dst[0] = l0;
       dst[1] = (l0 >>> 48) | (l1 << 16);
       dst[2] = (l1 >>> 32) | (l2 << 32);
       dst[3] = l2 >>> 16;
     }
     {
-      long l0 = src[3];
-      long l1 = src[4];
-      long l2 = src[5];
+      final long l0 = src[3];
+      final long l1 = src[4];
+      final long l2 = src[5];
       dst[4] = l0;
       dst[5] = (l0 >>> 48) | (l1 << 16);
       dst[6] = (l1 >>> 32) | (l2 << 32);
       dst[7] = l2 >>> 16;
     }
     {
-      long l0 = src[6];
-      long l1 = src[7];
-      long l2 = src[8];
+      final long l0 = src[6];
+      final long l1 = src[7];
+      final long l2 = src[8];
       dst[8] = l0;
       dst[9] = (l0 >>> 48) | (l1 << 16);
       dst[10] = (l1 >>> 32) | (l2 << 32);
       dst[11] = l2 >>> 16;
     }
     {
-      long l0 = src[9];
-      long l1 = src[10];
-      long l2 = src[11];
+      final long l0 = src[9];
+      final long l1 = src[10];
+      final long l2 = src[11];
       dst[12] = l0;
       dst[13] = (l0 >>> 48) | (l1 << 16);
       dst[14] = (l1 >>> 32) | (l2 << 32);
       dst[15] = l2 >>> 16;
     }
     {
-      long l0 = src[12];
-      long l1 = src[13];
-      long l2 = src[14];
+      final long l0 = src[12];
+      final long l1 = src[13];
+      final long l2 = src[14];
       dst[16] = l0;
       dst[17] = (l0 >>> 48) | (l1 << 16);
       dst[18] = (l1 >>> 32) | (l2 << 32);
       dst[19] = l2 >>> 16;
     }
     {
-      long l0 = src[15];
-      long l1 = src[16];
-      long l2 = src[17];
+      final long l0 = src[15];
+      final long l1 = src[16];
+      final long l2 = src[17];
       dst[20] = l0;
       dst[21] = (l0 >>> 48) | (l1 << 16);
       dst[22] = (l1 >>> 32) | (l2 << 32);
       dst[23] = l2 >>> 16;
     }
     {
-      long l0 = src[18];
-      long l1 = src[19];
-      long l2 = src[20];
+      final long l0 = src[18];
+      final long l1 = src[19];
+      final long l2 = src[20];
       dst[24] = l0;
       dst[25] = (l0 >>> 48) | (l1 << 16);
       dst[26] = (l1 >>> 32) | (l2 << 32);
       dst[27] = l2 >>> 16;
     }
     {
-      long l0 = src[21];
-      long l1 = src[22];
-      long l2 = src[23];
+      final long l0 = src[21];
+      final long l1 = src[22];
+      final long l2 = src[23];
       dst[28] = l0;
       dst[29] = (l0 >>> 48) | (l1 << 16);
       dst[30] = (l1 >>> 32) | (l2 << 32);
       dst[31] = l2 >>> 16;
     }
     {
-      long l0 = src[24];
-      long l1 = src[25];
-      long l2 = src[26];
+      final long l0 = src[24];
+      final long l1 = src[25];
+      final long l2 = src[26];
       dst[32] = l0;
       dst[33] = (l0 >>> 48) | (l1 << 16);
       dst[34] = (l1 >>> 32) | (l2 << 32);
       dst[35] = l2 >>> 16;
     }
     {
-      long l0 = src[27];
-      long l1 = src[28];
-      long l2 = src[29];
+      final long l0 = src[27];
+      final long l1 = src[28];
+      final long l2 = src[29];
       dst[36] = l0;
       dst[37] = (l0 >>> 48) | (l1 << 16);
       dst[38] = (l1 >>> 32) | (l2 << 32);
       dst[39] = l2 >>> 16;
     }
     {
-      long l0 = src[30];
-      long l1 = src[31];
-      long l2 = src[32];
+      final long l0 = src[30];
+      final long l1 = src[31];
+      final long l2 = src[32];
       dst[40] = l0;
       dst[41] = (l0 >>> 48) | (l1 << 16);
       dst[42] = (l1 >>> 32) | (l2 << 32);
       dst[43] = l2 >>> 16;
     }
     {
-      long l0 = src[33];
-      long l1 = src[34];
-      long l2 = src[35];
+      final long l0 = src[33];
+      final long l1 = src[34];
+      final long l2 = src[35];
       dst[44] = l0;
       dst[45] = (l0 >>> 48) | (l1 << 16);
       dst[46] = (l1 >>> 32) | (l2 << 32);
       dst[47] = l2 >>> 16;
     }
     {
-      long l0 = src[36];
-      long l1 = src[37];
-      long l2 = src[38];
+      final long l0 = src[36];
+      final long l1 = src[37];
+      final long l2 = src[38];
       dst[48] = l0;
       dst[49] = (l0 >>> 48) | (l1 << 16);
       dst[50] = (l1 >>> 32) | (l2 << 32);
       dst[51] = l2 >>> 16;
     }
     {
-      long l0 = src[39];
-      long l1 = src[40];
-      long l2 = src[41];
+      final long l0 = src[39];
+      final long l1 = src[40];
+      final long l2 = src[41];
       dst[52] = l0;
       dst[53] = (l0 >>> 48) | (l1 << 16);
       dst[54] = (l1 >>> 32) | (l2 << 32);
       dst[55] = l2 >>> 16;
     }
     {
-      long l0 = src[42];
-      long l1 = src[43];
-      long l2 = src[44];
+      final long l0 = src[42];
+      final long l1 = src[43];
+      final long l2 = src[44];
       dst[56] = l0;
       dst[57] = (l0 >>> 48) | (l1 << 16);
       dst[58] = (l1 >>> 32) | (l2 << 32);
       dst[59] = l2 >>> 16;
     }
     {
-      long l0 = src[45];
-      long l1 = src[46];
-      long l2 = src[47];
+      final long l0 = src[45];
+      final long l1 = src[46];
+      final long l2 = src[47];
       dst[60] = l0;
       dst[61] = (l0 >>> 48) | (l1 << 16);
       dst[62] = (l1 >>> 32) | (l2 << 32);
       dst[63] = l2 >>> 16;
     }
     {
-      long l0 = src[48];
-      long l1 = src[49];
-      long l2 = src[50];
+      final long l0 = src[48];
+      final long l1 = src[49];
+      final long l2 = src[50];
       dst[64] = l0;
       dst[65] = (l0 >>> 48) | (l1 << 16);
       dst[66] = (l1 >>> 32) | (l2 << 32);
       dst[67] = l2 >>> 16;
     }
     {
-      long l0 = src[51];
-      long l1 = src[52];
-      long l2 = src[53];
+      final long l0 = src[51];
+      final long l1 = src[52];
+      final long l2 = src[53];
       dst[68] = l0;
       dst[69] = (l0 >>> 48) | (l1 << 16);
       dst[70] = (l1 >>> 32) | (l2 << 32);
       dst[71] = l2 >>> 16;
     }
     {
-      long l0 = src[54];
-      long l1 = src[55];
-      long l2 = src[56];
+      final long l0 = src[54];
+      final long l1 = src[55];
+      final long l2 = src[56];
       dst[72] = l0;
       dst[73] = (l0 >>> 48) | (l1 << 16);
       dst[74] = (l1 >>> 32) | (l2 << 32);
       dst[75] = l2 >>> 16;
     }
     {
-      long l0 = src[57];
-      long l1 = src[58];
-      long l2 = src[59];
+      final long l0 = src[57];
+      final long l1 = src[58];
+      final long l2 = src[59];
       dst[76] = l0;
       dst[77] = (l0 >>> 48) | (l1 << 16);
       dst[78] = (l1 >>> 32) | (l2 << 32);
       dst[79] = l2 >>> 16;
     }
     {
-      long l0 = src[60];
-      long l1 = src[61];
-      long l2 = src[62];
+      final long l0 = src[60];
+      final long l1 = src[61];
+      final long l2 = src[62];
       dst[80] = l0;
       dst[81] = (l0 >>> 48) | (l1 << 16);
       dst[82] = (l1 >>> 32) | (l2 << 32);
       dst[83] = l2 >>> 16;
     }
     {
-      long l0 = src[63];
-      long l1 = src[64];
-      long l2 = src[65];
+      final long l0 = src[63];
+      final long l1 = src[64];
+      final long l2 = src[65];
       dst[84] = l0;
       dst[85] = (l0 >>> 48) | (l1 << 16);
       dst[86] = (l1 >>> 32) | (l2 << 32);
       dst[87] = l2 >>> 16;
     }
     {
-      long l0 = src[66];
-      long l1 = src[67];
-      long l2 = src[68];
+      final long l0 = src[66];
+      final long l1 = src[67];
+      final long l2 = src[68];
       dst[88] = l0;
       dst[89] = (l0 >>> 48) | (l1 << 16);
       dst[90] = (l1 >>> 32) | (l2 << 32);
       dst[91] = l2 >>> 16;
     }
     {
-      long l0 = src[69];
-      long l1 = src[70];
-      long l2 = src[71];
+      final long l0 = src[69];
+      final long l1 = src[70];
+      final long l2 = src[71];
       dst[92] = l0;
       dst[93] = (l0 >>> 48) | (l1 << 16);
       dst[94] = (l1 >>> 32) | (l2 << 32);
       dst[95] = l2 >>> 16;
     }
     {
-      long l0 = src[72];
-      long l1 = src[73];
-      long l2 = src[74];
+      final long l0 = src[72];
+      final long l1 = src[73];
+      final long l2 = src[74];
       dst[96] = l0;
       dst[97] = (l0 >>> 48) | (l1 << 16);
       dst[98] = (l1 >>> 32) | (l2 << 32);
       dst[99] = l2 >>> 16;
     }
     {
-      long l0 = src[75];
-      long l1 = src[76];
-      long l2 = src[77];
+      final long l0 = src[75];
+      final long l1 = src[76];
+      final long l2 = src[77];
       dst[100] = l0;
       dst[101] = (l0 >>> 48) | (l1 << 16);
       dst[102] = (l1 >>> 32) | (l2 << 32);
       dst[103] = l2 >>> 16;
     }
     {
-      long l0 = src[78];
-      long l1 = src[79];
-      long l2 = src[80];
+      final long l0 = src[78];
+      final long l1 = src[79];
+      final long l2 = src[80];
       dst[104] = l0;
       dst[105] = (l0 >>> 48) | (l1 << 16);
       dst[106] = (l1 >>> 32) | (l2 << 32);
       dst[107] = l2 >>> 16;
     }
     {
-      long l0 = src[81];
-      long l1 = src[82];
-      long l2 = src[83];
+      final long l0 = src[81];
+      final long l1 = src[82];
+      final long l2 = src[83];
       dst[108] = l0;
       dst[109] = (l0 >>> 48) | (l1 << 16);
       dst[110] = (l1 >>> 32) | (l2 << 32);
       dst[111] = l2 >>> 16;
     }
     {
-      long l0 = src[84];
-      long l1 = src[85];
-      long l2 = src[86];
+      final long l0 = src[84];
+      final long l1 = src[85];
+      final long l2 = src[86];
       dst[112] = l0;
       dst[113] = (l0 >>> 48) | (l1 << 16);
       dst[114] = (l1 >>> 32) | (l2 << 32);
       dst[115] = l2 >>> 16;
     }
     {
-      long l0 = src[87];
-      long l1 = src[88];
-      long l2 = src[89];
+      final long l0 = src[87];
+      final long l1 = src[88];
+      final long l2 = src[89];
       dst[116] = l0;
       dst[117] = (l0 >>> 48) | (l1 << 16);
       dst[118] = (l1 >>> 32) | (l2 << 32);
       dst[119] = l2 >>> 16;
     }
     {
-      long l0 = src[90];
-      long l1 = src[91];
-      long l2 = src[92];
+      final long l0 = src[90];
+      final long l1 = src[91];
+      final long l2 = src[92];
       dst[120] = l0;
       dst[121] = (l0 >>> 48) | (l1 << 16);
       dst[122] = (l1 >>> 32) | (l2 << 32);
       dst[123] = l2 >>> 16;
     }
     {
-      long l0 = src[93];
-      long l1 = src[94];
-      long l2 = src[95];
+      final long l0 = src[93];
+      final long l1 = src[94];
+      final long l2 = src[95];
       dst[124] = l0;
       dst[125] = (l0 >>> 48) | (l1 << 16);
       dst[126] = (l1 >>> 32) | (l2 << 32);
       dst[127] = l2 >>> 16;
     }
-
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 281474976710655L;
-    }
+    maskLongs(dst, 281474976710655L);
   }
 
   static void decode56(long[] src, long[] dst) {
     {
-      long l0 = src[0];
-      long l1 = src[1];
-      long l2 = src[2];
-      long l3 = src[3];
-      long l4 = src[4];
-      long l5 = src[5];
-      long l6 = src[6];
+      final long l0 = src[0];
+      final long l1 = src[1];
+      final long l2 = src[2];
+      final long l3 = src[3];
+      final long l4 = src[4];
+      final long l5 = src[5];
+      final long l6 = src[6];
       dst[0] = l0;
       dst[1] = (l0 >>> 56) | (l1 << 8);
       dst[2] = (l1 >>> 48) | (l2 << 16);
@@ -2558,13 +2522,13 @@ class UnrollingDecoder {
       dst[7] = l6 >>> 8;
     }
     {
-      long l0 = src[7];
-      long l1 = src[8];
-      long l2 = src[9];
-      long l3 = src[10];
-      long l4 = src[11];
-      long l5 = src[12];
-      long l6 = src[13];
+      final long l0 = src[7];
+      final long l1 = src[8];
+      final long l2 = src[9];
+      final long l3 = src[10];
+      final long l4 = src[11];
+      final long l5 = src[12];
+      final long l6 = src[13];
       dst[8] = l0;
       dst[9] = (l0 >>> 56) | (l1 << 8);
       dst[10] = (l1 >>> 48) | (l2 << 16);
@@ -2575,13 +2539,13 @@ class UnrollingDecoder {
       dst[15] = l6 >>> 8;
     }
     {
-      long l0 = src[14];
-      long l1 = src[15];
-      long l2 = src[16];
-      long l3 = src[17];
-      long l4 = src[18];
-      long l5 = src[19];
-      long l6 = src[20];
+      final long l0 = src[14];
+      final long l1 = src[15];
+      final long l2 = src[16];
+      final long l3 = src[17];
+      final long l4 = src[18];
+      final long l5 = src[19];
+      final long l6 = src[20];
       dst[16] = l0;
       dst[17] = (l0 >>> 56) | (l1 << 8);
       dst[18] = (l1 >>> 48) | (l2 << 16);
@@ -2592,13 +2556,13 @@ class UnrollingDecoder {
       dst[23] = l6 >>> 8;
     }
     {
-      long l0 = src[21];
-      long l1 = src[22];
-      long l2 = src[23];
-      long l3 = src[24];
-      long l4 = src[25];
-      long l5 = src[26];
-      long l6 = src[27];
+      final long l0 = src[21];
+      final long l1 = src[22];
+      final long l2 = src[23];
+      final long l3 = src[24];
+      final long l4 = src[25];
+      final long l5 = src[26];
+      final long l6 = src[27];
       dst[24] = l0;
       dst[25] = (l0 >>> 56) | (l1 << 8);
       dst[26] = (l1 >>> 48) | (l2 << 16);
@@ -2609,13 +2573,13 @@ class UnrollingDecoder {
       dst[31] = l6 >>> 8;
     }
     {
-      long l0 = src[28];
-      long l1 = src[29];
-      long l2 = src[30];
-      long l3 = src[31];
-      long l4 = src[32];
-      long l5 = src[33];
-      long l6 = src[34];
+      final long l0 = src[28];
+      final long l1 = src[29];
+      final long l2 = src[30];
+      final long l3 = src[31];
+      final long l4 = src[32];
+      final long l5 = src[33];
+      final long l6 = src[34];
       dst[32] = l0;
       dst[33] = (l0 >>> 56) | (l1 << 8);
       dst[34] = (l1 >>> 48) | (l2 << 16);
@@ -2626,13 +2590,13 @@ class UnrollingDecoder {
       dst[39] = l6 >>> 8;
     }
     {
-      long l0 = src[35];
-      long l1 = src[36];
-      long l2 = src[37];
-      long l3 = src[38];
-      long l4 = src[39];
-      long l5 = src[40];
-      long l6 = src[41];
+      final long l0 = src[35];
+      final long l1 = src[36];
+      final long l2 = src[37];
+      final long l3 = src[38];
+      final long l4 = src[39];
+      final long l5 = src[40];
+      final long l6 = src[41];
       dst[40] = l0;
       dst[41] = (l0 >>> 56) | (l1 << 8);
       dst[42] = (l1 >>> 48) | (l2 << 16);
@@ -2643,13 +2607,13 @@ class UnrollingDecoder {
       dst[47] = l6 >>> 8;
     }
     {
-      long l0 = src[42];
-      long l1 = src[43];
-      long l2 = src[44];
-      long l3 = src[45];
-      long l4 = src[46];
-      long l5 = src[47];
-      long l6 = src[48];
+      final long l0 = src[42];
+      final long l1 = src[43];
+      final long l2 = src[44];
+      final long l3 = src[45];
+      final long l4 = src[46];
+      final long l5 = src[47];
+      final long l6 = src[48];
       dst[48] = l0;
       dst[49] = (l0 >>> 56) | (l1 << 8);
       dst[50] = (l1 >>> 48) | (l2 << 16);
@@ -2660,13 +2624,13 @@ class UnrollingDecoder {
       dst[55] = l6 >>> 8;
     }
     {
-      long l0 = src[49];
-      long l1 = src[50];
-      long l2 = src[51];
-      long l3 = src[52];
-      long l4 = src[53];
-      long l5 = src[54];
-      long l6 = src[55];
+      final long l0 = src[49];
+      final long l1 = src[50];
+      final long l2 = src[51];
+      final long l3 = src[52];
+      final long l4 = src[53];
+      final long l5 = src[54];
+      final long l6 = src[55];
       dst[56] = l0;
       dst[57] = (l0 >>> 56) | (l1 << 8);
       dst[58] = (l1 >>> 48) | (l2 << 16);
@@ -2677,13 +2641,13 @@ class UnrollingDecoder {
       dst[63] = l6 >>> 8;
     }
     {
-      long l0 = src[56];
-      long l1 = src[57];
-      long l2 = src[58];
-      long l3 = src[59];
-      long l4 = src[60];
-      long l5 = src[61];
-      long l6 = src[62];
+      final long l0 = src[56];
+      final long l1 = src[57];
+      final long l2 = src[58];
+      final long l3 = src[59];
+      final long l4 = src[60];
+      final long l5 = src[61];
+      final long l6 = src[62];
       dst[64] = l0;
       dst[65] = (l0 >>> 56) | (l1 << 8);
       dst[66] = (l1 >>> 48) | (l2 << 16);
@@ -2694,13 +2658,13 @@ class UnrollingDecoder {
       dst[71] = l6 >>> 8;
     }
     {
-      long l0 = src[63];
-      long l1 = src[64];
-      long l2 = src[65];
-      long l3 = src[66];
-      long l4 = src[67];
-      long l5 = src[68];
-      long l6 = src[69];
+      final long l0 = src[63];
+      final long l1 = src[64];
+      final long l2 = src[65];
+      final long l3 = src[66];
+      final long l4 = src[67];
+      final long l5 = src[68];
+      final long l6 = src[69];
       dst[72] = l0;
       dst[73] = (l0 >>> 56) | (l1 << 8);
       dst[74] = (l1 >>> 48) | (l2 << 16);
@@ -2711,13 +2675,13 @@ class UnrollingDecoder {
       dst[79] = l6 >>> 8;
     }
     {
-      long l0 = src[70];
-      long l1 = src[71];
-      long l2 = src[72];
-      long l3 = src[73];
-      long l4 = src[74];
-      long l5 = src[75];
-      long l6 = src[76];
+      final long l0 = src[70];
+      final long l1 = src[71];
+      final long l2 = src[72];
+      final long l3 = src[73];
+      final long l4 = src[74];
+      final long l5 = src[75];
+      final long l6 = src[76];
       dst[80] = l0;
       dst[81] = (l0 >>> 56) | (l1 << 8);
       dst[82] = (l1 >>> 48) | (l2 << 16);
@@ -2728,13 +2692,13 @@ class UnrollingDecoder {
       dst[87] = l6 >>> 8;
     }
     {
-      long l0 = src[77];
-      long l1 = src[78];
-      long l2 = src[79];
-      long l3 = src[80];
-      long l4 = src[81];
-      long l5 = src[82];
-      long l6 = src[83];
+      final long l0 = src[77];
+      final long l1 = src[78];
+      final long l2 = src[79];
+      final long l3 = src[80];
+      final long l4 = src[81];
+      final long l5 = src[82];
+      final long l6 = src[83];
       dst[88] = l0;
       dst[89] = (l0 >>> 56) | (l1 << 8);
       dst[90] = (l1 >>> 48) | (l2 << 16);
@@ -2745,13 +2709,13 @@ class UnrollingDecoder {
       dst[95] = l6 >>> 8;
     }
     {
-      long l0 = src[84];
-      long l1 = src[85];
-      long l2 = src[86];
-      long l3 = src[87];
-      long l4 = src[88];
-      long l5 = src[89];
-      long l6 = src[90];
+      final long l0 = src[84];
+      final long l1 = src[85];
+      final long l2 = src[86];
+      final long l3 = src[87];
+      final long l4 = src[88];
+      final long l5 = src[89];
+      final long l6 = src[90];
       dst[96] = l0;
       dst[97] = (l0 >>> 56) | (l1 << 8);
       dst[98] = (l1 >>> 48) | (l2 << 16);
@@ -2762,13 +2726,13 @@ class UnrollingDecoder {
       dst[103] = l6 >>> 8;
     }
     {
-      long l0 = src[91];
-      long l1 = src[92];
-      long l2 = src[93];
-      long l3 = src[94];
-      long l4 = src[95];
-      long l5 = src[96];
-      long l6 = src[97];
+      final long l0 = src[91];
+      final long l1 = src[92];
+      final long l2 = src[93];
+      final long l3 = src[94];
+      final long l4 = src[95];
+      final long l5 = src[96];
+      final long l6 = src[97];
       dst[104] = l0;
       dst[105] = (l0 >>> 56) | (l1 << 8);
       dst[106] = (l1 >>> 48) | (l2 << 16);
@@ -2779,13 +2743,13 @@ class UnrollingDecoder {
       dst[111] = l6 >>> 8;
     }
     {
-      long l0 = src[98];
-      long l1 = src[99];
-      long l2 = src[100];
-      long l3 = src[101];
-      long l4 = src[102];
-      long l5 = src[103];
-      long l6 = src[104];
+      final long l0 = src[98];
+      final long l1 = src[99];
+      final long l2 = src[100];
+      final long l3 = src[101];
+      final long l4 = src[102];
+      final long l5 = src[103];
+      final long l6 = src[104];
       dst[112] = l0;
       dst[113] = (l0 >>> 56) | (l1 << 8);
       dst[114] = (l1 >>> 48) | (l2 << 16);
@@ -2796,13 +2760,13 @@ class UnrollingDecoder {
       dst[119] = l6 >>> 8;
     }
     {
-      long l0 = src[105];
-      long l1 = src[106];
-      long l2 = src[107];
-      long l3 = src[108];
-      long l4 = src[109];
-      long l5 = src[110];
-      long l6 = src[111];
+      final long l0 = src[105];
+      final long l1 = src[106];
+      final long l2 = src[107];
+      final long l3 = src[108];
+      final long l4 = src[109];
+      final long l5 = src[110];
+      final long l6 = src[111];
       dst[120] = l0;
       dst[121] = (l0 >>> 56) | (l1 << 8);
       dst[122] = (l1 >>> 48) | (l2 << 16);
@@ -2812,9 +2776,12 @@ class UnrollingDecoder {
       dst[126] = (l5 >>> 16) | (l6 << 48);
       dst[127] = l6 >>> 8;
     }
+    maskLongs(dst, 72057594037927935L);
+  }
 
-    for (int i = 0; i < 128; i++) {
-      dst[i] = dst[i] & 72057594037927935L;
+  private static void maskLongs(final long[] l, final long mask) {
+    for (int i=0; i<128; i++) {
+      l[i] = l[i] & mask;
     }
   }
 }

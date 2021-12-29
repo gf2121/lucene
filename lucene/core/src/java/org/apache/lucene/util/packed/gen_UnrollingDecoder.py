@@ -58,10 +58,7 @@ def write_decoder(bpv, f):
   for round in range(0, total_round):
     write_round(bpv, long_per_round, round)
   mask = 2**bpv - 1
-  f.write('\n')
-  f.write('    for (int i = 0; i < %d; i++) {\n' % BLOCK_SIZE)
-  f.write('      dst[i] = dst[i] & %dL;\n' % mask)
-  f.write('    }\n')
+  f.write('    maskLongs(dst, %dL);\n' % mask)
   f.write('  }\n')
 
 def write_round(bpv, long_per_round, round):
@@ -101,5 +98,12 @@ if __name__ == '__main__':
 
   for bpv in BPVS:
     write_decoder(bpv, f)
+
+  f.write("""
+  private static void maskLongs(final long[] l, final long mask) {
+    for (int i=0; i<128; i++) {
+      l[i] = l[i] & mask;
+    }
+  }\n""")
 
   f.write('}\n')
