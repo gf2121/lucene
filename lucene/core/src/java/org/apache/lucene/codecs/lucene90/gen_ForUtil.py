@@ -282,28 +282,6 @@ final class ForUtil {
   }
 
 """
-
-def writeRemainderWithSIMDOptimize(bpv, next_primitive, remaining_bits_per_long, o, num_values, f):
-  iteration = 1
-  num_longs = bpv * num_values / remaining_bits_per_long
-  while num_longs % 2 == 0 and num_values % 2 == 0:
-    num_longs /= 2
-    num_values /= 2
-    iteration *= 2
-
-  f.write('    shiftLongs(tmp, %d, tmp, 0, 0, MASK%d_%d);\n' % (iteration * num_longs, next_primitive, remaining_bits_per_long))
-  f.write('    for (int iter = 0, tmpIdx = 0, longsIdx = %d; iter < %d; ++iter, tmpIdx += %d, longsIdx += %d) {\n' %(o, iteration, num_longs, num_values))
-  tmp_idx = 0
-  b = bpv
-  b -= remaining_bits_per_long
-  f.write('      long l0 = tmp[tmpIdx + %d] << %d;\n' %(tmp_idx, b))
-  tmp_idx += 1
-  while b >= remaining_bits_per_long:
-    b -= remaining_bits_per_long
-    f.write('      l0 |= tmp[tmpIdx + %d] << %d;\n' %(tmp_idx, b))
-    tmp_idx += 1
-  f.write('      longs[longsIdx + 0] = l0;\n')
-  f.write('    }\n')
   
 
 def writeRemainder(bpv, next_primitive, remaining_bits_per_long, o, num_values, f):
@@ -313,28 +291,32 @@ def writeRemainder(bpv, next_primitive, remaining_bits_per_long, o, num_values, 
     num_longs /= 2
     num_values /= 2
     iteration *= 2
-  f.write('    for (int iter = 0, tmpIdx = 0, longsIdx = %d; iter < %d; ++iter, tmpIdx += %d, longsIdx += %d) {\n' %(o, iteration, num_longs, num_values))
-  i = 0
-  remaining_bits = 0
-  tmp_idx = 0
-  for i in range(num_values):
-    b = bpv
-    if remaining_bits == 0:
-      b -= remaining_bits_per_long
-      f.write('      long l%d = (tmp[tmpIdx + %d] & MASK%d_%d) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits_per_long, b))
-    else:
-      b -= remaining_bits
-      f.write('      long l%d = (tmp[tmpIdx + %d] & MASK%d_%d) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits, b))
-    tmp_idx += 1
-    while b >= remaining_bits_per_long:
-      b -= remaining_bits_per_long
-      f.write('      l%d |= (tmp[tmpIdx + %d] & MASK%d_%d) << %d;\n' %(i, tmp_idx, next_primitive, remaining_bits_per_long, b))
+  iter = 0
+  while iter < iteration:
+    remaining_bits = 0
+    tmp_idx = iter * num_longs
+    for i in range(0, num_values):
+      f.write('    longs[%d] =' % (iter * num_values + i + o))
+      b = bpv
+      if remaining_bits == 0:
+        b -= remaining_bits_per_long
+        f.write(' ((tmp[%d] & MASK%d_%d) << %d)' %(tmp_idx, next_primitive, remaining_bits_per_long, b))
+      else:
+        b -= remaining_bits
+        f.write(' ((tmp[%d] & MASK%d_%d) << %d)' %(tmp_idx, next_primitive, remaining_bits, b))
       tmp_idx += 1
-    if b > 0:
-      f.write('      l%d |= (tmp[tmpIdx + %d] >>> %d) & MASK%d_%d;\n' %(i, tmp_idx, remaining_bits_per_long-b, next_primitive, b))
-      remaining_bits = remaining_bits_per_long-b
-    f.write('      longs[longsIdx + %d] = l%d;\n' %(i, i))
-  f.write('    }\n')
+      while b >= remaining_bits_per_long:
+        b -= remaining_bits_per_long
+        if b != 0:
+          f.write(' | ((tmp[%d] & MASK%d_%d) << %d)' %(tmp_idx, next_primitive, remaining_bits_per_long, b))
+        else:
+          f.write(' | (tmp[%d] & MASK%d_%d)' %(tmp_idx, next_primitive, remaining_bits_per_long))
+        tmp_idx += 1
+      if b > 0:
+        f.write(' | ((tmp[%d] >>> %d) & MASK%d_%d)' %(tmp_idx, remaining_bits_per_long-b, next_primitive, b))
+        remaining_bits = remaining_bits_per_long-b
+      f.write(';\n')
+    iter += 1
   
 
 def writeDecode(bpv, f):
@@ -356,10 +338,7 @@ def writeDecode(bpv, f):
       o += bpv*2
       shift -= bpv
     if shift + bpv > 0:
-      if bpv % (next_primitive % bpv) == 0:
-        writeRemainderWithSIMDOptimize(bpv, next_primitive, shift + bpv, o, 128/num_values_per_long - o, f)
-      else:
-        writeRemainder(bpv, next_primitive, shift + bpv, o, 128/num_values_per_long - o, f)
+      writeRemainder(bpv, next_primitive, shift + bpv, o, 128/num_values_per_long - o, f)
   f.write('  }\n')
 
 
