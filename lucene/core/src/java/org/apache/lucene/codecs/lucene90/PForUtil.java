@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.LongHeap;
@@ -28,6 +30,10 @@ final class PForUtil {
 
   private static final int MAX_EXCEPTIONS = 7;
   private static final int HALF_BLOCK_SIZE = ForUtil.BLOCK_SIZE / 2;
+
+  static AtomicInteger ALL = new AtomicInteger();
+  static AtomicInteger ONE = new AtomicInteger();
+  static AtomicInteger SAME = new AtomicInteger();
 
   // IDENTITY_PLUS_ONE[i] == i + 1
   private static final long[] IDENTITY_PLUS_ONE = new long[ForUtil.BLOCK_SIZE];
@@ -118,11 +124,19 @@ final class PForUtil {
 
   /** Decode 128 integers into {@code ints}. */
   void decode(DataInput in, long[] longs) throws IOException {
+    if (ALL.incrementAndGet() % 10000 == 0) {
+      System.out.println(ALL.get() + " " + SAME.get() + " " + ONE.get());
+    }
     final int token = Byte.toUnsignedInt(in.readByte());
     final int bitsPerValue = token & 0x1f;
     final int numExceptions = token >>> 5;
     if (bitsPerValue == 0) {
-      Arrays.fill(longs, 0, ForUtil.BLOCK_SIZE, in.readVLong());
+      long l = in.readVLong();
+      if (l == 1) {
+        ONE.incrementAndGet();
+      }
+      SAME.incrementAndGet();
+      Arrays.fill(longs, 0, ForUtil.BLOCK_SIZE, l);
     } else {
       forUtil.decode(bitsPerValue, in, longs);
     }
