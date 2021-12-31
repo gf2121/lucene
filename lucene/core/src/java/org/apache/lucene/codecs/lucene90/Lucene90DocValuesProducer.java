@@ -412,7 +412,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
     @Override
     public final int nextDoc() throws IOException {
       int next = doc + 1;
-      return next >= maxDoc ? maxDoc : (doc = next);
+      return next >= maxDoc ? NO_MORE_DOCS : (doc = next);
     }
 
     @Override
