@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.DenseNumericDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -393,45 +394,6 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.name);
     return getNumeric(entry);
-  }
-
-  private abstract static class DenseNumericDocValues extends NumericDocValues {
-
-    final int maxDoc;
-    int doc = -1;
-
-    DenseNumericDocValues(int maxDoc) {
-      this.maxDoc = maxDoc;
-    }
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    @Override
-    public int nextDoc() throws IOException {
-      return advance(doc + 1);
-    }
-
-    @Override
-    public int advance(int target) throws IOException {
-      if (target >= maxDoc) {
-        return doc = NO_MORE_DOCS;
-      }
-      return doc = target;
-    }
-
-    @Override
-    public boolean advanceExact(int target) {
-      doc = target;
-      return true;
-    }
-
-    @Override
-    public long cost() {
-      return maxDoc;
-    }
   }
 
   private abstract static class SparseNumericDocValues extends NumericDocValues {
