@@ -191,11 +191,11 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       if (hits != null && hits.totalHits < numSegOrds / 10) {
         // Remap every ord to global ord as we iterate:
         if (singleValues != null) {
-          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+          while (it.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             counts[(int) ordMap.get(singleValues.ordValue())]++;
           }
         } else {
-          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+          while (it.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             int term = (int) multiValues.nextOrd();
             while (term != SortedSetDocValues.NO_MORE_ORDS) {
               counts[(int) ordMap.get(term)]++;
@@ -207,11 +207,11 @@ public class SortedSetDocValuesFacetCounts extends Facets {
         // First count in seg-ord space:
         final int[] segCounts = new int[numSegOrds];
         if (singleValues != null) {
-          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+          while (it.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             segCounts[singleValues.ordValue()]++;
           }
         } else {
-          for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+          while (it.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             int term = (int) multiValues.nextOrd();
             while (term != SortedSetDocValues.NO_MORE_ORDS) {
               segCounts[term]++;
@@ -233,11 +233,11 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       // No ord mapping (e.g., single segment index):
       // just aggregate directly into counts:
       if (singleValues != null) {
-        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+        while (it.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           counts[singleValues.ordValue()]++;
         }
       } else {
-        for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
+        while (it.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           int term = (int) multiValues.nextOrd();
           while (term != SortedSetDocValues.NO_MORE_ORDS) {
             counts[term]++;
