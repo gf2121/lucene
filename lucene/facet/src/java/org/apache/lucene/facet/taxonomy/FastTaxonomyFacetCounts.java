@@ -104,7 +104,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
           if (liveDocs != null && liveDocs.get(doc) == false) {
             continue;
           }
-          increment((int) ndv.longValue());
+          values[(int) ndv.longValue()]++;
         }
         continue;
       }
@@ -115,7 +115,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
         }
 
         for (int i = 0; i < dv.docValueCount(); i++) {
-          increment((int) dv.nextValue());
+          values[(int) dv.nextValue()]++;
         }
       }
     }
