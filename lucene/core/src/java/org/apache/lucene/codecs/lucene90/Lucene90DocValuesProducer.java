@@ -51,6 +51,7 @@ import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.packed.BlockReader;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
 import org.apache.lucene.util.packed.DirectReader;
+import org.apache.lucene.util.packed.ForwardBlockReader;
 
 /** reader for {@link Lucene90DocValuesFormat} */
 final class Lucene90DocValuesProducer extends DocValuesProducer {
@@ -469,14 +470,22 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
     }
   }
 
-  private LongValues getReaderInstance(NumericEntry entry, long offset) throws IOException {
-    if (version >= Lucene90DocValuesFormat.VERSION_BLOCK_READER) {
-      return getBlockReaderInstance(
-          entry.valuesOffset, entry.valuesLength, entry.bitsPerValue, offset, entry.numValues);
-    } else {
-      return getDirectReaderInstance(
-          entry.valuesOffset, entry.valuesLength, entry.bitsPerValue, offset, entry.numValues);
-    }
+  private ForwardBlockReader getReaderInstance(NumericEntry entry, long offset) throws IOException {
+//    if (version >= Lucene90DocValuesFormat.VERSION_BLOCK_READER) {
+//      return getBlockReaderInstance(
+//          entry.valuesOffset, entry.valuesLength, entry.bitsPerValue, offset, entry.numValues);
+//    } else {
+//      return getDirectReaderInstance(
+//          entry.valuesOffset, entry.valuesLength, entry.bitsPerValue, offset, entry.numValues);
+//    }
+    return getForwardBlockReaderInstance(entry.valuesOffset, entry.valuesLength, entry.bitsPerValue, offset, entry.numValues);
+  }
+
+  private ForwardBlockReader getForwardBlockReaderInstance(
+          long valuesOffset, long valuesLength, int bitsPerValue, long offset, long numValues)
+          throws IOException {
+    IndexInput slice = data.slice("numeric-docvalues", valuesOffset, valuesLength);
+    return new ForwardBlockReader(slice, bitsPerValue, offset, numValues);
   }
 
   private LongValues getBlockReaderInstance(
@@ -527,7 +536,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
             }
           };
         } else {
-          final LongValues values = getReaderInstance(entry, 0L);
+          final ForwardBlockReader values = getReaderInstance(entry, 0L);
           if (entry.table != null) {
             final long[] table = entry.table;
             return new DenseNumericDocValues(maxDoc) {
@@ -586,7 +595,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
             }
           };
         } else {
-          final LongValues values = getReaderInstance(entry, 0L);
+          final ForwardBlockReader values = getReaderInstance(entry, 0L);
           if (entry.table != null) {
             final long[] table = entry.table;
             return new SparseNumericDocValues(disi) {
@@ -640,7 +649,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
           }
         };
       } else {
-        final LongValues values = getReaderInstance(entry, 0L);
+        final ForwardBlockReader values = getReaderInstance(entry, 0L);
         if (entry.table != null) {
           final long[] table = entry.table;
           return new LongValues() {
@@ -852,7 +861,7 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
         throw new IllegalStateException("Ordinals shouldn't use GCD, offset or table compression");
       }
 
-      final LongValues values = getReaderInstance(ordsEntry, 0L);
+      final ForwardBlockReader values = getReaderInstance(ordsEntry, 0L);
 
       if (ordsEntry.docsWithFieldOffset == -1) { // dense
         return new BaseSortedDocValues(entry) {
