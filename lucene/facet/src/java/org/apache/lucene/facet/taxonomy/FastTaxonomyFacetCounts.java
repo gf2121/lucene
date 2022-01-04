@@ -22,8 +22,10 @@ import java.util.List;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.ConjunctionUtils;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -88,6 +90,7 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
   }
 
   private final void countAll(IndexReader reader) throws IOException {
+    assert values != null;
     for (LeafReaderContext context : reader.leaves()) {
       SortedNumericDocValues dv = context.reader().getSortedNumericDocValues(indexFieldName);
       if (dv == null) {
@@ -95,14 +98,37 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
       }
 
       Bits liveDocs = context.reader().getLiveDocs();
+      NumericDocValues ndv = DocValues.unwrapSingleton(dv);
 
-      for (int doc = dv.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = dv.nextDoc()) {
-        if (liveDocs != null && liveDocs.get(doc) == false) {
-          continue;
+      if (ndv != null) {
+        if (liveDocs == null) {
+          while (ndv.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            values[(int) ndv.longValue()]++;
+          }
+        } else {
+          for (int doc = ndv.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = ndv.nextDoc()) {
+            if (liveDocs.get(doc)) {
+              values[(int) ndv.longValue()]++;
+            }
+          }
         }
-
-        for (int i = 0; i < dv.docValueCount(); i++) {
-          increment((int) dv.nextValue());
+      } else {
+        if (liveDocs == null) {
+          while (dv.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+            final int dvCount = dv.docValueCount();
+            for (int i = 0; i < dvCount; i++) {
+              values[(int) dv.nextValue()]++;
+            }
+          }
+        } else {
+          for (int doc = dv.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = dv.nextDoc()) {
+            if (liveDocs.get(doc)) {
+              final int dvCount = dv.docValueCount();
+              for (int i = 0; i < dvCount; i++) {
+                values[(int) dv.nextValue()]++;
+              }
+            }
+          }
         }
       }
     }
