@@ -188,7 +188,9 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
       int numSegOrds = (int) multiValues.getValueCount();
 
-      if (hits != null && hits.totalHits < numSegOrds / 10) {
+      System.out.println(numSegOrds + " " + reader.maxDoc());
+
+      if ((hits != null && hits.totalHits < numSegOrds / 10)) {
         // Remap every ord to global ord as we iterate:
         if (singleValues != null) {
           for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
