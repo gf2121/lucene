@@ -56,27 +56,27 @@ final class ForUtil {
     return expandMask8((1L << bitsPerValue) - 1);
   }
 
-  private static void expand8(long[] arr) {
+  private static void expand8(long[] arr, final long base) {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
-      arr[i] = (l >>> 56) & 0xFFL;
-      arr[16 + i] = (l >>> 48) & 0xFFL;
-      arr[32 + i] = (l >>> 40) & 0xFFL;
-      arr[48 + i] = (l >>> 32) & 0xFFL;
-      arr[64 + i] = (l >>> 24) & 0xFFL;
-      arr[80 + i] = (l >>> 16) & 0xFFL;
-      arr[96 + i] = (l >>> 8) & 0xFFL;
-      arr[112 + i] = l & 0xFFL;
+      arr[i] = ((l >>> 56) & 0xFFL) + base;
+      arr[16 + i] = ((l >>> 48) & 0xFFL) + base;
+      arr[32 + i] = ((l >>> 40) & 0xFFL) + base;
+      arr[48 + i] = ((l >>> 32) & 0xFFL) + base;
+      arr[64 + i] = ((l >>> 24) & 0xFFL) + base;
+      arr[80 + i] = ((l >>> 16) & 0xFFL) + base;
+      arr[96 + i] = ((l >>> 8) & 0xFFL) + base;
+      arr[112 + i] = (l & 0xFFL) + base;
     }
   }
 
-  private static void expand8To32(long[] arr) {
+  private static void expand8To32(long[] arr, final long base) {
     for (int i = 0; i < 16; ++i) {
       long l = arr[i];
-      arr[i] = (l >>> 24) & 0x000000FF000000FFL;
-      arr[16 + i] = (l >>> 16) & 0x000000FF000000FFL;
-      arr[32 + i] = (l >>> 8) & 0x000000FF000000FFL;
-      arr[48 + i] = l & 0x000000FF000000FFL;
+      arr[i] = ((l >>> 24) & 0x000000FF000000FFL) + base;
+      arr[16 + i] = ((l >>> 16) & 0x000000FF000000FFL) + base;
+      arr[32 + i] = ((l >>> 8) & 0x000000FF000000FFL) + base;
+      arr[48 + i] = (l & 0x000000FF000000FFL) + base;
     }
   }
 
@@ -94,21 +94,21 @@ final class ForUtil {
     }
   }
 
-  private static void expand16(long[] arr) {
+  private static void expand16(long[] arr, final long base) {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
-      arr[i] = (l >>> 48) & 0xFFFFL;
-      arr[32 + i] = (l >>> 32) & 0xFFFFL;
-      arr[64 + i] = (l >>> 16) & 0xFFFFL;
-      arr[96 + i] = l & 0xFFFFL;
+      arr[i] = ((l >>> 48) & 0xFFFFL) + base;
+      arr[32 + i] = ((l >>> 32) & 0xFFFFL) + base;
+      arr[64 + i] = ((l >>> 16) & 0xFFFFL) + base;
+      arr[96 + i] = (l & 0xFFFFL) + base;
     }
   }
 
-  private static void expand16To32(long[] arr) {
+  private static void expand16To32(long[] arr, final long base) {
     for (int i = 0; i < 32; ++i) {
       long l = arr[i];
-      arr[i] = (l >>> 16) & 0x0000FFFF0000FFFFL;
-      arr[32 + i] = l & 0x0000FFFF0000FFFFL;
+      arr[i] = ((l >>> 16) & 0x0000FFFF0000FFFFL) + base;
+      arr[32 + i] = (l & 0x0000FFFF0000FFFFL) + base;
     }
   }
 
@@ -118,11 +118,11 @@ final class ForUtil {
     }
   }
 
-  private static void expand32(long[] arr) {
+  private static void expand32(long[] arr, final long base) {
     for (int i = 0; i < 64; ++i) {
       long l = arr[i];
-      arr[i] = l >>> 32;
-      arr[64 + i] = l & 0xFFFFFFFFL;
+      arr[i] = (l >>> 32) + base;
+      arr[64 + i] = (l & 0xFFFFFFFFL) + base;
     }
   }
 
@@ -317,107 +317,107 @@ final class ForUtil {
   private static final long MASK32_24 = MASKS32[24];
 
   /** Decode 128 integers into {@code longs}. */
-  void decode(int bitsPerValue, DataInput in, long[] longs) throws IOException {
+  void decode(int bitsPerValue, DataInput in, long[] longs, long base) throws IOException {
     switch (bitsPerValue) {
       case 1:
         decode1(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 2:
         decode2(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 3:
         decode3(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 4:
         decode4(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 5:
         decode5(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 6:
         decode6(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 7:
         decode7(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 8:
         decode8(in, tmp, longs);
-        expand8(longs);
+        expand8(longs, base);
         break;
       case 9:
         decode9(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 10:
         decode10(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 11:
         decode11(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 12:
         decode12(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 13:
         decode13(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 14:
         decode14(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 15:
         decode15(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 16:
         decode16(in, tmp, longs);
-        expand16(longs);
+        expand16(longs, base);
         break;
       case 17:
         decode17(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       case 18:
         decode18(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       case 19:
         decode19(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       case 20:
         decode20(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       case 21:
         decode21(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       case 22:
         decode22(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       case 23:
         decode23(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       case 24:
         decode24(in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
       default:
         decodeSlow(bitsPerValue, in, tmp, longs);
-        expand32(longs);
+        expand32(longs, base);
         break;
     }
   }
@@ -428,99 +428,115 @@ final class ForUtil {
    * [0..63], and values [64..127] are encoded in the low-order bits of {@code longs} [0..63]. This
    * representation may allow subsequent operations to be performed on two values at a time.
    */
-  void decodeTo32(int bitsPerValue, DataInput in, long[] longs) throws IOException {
+  void decodeTo32(int bitsPerValue, DataInput in, long[] longs, long base) throws IOException {
+    base = (base << 32) | base;
     switch (bitsPerValue) {
       case 1:
         decode1(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 2:
         decode2(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 3:
         decode3(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 4:
         decode4(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 5:
         decode5(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 6:
         decode6(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 7:
         decode7(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 8:
         decode8(in, tmp, longs);
-        expand8To32(longs);
+        expand8To32(longs, base);
         break;
       case 9:
         decode9(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 10:
         decode10(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 11:
         decode11(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 12:
         decode12(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 13:
         decode13(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 14:
         decode14(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 15:
         decode15(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 16:
         decode16(in, tmp, longs);
-        expand16To32(longs);
+        expand16To32(longs, base);
         break;
       case 17:
         decode17(in, tmp, longs);
+        plus(longs, base);
         break;
       case 18:
         decode18(in, tmp, longs);
+        plus(longs, base);
         break;
       case 19:
         decode19(in, tmp, longs);
+        plus(longs, base);
         break;
       case 20:
         decode20(in, tmp, longs);
+        plus(longs, base);
         break;
       case 21:
         decode21(in, tmp, longs);
+        plus(longs, base);
         break;
       case 22:
         decode22(in, tmp, longs);
+        plus(longs, base);
         break;
       case 23:
         decode23(in, tmp, longs);
+        plus(longs, base);
         break;
       case 24:
         decode24(in, tmp, longs);
+        plus(longs, base);
         break;
       default:
         decodeSlow(bitsPerValue, in, tmp, longs);
+        plus(longs, base);
         break;
+    }
+  }
+
+  private static void plus(long[] longs, final long base) {
+    for (int i=0; i<128; i++) {
+      longs[i] = longs[i] + base;
     }
   }
 
