@@ -37,7 +37,9 @@ final class PForUtil {
   private static final AtomicInteger total = new AtomicInteger(0);
 
   static {
-    Arrays.fill(computes, new AtomicInteger(0));
+    for (int i=0; i<computes.length; i++) {
+      computes[i] = new AtomicInteger(0);
+    }
   }
 
   static void increment(int bpv) {
