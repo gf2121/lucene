@@ -16,18 +16,40 @@
  */
 package org.apache.lucene.codecs.lucene90;
 
-import java.io.IOException;
-import java.util.Arrays;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.LongHeap;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** Utility class to encode sequences of 128 small positive integers. */
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Utility class to encode sequences of 128 small positive integers.
+ */
 final class PForUtil {
 
   private static final int MAX_EXCEPTIONS = 7;
   private static final int HALF_BLOCK_SIZE = ForUtil.BLOCK_SIZE / 2;
+
+  private static final AtomicInteger[] computes = new AtomicInteger[32];
+  private static final AtomicInteger total = new AtomicInteger(0);
+
+  static {
+    Arrays.fill(computes, new AtomicInteger(0));
+  }
+
+  static void increment(int bpv) {
+    computes[bpv].incrementAndGet();
+    if (total.incrementAndGet() % 10000 == 0) {
+      System.out.print("total: " + total.get() + "; ");
+      for (int i=0 ; i < computes.length; i++) {
+        System.out.print(i + " " + computes[i].get() + ", ");
+      }
+      System.out.println();
+    }
+  }
 
   // IDENTITY_PLUS_ONE[i] == i + 1
   private static final long[] IDENTITY_PLUS_ONE = new long[ForUtil.BLOCK_SIZE];
@@ -57,7 +79,9 @@ final class PForUtil {
     this.forUtil = forUtil;
   }
 
-  /** Encode 128 integers from {@code longs} into {@code out}. */
+  /**
+   * Encode 128 integers from {@code longs} into {@code out}.
+   */
   void encode(long[] longs, DataOutput out) throws IOException {
     // Determine the top MAX_EXCEPTIONS + 1 values
     final LongHeap top = LongHeap.create(LongHeap.Order.MIN, MAX_EXCEPTIONS + 1);
@@ -79,7 +103,7 @@ final class PForUtil {
     final int maxBitsRequired = PackedInts.bitsRequired(max);
     // We store the patch on a byte, so we can't decrease the number of bits required by more than 8
     final int patchedBitsRequired =
-        Math.max(PackedInts.bitsRequired(topValue), maxBitsRequired - 8);
+            Math.max(PackedInts.bitsRequired(topValue), maxBitsRequired - 8);
     int numExceptions = 0;
     final long maxUnpatchedValue = (1L << patchedBitsRequired) - 1;
     for (int i = 2; i <= top.size(); ++i) {
@@ -104,7 +128,7 @@ final class PForUtil {
     if (allEqual(longs) && maxBitsRequired <= 8) {
       for (int i = 0; i < numExceptions; ++i) {
         exceptions[2 * i + 1] =
-            (byte) (Byte.toUnsignedLong(exceptions[2 * i + 1]) << patchedBitsRequired);
+                (byte) (Byte.toUnsignedLong(exceptions[2 * i + 1]) << patchedBitsRequired);
       }
       out.writeByte((byte) (numExceptions << 5));
       out.writeVLong(longs[0]);
@@ -116,10 +140,13 @@ final class PForUtil {
     out.writeBytes(exceptions, exceptions.length);
   }
 
-  /** Decode 128 integers into {@code ints}. */
+  /**
+   * Decode 128 integers into {@code ints}.
+   */
   void decode(DataInput in, long[] longs) throws IOException {
     final int token = Byte.toUnsignedInt(in.readByte());
     final int bitsPerValue = token & 0x1f;
+    increment(bitsPerValue);
     final int numExceptions = token >>> 5;
     if (bitsPerValue == 0) {
       Arrays.fill(longs, 0, ForUtil.BLOCK_SIZE, in.readVLong());
@@ -128,15 +155,18 @@ final class PForUtil {
     }
     for (int i = 0; i < numExceptions; ++i) {
       longs[Byte.toUnsignedInt(in.readByte())] |=
-          Byte.toUnsignedLong(in.readByte()) << bitsPerValue;
+              Byte.toUnsignedLong(in.readByte()) << bitsPerValue;
     }
   }
 
-  /** Decode deltas, compute the prefix sum and add {@code base} to all decoded longs. */
+  /**
+   * Decode deltas, compute the prefix sum and add {@code base} to all decoded longs.
+   */
   void decodeAndPrefixSum(DataInput in, long base, long[] longs) throws IOException {
     final int token = Byte.toUnsignedInt(in.readByte());
     final int bitsPerValue = token & 0x1f;
     final int numExceptions = token >>> 5;
+    increment(bitsPerValue);
     if (numExceptions == 0) {
       // when there are no exceptions to apply, we can be a bit more efficient with our decoding
       if (bitsPerValue == 0) {
@@ -166,7 +196,9 @@ final class PForUtil {
     }
   }
 
-  /** Skip 128 integers. */
+  /**
+   * Skip 128 integers.
+   */
   void skip(DataInput in) throws IOException {
     final int token = Byte.toUnsignedInt(in.readByte());
     final int bitsPerValue = token & 0x1f;
@@ -210,9 +242,11 @@ final class PForUtil {
     Arrays.fill(longs, 0, HALF_BLOCK_SIZE, token);
   }
 
-  /** Apply the exceptions where the values are packed two-per-long in {@code longs}. */
+  /**
+   * Apply the exceptions where the values are packed two-per-long in {@code longs}.
+   */
   private void applyExceptions32(int bitsPerValue, int numExceptions, DataInput in, long[] longs)
-      throws IOException {
+          throws IOException {
     in.readBytes(exceptionBuff, 0, numExceptions * 2);
     for (int i = 0; i < numExceptions; ++i) {
       final int exceptionPos = Byte.toUnsignedInt(exceptionBuff[i * 2]);
@@ -226,7 +260,9 @@ final class PForUtil {
     }
   }
 
-  /** Apply prefix sum logic where the values are packed two-per-long in {@code longs}. */
+  /**
+   * Apply prefix sum logic where the values are packed two-per-long in {@code longs}.
+   */
   private static void prefixSum32(long[] longs, long base) {
     longs[0] += base << 32;
     innerPrefixSum32(longs);
