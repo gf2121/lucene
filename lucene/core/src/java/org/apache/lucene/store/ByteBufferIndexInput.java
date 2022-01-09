@@ -240,6 +240,49 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     }
   }
 
+  private byte readUnsafeByte() throws IOException {
+    try {
+      return curBuf.get();
+    } catch (
+            @SuppressWarnings("unused")
+                    BufferUnderflowException e) {
+      do {
+        curBufIndex++;
+        if (curBufIndex >= buffers.length) {
+          throw new EOFException("read past EOF: " + this);
+        }
+        setCurBuf(buffers[curBufIndex]);
+        curBuf.position(0);
+      } while (!curBuf.hasRemaining());
+      return curBuf.get();
+    } catch (
+            @SuppressWarnings("unused")
+                    NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public final int readVInt() throws IOException {
+    byte b = readByte();
+    if (b >= 0) return b;
+    int i = b & 0x7F;
+    b = readUnsafeByte();
+    i |= (b & 0x7F) << 7;
+    if (b >= 0) return i;
+    b = readUnsafeByte();
+    i |= (b & 0x7F) << 14;
+    if (b >= 0) return i;
+    b = readUnsafeByte();
+    i |= (b & 0x7F) << 21;
+    if (b >= 0) return i;
+    b = readUnsafeByte();
+    // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+    i |= (b & 0x0F) << 28;
+    if ((b & 0xF0) == 0) return i;
+    throw new IOException("Invalid vInt detected (too many bits)");
+  }
+
   @Override
   public final long readLong() throws IOException {
     try {

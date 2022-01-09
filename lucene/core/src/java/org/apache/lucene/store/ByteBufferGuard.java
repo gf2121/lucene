@@ -108,6 +108,11 @@ final class ByteBufferGuard {
     return receiver.getInt();
   }
 
+  public int getVInt(ByteBuffer receiver) {
+    ensureValid();
+    return receiver.getInt();
+  }
+
   public long getLong(ByteBuffer receiver) {
     ensureValid();
     return receiver.getLong();
