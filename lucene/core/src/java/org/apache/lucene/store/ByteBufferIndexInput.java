@@ -48,6 +48,8 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   private LongBuffer[] curLongBufferViews;
   private FloatBuffer[] curFloatBufferViews;
 
+  protected int curPos;
+
   protected boolean isClone = false;
 
   public static ByteBufferIndexInput newInstance(
@@ -75,6 +77,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     this.chunkSizePower = chunkSizePower;
     this.chunkSizeMask = (1L << chunkSizePower) - 1L;
     this.guard = guard;
+    this.curPos = 0;
     assert chunkSizePower >= 0 && chunkSizePower <= 30;
     assert (length >>> chunkSizePower) < Integer.MAX_VALUE;
   }
@@ -88,19 +91,21 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public final byte readByte() throws IOException {
     try {
-      return guard.getByte(curBuf);
+      byte b = guard.getByte(curBuf, curPos);
+      curPos++;
+      return b;
     } catch (
         @SuppressWarnings("unused")
-        BufferUnderflowException e) {
+        IndexOutOfBoundsException e) {
       do {
         curBufIndex++;
         if (curBufIndex >= buffers.length) {
           throw new EOFException("read past EOF: " + this);
         }
         setCurBuf(buffers[curBufIndex]);
-        curBuf.position(0);
-      } while (!curBuf.hasRemaining());
-      return guard.getByte(curBuf);
+      } while (curBuf.limit() <= 0);
+      curPos = 0;
+      return guard.getByte(curBuf, curPos++);
     } catch (
         @SuppressWarnings("unused")
         NullPointerException npe) {
@@ -111,7 +116,9 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public final void readBytes(byte[] b, int offset, int len) throws IOException {
     try {
+      curBuf.position(curPos);
       guard.getBytes(curBuf, b, offset, len);
+      curPos = curBuf.position();
     } catch (
         @SuppressWarnings("unused")
         BufferUnderflowException e) {
@@ -129,6 +136,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         curAvail = curBuf.remaining();
       }
       guard.getBytes(curBuf, b, offset, len);
+      curPos = curBuf.position();
     } catch (
         @SuppressWarnings("unused")
         NullPointerException npe) {
@@ -160,11 +168,10 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       }
     }
     try {
-      final int position = curBuf.position();
       guard.getLongs(
-          curLongBufferViews[position & 0x07].position(position >>> 3), dst, offset, length);
+          curLongBufferViews[curPos & 0x07].position(curPos >>> 3), dst, offset, length);
       // if the above call succeeded, then we know the below sum cannot overflow
-      curBuf.position(position + (length << 3));
+      curPos += length << 3;
     } catch (
         @SuppressWarnings("unused")
         BufferUnderflowException e) {
@@ -193,12 +200,11 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       }
     }
     try {
-      final int position = curBuf.position();
-      FloatBuffer floatBuffer = curFloatBufferViews[position & 0x03];
-      floatBuffer.position(position >>> 2);
+      FloatBuffer floatBuffer = curFloatBufferViews[curPos & 0x03];
+      floatBuffer.position(curPos >>> 2);
       guard.getFloats(floatBuffer, floats, offset, len);
       // if the above call succeeded, then we know the below sum cannot overflow
-      curBuf.position(position + (len << 2));
+      curPos += len << 2;
     } catch (
         @SuppressWarnings("unused")
         BufferUnderflowException e) {
@@ -213,10 +219,12 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public final short readShort() throws IOException {
     try {
-      return guard.getShort(curBuf);
+      short s = guard.getShort(curBuf, curPos);
+      curPos += 2;
+      return s;
     } catch (
         @SuppressWarnings("unused")
-        BufferUnderflowException e) {
+        IndexOutOfBoundsException e) {
       return super.readShort();
     } catch (
         @SuppressWarnings("unused")
@@ -228,10 +236,12 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public final int readInt() throws IOException {
     try {
-      return guard.getInt(curBuf);
+      int i = guard.getInt(curBuf, curPos);
+      curPos += 4;
+      return i;
     } catch (
         @SuppressWarnings("unused")
-        BufferUnderflowException e) {
+        IndexOutOfBoundsException e) {
       return super.readInt();
     } catch (
         @SuppressWarnings("unused")
@@ -243,10 +253,12 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public final long readLong() throws IOException {
     try {
-      return guard.getLong(curBuf);
+      long l = guard.getLong(curBuf, curPos);
+      curPos += 8;
+      return l;
     } catch (
         @SuppressWarnings("unused")
-        BufferUnderflowException e) {
+        IndexOutOfBoundsException e) {
       return super.readLong();
     } catch (
         @SuppressWarnings("unused")
@@ -258,7 +270,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public long getFilePointer() {
     try {
-      return (((long) curBufIndex) << chunkSizePower) + curBuf.position();
+      return (((long) curBufIndex) << chunkSizePower) + curPos;
     } catch (
         @SuppressWarnings("unused")
         NullPointerException npe) {
@@ -273,13 +285,16 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     final int bi = (int) (pos >> chunkSizePower);
     try {
       if (bi == curBufIndex) {
-        curBuf.position((int) (pos & chunkSizeMask));
+        curPos = (int) (pos & chunkSizeMask);
       } else {
         final ByteBuffer b = buffers[bi];
-        b.position((int) (pos & chunkSizeMask));
+        curPos = (int) (pos & chunkSizeMask);
         // write values, on exception all is unchanged
         this.curBufIndex = bi;
         setCurBuf(b);
+      }
+      if (curPos > curBuf.limit()) {
+        throw new EOFException("seek past EOF: " + this);
       }
     } catch (@SuppressWarnings("unused")
         ArrayIndexOutOfBoundsException
@@ -312,7 +327,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   private void setPos(long pos, int bi) throws IOException {
     try {
       final ByteBuffer b = buffers[bi];
-      b.position((int) (pos & chunkSizeMask));
+      curPos = (int) (pos & chunkSizeMask);
       this.curBufIndex = bi;
       setCurBuf(b);
     } catch (@SuppressWarnings("unused")
@@ -518,7 +533,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       this.curBufIndex = 0;
       assert buffer.order() == ByteOrder.LITTLE_ENDIAN;
       setCurBuf(buffer);
-      buffer.position(0);
+      curPos = 0;
     }
 
     // TODO: investigate optimizing readByte() & Co?
@@ -526,13 +541,12 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     @Override
     public void seek(long pos) throws IOException {
       try {
-        curBuf.position((int) pos);
-      } catch (IllegalArgumentException e) {
         if (pos < 0) {
-          throw new IllegalArgumentException("Seeking to negative position: " + this, e);
-        } else {
+          throw new IllegalArgumentException("Seeking to negative position: " + this);
+        } else if (pos > curBuf.limit()) {
           throw new EOFException("seek past EOF: " + this);
         }
+        curPos = (int) pos;
       } catch (
           @SuppressWarnings("unused")
           NullPointerException npe) {
@@ -542,13 +556,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
 
     @Override
     public long getFilePointer() {
-      try {
-        return curBuf.position();
-      } catch (
-          @SuppressWarnings("unused")
-          NullPointerException npe) {
-        throw new AlreadyClosedException("Already closed: " + this);
-      }
+      return curPos;
     }
 
     @Override
