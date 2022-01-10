@@ -168,8 +168,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       }
     }
     try {
-      guard.getLongs(
-          curLongBufferViews[curPos & 0x07].position(curPos >>> 3), dst, offset, length);
+      guard.getLongs(curLongBufferViews[curPos & 0x07].position(curPos >>> 3), dst, offset, length);
       // if the above call succeeded, then we know the below sum cannot overflow
       curPos += length << 3;
     } catch (
@@ -229,6 +228,134 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     } catch (
         @SuppressWarnings("unused")
         NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  static final int a = 0x80;
+  static final int b = a;
+  static final int c = a & 129;
+
+  @Override
+  public int readVInt() throws IOException {
+    try {
+      int b4 = guard.getInt(curBuf, curPos);
+      if ((b4 & 0x80) == 0) {
+        curPos++;
+        return b4 & 0x7F;
+      }
+      if ((b4 & 0x8000) == 0) {
+        curPos += 2;
+        return ((b4 & 0x7F00) >>> 1) | (b4 & 0x7F);
+      }
+      if ((b4 & 0x800000) == 0) {
+        curPos += 3;
+        return (((b4 & 0x7F0000) >>> 2)) | ((b4 & 0x7F00) >>> 1) | (b4 & 0x7F);
+      }
+      if ((b4 & 0x80000000) == 0) {
+        curPos += 4;
+        return (((b4 & 0x7F000000) >>> 3))
+            | (((b4 & 0x7F0000) >>> 2))
+            | ((b4 & 0x7F00) >>> 1)
+            | (b4 & 0x7F);
+      }
+      curPos += 4;
+      byte b = readByte();
+      // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+      if ((b & 0xF0) == 0) {
+        return (b & 0x0F) << 28
+            | (((b4 & 0x7F000000) >>> 3))
+            | (((b4 & 0x7F0000) >>> 2))
+            | ((b4 & 0x7F00) >>> 1)
+            | (b4 & 0x7F);
+      }
+      throw new IOException("Invalid vInt detected (too many bits)");
+    } catch (IndexOutOfBoundsException e) {
+      return super.readVInt();
+    } catch (NullPointerException e) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public long readVLong() throws IOException {
+    try {
+      long b8 = guard.getLong(curBuf, curPos);
+      if ((b8 & 0x80L) == 0) {
+        curPos++;
+        return b8 & 0x7FL;
+      }
+      if ((b8 & 0x8000L) == 0) {
+        curPos += 2;
+        return ((b8 & 0x7F00L) >>> 1) | (b8 & 0x7FL);
+      }
+      if ((b8 & 0x800000L) == 0) {
+        curPos += 3;
+        return (((b8 & 0x7F0000L) >>> 2)) | ((b8 & 0x7F00L) >>> 1) | (b8 & 0x7FL);
+      }
+      if ((b8 & 0x80000000L) == 0) {
+        curPos += 4;
+        return (((b8 & 0x7F000000L) >>> 3L))
+            | (((b8 & 0x7F0000L) >>> 2))
+            | ((b8 & 0x7F00L) >>> 1)
+            | (b8 & 0x7FL);
+      }
+      if ((b8 & 0x8000000000L) == 0) {
+        curPos += 5;
+        return (((b8 & 0x7F00000000L) >>> 4L))
+            | (((b8 & 0x7F000000) >>> 3L))
+            | (((b8 & 0x7F0000L) >>> 2))
+            | ((b8 & 0x7F00L) >>> 1)
+            | (b8 & 0x7FL);
+      }
+      if ((b8 & 0x800000000000L) == 0) {
+        curPos += 6;
+        return (((b8 & 0x7F0000000000L) >>> 5L))
+            | (((b8 & 0x7F00000000L) >>> 4L))
+            | (((b8 & 0x7F000000) >>> 3L))
+            | (((b8 & 0x7F0000L) >>> 2))
+            | ((b8 & 0x7F00L) >>> 1)
+            | (b8 & 0x7FL);
+      }
+      if ((b8 & 0x80000000000000L) == 0) {
+        curPos += 7;
+        return (((b8 & 0x7F000000000000L) >>> 6L))
+            | (((b8 & 0x7F0000000000L) >>> 5L))
+            | (((b8 & 0x7F00000000L) >>> 4L))
+            | (((b8 & 0x7F000000) >>> 3L))
+            | (((b8 & 0x7F0000L) >>> 2))
+            | ((b8 & 0x7F00L) >>> 1)
+            | (b8 & 0x7FL);
+      }
+      if ((b8 & 0x8000000000000000L) == 0) {
+        curPos += 8;
+        return (((b8 & 0x7F00000000000000L) >>> 7L))
+            | (((b8 & 0x7F000000000000L) >>> 6L))
+            | (((b8 & 0x7F0000000000L) >>> 5L))
+            | (((b8 & 0x7F00000000L) >>> 4L))
+            | (((b8 & 0x7F000000) >>> 3L))
+            | (((b8 & 0x7F0000L) >>> 2))
+            | ((b8 & 0x7F00L) >>> 1)
+            | (b8 & 0x7FL);
+      }
+      curPos += 8;
+      byte b = readByte();
+      // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+      if (b >= 0) {
+        return ((b & 0x7FL) << 56)
+            | (((b8 & 0x7F00000000000000L) >>> 7L))
+            | (((b8 & 0x7F000000000000L) >>> 6L))
+            | (((b8 & 0x7F0000000000L) >>> 5L))
+            | (((b8 & 0x7F00000000L) >>> 4L))
+            | (((b8 & 0x7F000000) >>> 3L))
+            | (((b8 & 0x7F0000L) >>> 2))
+            | ((b8 & 0x7F00L) >>> 1)
+            | (b8 & 0x7FL);
+      }
+      throw new IOException("Invalid vInt detected (too many bits)");
+    } catch (IndexOutOfBoundsException e) {
+      return super.readVLong();
+    } catch (NullPointerException e) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
   }
