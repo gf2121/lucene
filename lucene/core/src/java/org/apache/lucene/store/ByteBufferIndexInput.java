@@ -263,9 +263,13 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         return ((b & 0x0F) << 28) | i;
       }
       throw new IOException("Invalid vInt detected (too many bits)");
-    } catch (@SuppressWarnings("unused")IndexOutOfBoundsException e) {
+    } catch (
+        @SuppressWarnings("unused")
+        IndexOutOfBoundsException e) {
       return super.readVInt();
-    } catch (@SuppressWarnings("unused")NullPointerException e) {
+    } catch (
+        @SuppressWarnings("unused")
+        NullPointerException e) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
   }
@@ -321,9 +325,13 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         return ((b & 0x7FL) << 56) | l;
       }
       throw new IOException("Invalid vInt detected (too many bits)");
-    } catch (@SuppressWarnings("unused")IndexOutOfBoundsException e) {
+    } catch (
+        @SuppressWarnings("unused")
+        IndexOutOfBoundsException e) {
       return super.readVLong();
-    } catch (@SuppressWarnings("unused")NullPointerException e) {
+    } catch (
+        @SuppressWarnings("unused")
+        NullPointerException e) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
   }

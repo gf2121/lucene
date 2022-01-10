@@ -93,26 +93,6 @@ final class ByteBufferGuard {
     receiver.get(dst, offset, length);
   }
 
-  public byte getByte(ByteBuffer receiver) {
-    ensureValid();
-    return receiver.get();
-  }
-
-  public short getShort(ByteBuffer receiver) {
-    ensureValid();
-    return receiver.getShort();
-  }
-
-  public int getInt(ByteBuffer receiver) {
-    ensureValid();
-    return receiver.getInt();
-  }
-
-  public long getLong(ByteBuffer receiver) {
-    ensureValid();
-    return receiver.getLong();
-  }
-
   public byte getByte(ByteBuffer receiver, int pos) {
     ensureValid();
     return receiver.get(pos);
