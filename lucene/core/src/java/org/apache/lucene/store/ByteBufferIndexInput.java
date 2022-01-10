@@ -277,44 +277,45 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public long readVLong() throws IOException {
     try {
-      final long b8 = guard.getLong(curBuf, curPos);
-      long l = b8 & 0x7F;
-      if ((b8 & 0x80) == 0) {
+      long b4 = guard.getInt(curBuf, curPos);
+      long l = b4 & 0x7F;
+      if ((b4 & 0x80) == 0) {
         curPos++;
         return l;
       }
-      l |= (b8 & 0x7F00) >>> 1;
-      if ((b8 & 0x8000) == 0) {
+      l |= (b4 & 0x7F00) >>> 1;
+      if ((b4 & 0x8000) == 0) {
         curPos += 2;
         return l;
       }
-      l |= (b8 & 0x7F0000) >>> 2;
-      if ((b8 & 0x800000) == 0) {
+      l |= (b4 & 0x7F0000) >>> 2;
+      if ((b4 & 0x800000) == 0) {
         curPos += 3;
         return l;
       }
-      l |= (b8 & 0x7F000000) >>> 3;
-      if ((b8 & 0x80000000) == 0) {
+      l |= (b4 & 0x7F000000) >>> 3;
+      if ((b4 & 0x80000000) == 0) {
         curPos += 4;
         return l;
       }
-      l |= (b8 & 0x7F00000000L) >>> 4;
-      if ((b8 & 0x8000000000L) == 0) {
+      b4 = guard.getInt(curBuf, curPos + 4);
+      l |= (b4 & 0x7FL) << 28;
+      if ((b4 & 0x80L) == 0) {
         curPos += 5;
         return l;
       }
-      l |= (b8 & 0x7F0000000000L) >>> 5;
-      if ((b8 & 0x800000000000L) == 0) {
+      l |= (b4 & 0x7F00L) << 27;
+      if ((b4 & 0x8000L) == 0) {
         curPos += 6;
         return l;
       }
-      l |= (b8 & 0x7F000000000000L) >>> 6;
-      if ((b8 & 0x80000000000000L) == 0) {
+      l |= (b4 & 0x7F0000L) << 26;
+      if ((b4 & 0x800000L) == 0) {
         curPos += 7;
         return l;
       }
-      l |= (b8 & 0x7F00000000000000L) >>> 7;
-      if ((b8 & 0x8000000000000000L) == 0) {
+      l |= (b4 & 0x7F000000L) << 25;
+      if ((b4 & 0x80000000L) == 0) {
         curPos += 8;
         return l;
       }
@@ -326,12 +327,12 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       }
       throw new IOException("Invalid vInt detected (too many bits)");
     } catch (
-        @SuppressWarnings("unused")
-        IndexOutOfBoundsException e) {
+            @SuppressWarnings("unused")
+                    IndexOutOfBoundsException e) {
       return super.readVLong();
     } catch (
-        @SuppressWarnings("unused")
-        NullPointerException e) {
+            @SuppressWarnings("unused")
+                    NullPointerException e) {
       throw new AlreadyClosedException("Already closed: " + this);
     }
   }
