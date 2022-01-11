@@ -299,7 +299,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         return i;
       }
       final long b8 = guard.getInt(curBuf, curPos + 4);
-      long l = (i & 0xFFFFFFFFL) | (b8 & 0x7FL) << 28;
+      long l = (i & 0xFFFFFFFFL) | ((b8 & 0x7FL) << 28);
       if ((b8 & 0x80L) == 0) {
         curPos += 5;
         return l;
