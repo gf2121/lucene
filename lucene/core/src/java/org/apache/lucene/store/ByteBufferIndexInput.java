@@ -277,45 +277,45 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   @Override
   public long readVLong() throws IOException {
     try {
-      long b4 = guard.getInt(curBuf, curPos);
-      long l = b4 & 0x7F;
+      final int b4 = guard.getInt(curBuf, curPos);
+      int i = b4 & 0x7F;
       if ((b4 & 0x80) == 0) {
         curPos++;
-        return l;
+        return i;
       }
-      l |= (b4 & 0x7F00) >>> 1;
+      i |= (b4 & 0x7F00) >>> 1;
       if ((b4 & 0x8000) == 0) {
         curPos += 2;
-        return l;
+        return i;
       }
-      l |= (b4 & 0x7F0000) >>> 2;
+      i |= (b4 & 0x7F0000) >>> 2;
       if ((b4 & 0x800000) == 0) {
         curPos += 3;
-        return l;
+        return i;
       }
-      l |= (b4 & 0x7F000000) >>> 3;
+      i |= (b4 & 0x7F000000) >>> 3;
       if ((b4 & 0x80000000) == 0) {
         curPos += 4;
-        return l;
+        return i;
       }
-      b4 = guard.getInt(curBuf, curPos + 4);
-      l |= (b4 & 0x7FL) << 28;
-      if ((b4 & 0x80L) == 0) {
+      final long b8 = guard.getInt(curBuf, curPos + 4);
+      long l = (i & 0xFFFFFFFFL) | (b8 & 0x7FL) << 28;
+      if ((b8 & 0x80L) == 0) {
         curPos += 5;
         return l;
       }
-      l |= (b4 & 0x7F00L) << 27;
-      if ((b4 & 0x8000L) == 0) {
+      l |= (b8 & 0x7F00L) << 27;
+      if ((b8 & 0x8000L) == 0) {
         curPos += 6;
         return l;
       }
-      l |= (b4 & 0x7F0000L) << 26;
-      if ((b4 & 0x800000L) == 0) {
+      l |= (b8 & 0x7F0000L) << 26;
+      if ((b8 & 0x800000L) == 0) {
         curPos += 7;
         return l;
       }
-      l |= (b4 & 0x7F000000L) << 25;
-      if ((b4 & 0x80000000L) == 0) {
+      l |= (b8 & 0x7F000000L) << 25;
+      if ((b8 & 0x80000000L) == 0) {
         curPos += 8;
         return l;
       }
