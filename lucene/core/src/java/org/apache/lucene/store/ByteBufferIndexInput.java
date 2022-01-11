@@ -278,23 +278,23 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   public long readVLong() throws IOException {
     try {
       final long b8 = guard.getLong(curBuf, curPos);
-      long l = b8 & 0x7F;
-      if ((b8 & 0x80) == 0) {
+      long l = b8 & 0x7FL;
+      if ((b8 & 0x80L) == 0) {
         curPos++;
         return l;
       }
-      l |= (b8 & 0x7F00) >>> 1;
-      if ((b8 & 0x8000) == 0) {
+      l |= (b8 & 0x7F00L) >>> 1;
+      if ((b8 & 0x8000L) == 0) {
         curPos += 2;
         return l;
       }
-      l |= (b8 & 0x7F0000) >>> 2;
-      if ((b8 & 0x800000) == 0) {
+      l |= (b8 & 0x7F0000L) >>> 2;
+      if ((b8 & 0x800000L) == 0) {
         curPos += 3;
         return l;
       }
-      l |= (b8 & 0x7F000000) >>> 3;
-      if ((b8 & 0x80000000) == 0) {
+      l |= (b8 & 0x7F000000L) >>> 3;
+      if ((b8 & 0x80000000L) == 0) {
         curPos += 4;
         return l;
       }
