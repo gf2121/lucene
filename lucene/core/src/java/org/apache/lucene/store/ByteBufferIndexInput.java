@@ -236,27 +236,15 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   public int readVInt() throws IOException {
     try {
       final int b4 = guard.getInt(curBuf, curPos);
-      int i = b4 & 0x7F;
-      if ((b4 & 0x80) == 0) {
-        curPos++;
-        return i;
+      int i = 0, mask1 = 0x7F, mask2 = 0x80;
+      for (int shift = 0; shift < 4; shift++, mask1 <<= 8, mask2 <<= 8) {
+        i |= (mask1 & b4) >>> shift;
+        if ((b4 & mask2) == 0) {
+          curPos += shift + 1;
+          return i;
+        }
       }
-      i |= (b4 & 0x7F00) >>> 1;
-      if ((b4 & 0x8000) == 0) {
-        curPos += 2;
-        return i;
-      }
-      i |= (b4 & 0x7F0000) >>> 2;
-      if ((b4 & 0x800000) == 0) {
-        curPos += 3;
-        return i;
-      }
-      i |= (b4 & 0x7F000000) >>> 3;
-      if ((b4 & 0x80000000) == 0) {
-        curPos += 4;
-        return i;
-      }
-      curPos += 4;
+      curPos += 4; //following use readByte and won't throw IOOBE
       final byte b = readByte();
       // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
       if ((b & 0xF0) == 0) {
@@ -274,67 +262,35 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     }
   }
 
-//  @Override
-//  public long readVLong() throws IOException {
-//    try {
-//      final long b8 = guard.getLong(curBuf, curPos);
-//      long l = b8 & 0x7FL;
-//      if ((b8 & 0x80L) == 0) {
-//        curPos++;
-//        return l;
-//      }
-//      l |= (b8 & 0x7F00L) >>> 1;
-//      if ((b8 & 0x8000L) == 0) {
-//        curPos += 2;
-//        return l;
-//      }
-//      l |= (b8 & 0x7F0000L) >>> 2;
-//      if ((b8 & 0x800000L) == 0) {
-//        curPos += 3;
-//        return l;
-//      }
-//      l |= (b8 & 0x7F000000L) >>> 3;
-//      if ((b8 & 0x80000000L) == 0) {
-//        curPos += 4;
-//        return l;
-//      }
-//      l |= (b8 & 0x7F00000000L) >>> 4;
-//      if ((b8 & 0x8000000000L) == 0) {
-//        curPos += 5;
-//        return l;
-//      }
-//      l |= (b8 & 0x7F0000000000L) >>> 5;
-//      if ((b8 & 0x800000000000L) == 0) {
-//        curPos += 6;
-//        return l;
-//      }
-//      l |= (b8 & 0x7F000000000000L) >>> 6;
-//      if ((b8 & 0x80000000000000L) == 0) {
-//        curPos += 7;
-//        return l;
-//      }
-//      l |= (b8 & 0x7F00000000000000L) >>> 7;
-//      if ((b8 & 0x8000000000000000L) == 0) {
-//        curPos += 8;
-//        return l;
-//      }
-//      curPos += 8;
-//      byte b = readByte();
-//      // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
-//      if (b >= 0) {
-//        return ((b & 0x7FL) << 56) | l;
-//      }
-//      throw new IOException("Invalid vInt detected (too many bits)");
-//    } catch (
-//        @SuppressWarnings("unused")
-//        IndexOutOfBoundsException e) {
-//      return super.readVLong();
-//    } catch (
-//        @SuppressWarnings("unused")
-//        NullPointerException e) {
-//      throw new AlreadyClosedException("Already closed: " + this);
-//    }
-//  }
+  @Override
+  public long readVLong() throws IOException {
+    try {
+      final long b8 = guard.getLong(curBuf, curPos);
+      long l = 0, mask1 = 0x7FL, mask2 = 0x80L;
+      for (int shift = 0; shift < 8; shift++, mask1 <<= 8, mask2 <<= 8) {
+        l |= (mask1 & b8) >>> shift;
+        if ((b8 & mask2) == 0) {
+          curPos += shift + 1;
+          return l;
+        }
+      }
+      curPos += 8;
+      byte b = readByte();
+      // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+      if (b >= 0) {
+        return ((b & 0x7FL) << 56) | l;
+      }
+      throw new IOException("Invalid vInt detected (too many bits)");
+    } catch (
+        @SuppressWarnings("unused")
+        IndexOutOfBoundsException e) {
+      return super.readVLong();
+    } catch (
+        @SuppressWarnings("unused")
+        NullPointerException e) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
 
   @Override
   public final int readInt() throws IOException {
