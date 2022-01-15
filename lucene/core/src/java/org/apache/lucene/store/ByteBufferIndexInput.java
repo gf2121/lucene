@@ -436,6 +436,26 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     return clone;
   }
 
+  @Override
+  public int readVInt() throws IOException {
+    return super.readVInt();
+  }
+
+  @Override
+  public int readZInt() throws IOException {
+    return super.readZInt();
+  }
+
+  @Override
+  public long readVLong() throws IOException {
+    return super.readVLong();
+  }
+
+  @Override
+  public long readZLong() throws IOException {
+    return super.readZLong();
+  }
+
   /**
    * Factory method that creates a suitable implementation of this class for the given ByteBuffers.
    */
