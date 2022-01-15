@@ -108,6 +108,81 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     }
   }
 
+  private byte readInnerByte() throws IOException {
+    try {
+      return guard.getByte(curBuf);
+    } catch (
+            @SuppressWarnings("unused")
+                    BufferUnderflowException e) {
+      do {
+        curBufIndex++;
+        if (curBufIndex >= buffers.length) {
+          throw new EOFException("read past EOF: " + this);
+        }
+        setCurBuf(buffers[curBufIndex]);
+        curBuf.position(0);
+      } while (!curBuf.hasRemaining());
+      return guard.getByte(curBuf);
+    } catch (
+            @SuppressWarnings("unused")
+                    NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public int readVInt() throws IOException {
+    byte b = readInnerByte();
+    if (b >= 0) return b;
+    int i = b & 0x7F;
+    b = readInnerByte();
+    i |= (b & 0x7F) << 7;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7F) << 14;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7F) << 21;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
+    i |= (b & 0x0F) << 28;
+    if ((b & 0xF0) == 0) return i;
+    throw new IOException("Invalid vInt detected (too many bits)");
+  }
+
+  @Override
+  public long readVLong() throws IOException {
+    byte b = readInnerByte();
+    if (b >= 0) return b;
+    long i = b & 0x7FL;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 7;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 14;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 21;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 28;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 35;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 42;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 49;
+    if (b >= 0) return i;
+    b = readInnerByte();
+    i |= (b & 0x7FL) << 56;
+    if (b >= 0) return i;
+    throw new IOException("Invalid vLong detected (negative values disallowed)");
+  }
+
   @Override
   public final void readBytes(byte[] b, int offset, int len) throws IOException {
     try {
