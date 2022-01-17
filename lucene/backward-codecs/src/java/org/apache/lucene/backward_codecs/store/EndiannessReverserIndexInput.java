@@ -58,16 +58,6 @@ final class EndiannessReverserIndexInput extends IndexInput {
   }
 
   @Override
-  public int readVInt() throws IOException {
-    return in.readVInt();
-  }
-
-  @Override
-  public int readZInt() throws IOException {
-    return in.readZInt();
-  }
-
-  @Override
   public long readLong() throws IOException {
     return Long.reverseBytes(in.readLong());
   }
@@ -87,16 +77,6 @@ final class EndiannessReverserIndexInput extends IndexInput {
       dst[offset + i] =
           Float.intBitsToFloat(Integer.reverseBytes(Float.floatToRawIntBits(dst[offset + i])));
     }
-  }
-
-  @Override
-  public long readVLong() throws IOException {
-    return in.readVLong();
-  }
-
-  @Override
-  public long readZLong() throws IOException {
-    return in.readZLong();
   }
 
   @Override

@@ -110,33 +110,9 @@ public final class ByteBuffersIndexInput extends IndexInput implements RandomAcc
   }
 
   @Override
-  public int readVInt() throws IOException {
-    ensureOpen();
-    return in.readVInt();
-  }
-
-  @Override
-  public int readZInt() throws IOException {
-    ensureOpen();
-    return in.readZInt();
-  }
-
-  @Override
   public long readLong() throws IOException {
     ensureOpen();
     return in.readLong();
-  }
-
-  @Override
-  public long readVLong() throws IOException {
-    ensureOpen();
-    return in.readVLong();
-  }
-
-  @Override
-  public long readZLong() throws IOException {
-    ensureOpen();
-    return in.readZLong();
   }
 
   @Override
