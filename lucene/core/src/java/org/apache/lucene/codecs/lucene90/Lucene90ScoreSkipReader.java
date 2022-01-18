@@ -98,8 +98,7 @@ final class Lucene90ScoreSkipReader extends Lucene90SkipReader {
   }
 
   @Override
-  protected void readImpacts(int level, IndexInput skipStream) throws IOException {
-    int length = skipStream.readVInt();
+  protected void readImpacts(int level, int length, IndexInput skipStream) throws IOException {
     if (impactData[level].length < length) {
       impactData[level] = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
     }

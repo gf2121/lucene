@@ -180,27 +180,63 @@ class Lucene90SkipReader extends MultiLevelSkipListReader {
 
   @Override
   protected int readSkipData(int level, IndexInput skipStream) throws IOException {
-    int delta = skipStream.readVInt();
-    docPointer[level] += skipStream.readVLong();
+    int sign = skipStream.readShort();
+    int delta = readNextInt(sign, skipStream);
+    sign >>>= 2;
+    docPointer[level] += readNextLong(sign, skipStream);
+    sign >>>= 2;
 
     if (posPointer != null) {
-      posPointer[level] += skipStream.readVLong();
-      posBufferUpto[level] = skipStream.readVInt();
+      posPointer[level] += readNextLong(sign, skipStream);
+      sign >>>= 2;
+      posBufferUpto[level] = readNextInt(sign, skipStream);
+      sign >>>= 2;
 
       if (payloadByteUpto != null) {
-        payloadByteUpto[level] = skipStream.readVInt();
+        payloadByteUpto[level] = readNextInt(sign, skipStream);
+        sign >>>= 2;
       }
 
       if (payPointer != null) {
-        payPointer[level] += skipStream.readVLong();
+        payPointer[level] += readNextLong(sign, skipStream);
+        sign >>>= 2;
       }
     }
-    readImpacts(level, skipStream);
+    int length = readNextInt(sign, skipStream);
+    readImpacts(level, length, skipStream);
     return delta;
   }
 
+  private int readNextInt(int sign, IndexInput skipStream) throws IOException {
+    switch (sign & 0x3) {
+      case 0:
+        return skipStream.readByte() & 0xFF;
+      case 1:
+        return skipStream.readShort() & 0xFFFF;
+      case 2:
+        return skipStream.readInt();
+      default:
+        throw new AssertionError();
+    }
+  }
+
+  private long readNextLong(int sign, IndexInput skipStream) throws IOException {
+    switch (sign & 0x3) {
+      case 0:
+        return skipStream.readByte() & 0xFFL;
+      case 1:
+        return skipStream.readShort() & 0xFFFFL;
+      case 2:
+        return skipStream.readInt() & 0xFFFFFFFFL;
+      case 3:
+        return skipStream.readLong();
+      default:
+        throw new AssertionError();
+    }
+  }
+
   // The default impl skips impacts
-  protected void readImpacts(int level, IndexInput skipStream) throws IOException {
-    skipStream.skipBytes(skipStream.readVInt());
+  protected void readImpacts(int level, int length, IndexInput skipStream) throws IOException {
+    skipStream.skipBytes(length);
   }
 }

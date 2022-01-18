@@ -179,27 +179,28 @@ final class Lucene90SkipWriter extends MultiLevelSkipListWriter {
 
   @Override
   protected void writeSkipData(int level, DataOutput skipBuffer) throws IOException {
+    long[] skipValues = new long[7];
 
-    int delta = curDoc - lastSkipDoc[level];
+    int skipLongPos = 0;
+    skipValues[skipLongPos++] = curDoc - lastSkipDoc[level];
 
-    skipBuffer.writeVInt(delta);
     lastSkipDoc[level] = curDoc;
 
-    skipBuffer.writeVLong(curDocPointer - lastSkipDocPointer[level]);
+    skipValues[skipLongPos++] = curDocPointer - lastSkipDocPointer[level];
     lastSkipDocPointer[level] = curDocPointer;
 
     if (fieldHasPositions) {
 
-      skipBuffer.writeVLong(curPosPointer - lastSkipPosPointer[level]);
+      skipValues[skipLongPos++] = curPosPointer - lastSkipPosPointer[level];
       lastSkipPosPointer[level] = curPosPointer;
-      skipBuffer.writeVInt(curPosBufferUpto);
+      skipValues[skipLongPos++] = curPosBufferUpto;
 
       if (fieldHasPayloads) {
-        skipBuffer.writeVInt(curPayloadByteUpto);
+        skipValues[skipLongPos++] = curPosBufferUpto;
       }
 
       if (fieldHasOffsets || fieldHasPayloads) {
-        skipBuffer.writeVLong(curPayPointer - lastSkipPayPointer[level]);
+        skipValues[skipLongPos++] = curPayPointer - lastSkipPayPointer[level];
         lastSkipPayPointer[level] = curPayPointer;
       }
     }
@@ -210,10 +211,43 @@ final class Lucene90SkipWriter extends MultiLevelSkipListWriter {
       curCompetitiveFreqNorms[level + 1].addAll(competitiveFreqNorms);
     }
     writeImpacts(competitiveFreqNorms, freqNormOut);
-    skipBuffer.writeVInt(Math.toIntExact(freqNormOut.size()));
+    skipValues[skipLongPos++] = Math.toIntExact(freqNormOut.size());
+    writeSkips(skipValues, skipLongPos, skipBuffer);
     freqNormOut.copyTo(skipBuffer);
     freqNormOut.reset();
     competitiveFreqNorms.clear();
+  }
+
+  private void writeSkips(long[] skipValues, int skipValuesLen, DataOutput skipBuffer) throws IOException {
+    ByteBuffersDataOutput buffer = ByteBuffersDataOutput.newResettableInstance();
+    short sign = 0;
+    int shift = 0;
+    for (int i = 0; i < skipValuesLen; i++) {
+      long skipValue = skipValues[i];
+      int byteSign = write(skipValue, buffer);
+      sign |= byteSign << shift;
+      shift += 2;
+    }
+
+    skipBuffer.writeShort(sign);
+    buffer.copyTo(skipBuffer);
+    buffer.reset();
+  }
+
+  private int write(long l, DataOutput dataOutput) throws IOException {
+    if (l <= 0xFFL) {
+      dataOutput.writeByte((byte) l);
+      return 0;
+    } else if (l <= 0xFFFFL) {
+      dataOutput.writeShort((short) l);
+      return 1;
+    } else if (l <= 0xFFFFFFFFL) {
+      dataOutput.writeInt((int) l);
+      return 2;
+    } else {
+      dataOutput.writeLong(l);
+      return 3;
+    }
   }
 
   static void writeImpacts(CompetitiveImpactAccumulator acc, DataOutput out) throws IOException {
