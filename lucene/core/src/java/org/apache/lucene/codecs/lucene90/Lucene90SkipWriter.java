@@ -219,19 +219,9 @@ final class Lucene90SkipWriter extends MultiLevelSkipListWriter {
   }
 
   private void writeSkips(long[] skipValues, int skipValuesLen, DataOutput skipBuffer) throws IOException {
-    ByteBuffersDataOutput buffer = ByteBuffersDataOutput.newResettableInstance();
-    short sign = 0;
-    int shift = 0;
-    for (int i = 0; i < skipValuesLen; i++) {
-      long skipValue = skipValues[i];
-      int byteSign = write(skipValue, buffer);
-      sign |= byteSign << shift;
-      shift += 2;
+    for (int i=0; i<skipValuesLen; i++) {
+      skipBuffer.writeLong(skipValues[i]);
     }
-
-    skipBuffer.writeShort(sign);
-    buffer.copyTo(skipBuffer);
-    buffer.reset();
   }
 
   private int write(long l, DataOutput dataOutput) throws IOException {

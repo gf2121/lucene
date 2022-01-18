@@ -54,6 +54,8 @@ class Lucene90SkipReader extends MultiLevelSkipListReader {
   private long[] payPointer;
   private int[] posBufferUpto;
   private int[] payloadByteUpto;
+  private final long[] skipValues;
+  private final int skipValueCount;
 
   private long lastPosPointer;
   private long lastPayPointer;
@@ -68,23 +70,29 @@ class Lucene90SkipReader extends MultiLevelSkipListReader {
       boolean hasOffsets,
       boolean hasPayloads) {
     super(skipStream, maxSkipLevels, ForUtil.BLOCK_SIZE, 8);
+    int skipValueCount = 3;
     docPointer = new long[maxSkipLevels];
     if (hasPos) {
       posPointer = new long[maxSkipLevels];
       posBufferUpto = new int[maxSkipLevels];
+      skipValueCount += 2;
       if (hasPayloads) {
         payloadByteUpto = new int[maxSkipLevels];
+        skipValueCount++;
       } else {
         payloadByteUpto = null;
       }
       if (hasOffsets || hasPayloads) {
         payPointer = new long[maxSkipLevels];
+        skipValueCount++;
       } else {
         payPointer = null;
       }
     } else {
       posPointer = null;
     }
+    this.skipValueCount = skipValueCount;
+    this.skipValues = new long[skipValueCount];
   }
 
   /**
@@ -180,59 +188,24 @@ class Lucene90SkipReader extends MultiLevelSkipListReader {
 
   @Override
   protected int readSkipData(int level, IndexInput skipStream) throws IOException {
-    int sign = skipStream.readShort();
-    int delta = readNextInt(sign, skipStream);
-    sign >>>= 2;
-    docPointer[level] += readNextLong(sign, skipStream);
-    sign >>>= 2;
+    skipStream.readLongs(skipValues, 0, skipValueCount);
+    int pos = 1;
+    docPointer[level] += skipValues[pos++];
 
     if (posPointer != null) {
-      posPointer[level] += readNextLong(sign, skipStream);
-      sign >>>= 2;
-      posBufferUpto[level] = readNextInt(sign, skipStream);
-      sign >>>= 2;
+      posPointer[level] += skipValues[pos++];
+      posBufferUpto[level] = (int) skipValues[pos++];
 
       if (payloadByteUpto != null) {
-        payloadByteUpto[level] = readNextInt(sign, skipStream);
-        sign >>>= 2;
+        payloadByteUpto[level] = (int) skipValues[pos++];
       }
 
       if (payPointer != null) {
-        payPointer[level] += readNextLong(sign, skipStream);
-        sign >>>= 2;
+        payPointer[level] += skipValues[pos++];
       }
     }
-    int length = readNextInt(sign, skipStream);
-    readImpacts(level, length, skipStream);
-    return delta;
-  }
-
-  private int readNextInt(int sign, IndexInput skipStream) throws IOException {
-    switch (sign & 0x3) {
-      case 0:
-        return skipStream.readByte() & 0xFF;
-      case 1:
-        return skipStream.readShort() & 0xFFFF;
-      case 2:
-        return skipStream.readInt();
-      default:
-        throw new AssertionError();
-    }
-  }
-
-  private long readNextLong(int sign, IndexInput skipStream) throws IOException {
-    switch (sign & 0x3) {
-      case 0:
-        return skipStream.readByte() & 0xFFL;
-      case 1:
-        return skipStream.readShort() & 0xFFFFL;
-      case 2:
-        return skipStream.readInt() & 0xFFFFFFFFL;
-      case 3:
-        return skipStream.readLong();
-      default:
-        throw new AssertionError();
-    }
+    readImpacts(level, (int) skipValues[pos], skipStream);
+    return (int) skipValues[0];
   }
 
   // The default impl skips impacts
