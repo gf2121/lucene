@@ -42,6 +42,13 @@ final class ReverseRandomAccessReader extends FST.BytesReader {
   }
 
   @Override
+  public long readLongForBitCount() throws IOException {
+    long l = in.readLong(pos - 7);
+    pos -= 8;
+    return l;
+  }
+
+  @Override
   public void skipBytes(long count) {
     pos -= count;
   }

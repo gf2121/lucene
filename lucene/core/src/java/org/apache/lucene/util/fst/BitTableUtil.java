@@ -171,6 +171,6 @@ class BitTableUtil {
   }
 
   private static int bitCount8Bytes(FST.BytesReader reader) throws IOException {
-    return Long.bitCount(reader.readLong());
+    return Long.bitCount(reader.readLongForBitCount());
   }
 }

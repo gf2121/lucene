@@ -1543,5 +1543,9 @@ public final class FST<T> implements Accountable {
 
     /** Returns true if this reader uses reversed bytes under-the-hood. */
     public abstract boolean reversed();
+
+    public long readLongForBitCount() throws IOException {
+      return readLong();
+    }
   }
 }
