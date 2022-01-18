@@ -196,11 +196,7 @@ public abstract class DataOutput {
    * @see DataInput#readVInt()
    */
   public final void writeVInt(int i) throws IOException {
-    while ((i & ~0x7F) != 0) {
-      writeByte((byte) ((i & 0x7F) | 0x80));
-      i >>>= 7;
-    }
-    writeByte((byte) i);
+    writeInt(i);
   }
 
   /**
@@ -211,7 +207,7 @@ public abstract class DataOutput {
    * @see DataInput#readZInt()
    */
   public final void writeZInt(int i) throws IOException {
-    writeVInt(BitUtil.zigZagEncode(i));
+    writeInt(i);
   }
 
   /**
@@ -237,7 +233,7 @@ public abstract class DataOutput {
     if (i < 0) {
       throw new IllegalArgumentException("cannot write negative vLong (got: " + i + ")");
     }
-    writeSignedVLong(i);
+    writeLong(i);
   }
 
   // write a potentially negative vLong
@@ -257,7 +253,7 @@ public abstract class DataOutput {
    * @see DataInput#readZLong()
    */
   public final void writeZLong(long i) throws IOException {
-    writeSignedVLong(BitUtil.zigZagEncode(i));
+    writeLong(i);
   }
 
   /**

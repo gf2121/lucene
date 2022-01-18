@@ -107,34 +107,7 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeVInt(int)
    */
   public int readVInt() throws IOException {
-    /* This is the original code of this method,
-     * but a Hotspot bug (see LUCENE-2975) corrupts the for-loop if
-     * readByte() is inlined. So the loop was unwinded!
-    byte b = readByte();
-    int i = b & 0x7F;
-    for (int shift = 7; (b & 0x80) != 0; shift += 7) {
-      b = readByte();
-      i |= (b & 0x7F) << shift;
-    }
-    return i;
-    */
-    byte b = readByte();
-    if (b >= 0) return b;
-    int i = b & 0x7F;
-    b = readByte();
-    i |= (b & 0x7F) << 7;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7F) << 14;
-    if (b >= 0) return i;
-    b = readByte();
-    i |= (b & 0x7F) << 21;
-    if (b >= 0) return i;
-    b = readByte();
-    // Warning: the next ands use 0x0F / 0xF0 - beware copy/paste errors:
-    i |= (b & 0x0F) << 28;
-    if ((b & 0xF0) == 0) return i;
-    throw new IOException("Invalid vInt detected (too many bits)");
+    return readInt();
   }
 
   /**
@@ -144,7 +117,7 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeZInt(int)
    */
   public int readZInt() throws IOException {
-    return BitUtil.zigZagDecode(readVInt());
+    return readInt();
   }
 
   /**
@@ -192,7 +165,7 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeVLong(long)
    */
   public long readVLong() throws IOException {
-    return readVLong(false);
+    return readLong();
   }
 
   private long readVLong(boolean allowNegative) throws IOException {
@@ -251,7 +224,7 @@ public abstract class DataInput implements Cloneable {
    * @see DataOutput#writeZLong(long)
    */
   public long readZLong() throws IOException {
-    return BitUtil.zigZagDecode(readVLong(true));
+    return readLong();
   }
 
   /**
