@@ -74,7 +74,7 @@ final class Lucene90SkipWriter extends MultiLevelSkipListWriter {
       IndexOutput docOut,
       IndexOutput posOut,
       IndexOutput payOut) {
-    super(blockSize, 8, maxSkipLevels, docCount);
+    super(blockSize, 16, maxSkipLevels, docCount);
     this.docOut = docOut;
     this.posOut = posOut;
     this.payOut = payOut;
