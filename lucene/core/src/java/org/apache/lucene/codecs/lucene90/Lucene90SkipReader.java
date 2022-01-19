@@ -67,7 +67,7 @@ class Lucene90SkipReader extends MultiLevelSkipListReader {
       boolean hasPos,
       boolean hasOffsets,
       boolean hasPayloads) {
-    super(skipStream, maxSkipLevels, ForUtil.BLOCK_SIZE, 16);
+    super(skipStream, maxSkipLevels, ForUtil.BLOCK_SIZE, 4);
     docPointer = new long[maxSkipLevels];
     if (hasPos) {
       posPointer = new long[maxSkipLevels];
