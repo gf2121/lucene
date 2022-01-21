@@ -31,6 +31,7 @@ final class Lucene90ScoreSkipReader extends Lucene90SkipReader {
 
   private final byte[][] impactData;
   private final int[] impactDataLength;
+  private final long[] impactFP;
   private final ByteArrayDataInput badi = new ByteArrayDataInput();
   private final Impacts impacts;
   private int numLevels = 1;
@@ -47,6 +48,7 @@ final class Lucene90ScoreSkipReader extends Lucene90SkipReader {
     Arrays.fill(impactData, new byte[0]);
     this.impactDataLength = new int[maxSkipLevels];
     this.perLevelImpacts = new MutableImpactList[maxSkipLevels];
+    this.impactFP = new long[maxSkipLevels];
     for (int i = 0; i < perLevelImpacts.length; ++i) {
       perLevelImpacts[i] = new MutableImpactList();
     }
@@ -100,11 +102,22 @@ final class Lucene90ScoreSkipReader extends Lucene90SkipReader {
   @Override
   protected void readImpacts(int level, IndexInput skipStream) throws IOException {
     int length = skipStream.readVInt();
+    impactFP[level] = skipStream.getFilePointer();
+    skipStream.skipBytes(length);
+    impactDataLength[level] = length;
+  }
+
+  @Override
+  protected void finishCurLevel(int level, IndexInput skipStream) throws IOException {
+    skipStream.seek(impactFP[level]);
+    int length = impactDataLength[level];
     if (impactData[level].length < length) {
       impactData[level] = new byte[ArrayUtil.oversize(length, Byte.BYTES)];
     }
     skipStream.readBytes(impactData[level], 0, length);
-    impactDataLength[level] = length;
+    if (level != 0) {
+      readChildPointer(skipStream);
+    }
   }
 
   static MutableImpactList readImpacts(ByteArrayDataInput in, MutableImpactList reuse) {

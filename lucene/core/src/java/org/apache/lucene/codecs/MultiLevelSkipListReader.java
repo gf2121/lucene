@@ -129,19 +129,24 @@ public abstract class MultiLevelSkipListReader implements Closeable {
 
     while (level >= 0) {
       if (target > skipDoc[level]) {
-        if (!loadNextSkip(level)) {
-          continue;
+        while (target > skipDoc[level]) {
+          loadNextSkip(level);
         }
-      } else {
-        // no more skips on this level, go down one level
-        if (level > 0 && lastChildPointer > skipStream[level - 1].getFilePointer()) {
-          seekChild(level - 1);
-        }
-        level--;
+        finishCurLevel(level, skipStream[level]);
       }
+
+      // no more skips on this level, go down one level
+      if (level > 0 && lastChildPointer > skipStream[level - 1].getFilePointer()) {
+        seekChild(level - 1);
+      }
+      level--;
     }
 
     return numSkipped[0] - skipInterval[0] - 1;
+  }
+
+  protected void finishCurLevel(int level, IndexInput skipStream) throws IOException {
+
   }
 
   private boolean loadNextSkip(int level) throws IOException {
