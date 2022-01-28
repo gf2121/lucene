@@ -181,16 +181,22 @@ public final class Lucene90PostingsReader extends PostingsReaderBase {
   }
 
   static int findFirstGreater(long[] buffer, long target, int from, int to) {
-    for (int i = from;i<to;i++) {
+    if (buffer[from] >= target) {
+      return from;
+    }
+    for (int i = from + 4; i < to; i += 4) {
       if (buffer[i] >= target) {
-        if (total.incrementAndGet() % 1000 == 0) {
-          if (i - from < 4) {
-            counter[i-from].incrementAndGet();
-          } else {
-            counter[4].incrementAndGet();
-          }
-          System.out.println(Arrays.toString(counter));
-        }
+        if (buffer[i - 3] >= target) return i - 3;
+        if (buffer[i - 2] >= target) return i - 2;
+        if (buffer[i - 1] >= target) return i - 1;
+        return i;
+      }
+    }
+    //from = 0, to = 2; remainder = 1 + 2 - (2 % 4) = 1;
+    //from = 0, to = 5; remainder = 1 + 5 - (5 % 4) = 5;
+    int remainder = 1 + to - ((to - from) & 0x3);
+    for (int i = remainder; i < to; i++) {
+      if (buffer[i] >= target) {
         return i;
       }
     }
