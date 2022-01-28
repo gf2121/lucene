@@ -171,6 +171,7 @@ public final class Lucene90PostingsReader extends PostingsReaderBase {
   static int findFirstGreater(long[] buffer, int target, int from) {
     for (int i = from; i < BLOCK_SIZE; ++i) {
       if (buffer[i] >= target) {
+        System.out.println("from: " + from + ", next: " + i);
         return i;
       }
     }
