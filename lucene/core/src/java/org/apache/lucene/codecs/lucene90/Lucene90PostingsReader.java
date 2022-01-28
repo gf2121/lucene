@@ -192,9 +192,8 @@ public final class Lucene90PostingsReader extends PostingsReaderBase {
         return i;
       }
     }
-    //from = 0, to = 2; remainder = 1 + 2 - (2 % 4) = 1;
-    //from = 0, to = 5; remainder = 1 + 5 - (5 % 4) = 5;
-    int remainder = 1 + to - ((to - from) & 0x3);
+
+    int remainder = Math.max(from + 1, to - 4);
     for (int i = remainder; i < to; i++) {
       if (buffer[i] >= target) {
         return i;
