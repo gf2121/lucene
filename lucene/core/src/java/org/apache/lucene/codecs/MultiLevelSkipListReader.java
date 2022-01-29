@@ -146,7 +146,7 @@ public abstract class MultiLevelSkipListReader implements Closeable {
       NEED_SKIP_DATA.incrementAndGet();
     }
 
-    if ((READ_SKIP_DATA.get() + NEED_SKIP_DATA.incrementAndGet()) % 1000 == 0) {
+    if ((READ_SKIP_DATA.get() + NEED_SKIP_DATA.get()) % 1000 == 0) {
       System.out.printf("read: %d, need %d\n", READ_SKIP_DATA.get(), NEED_SKIP_DATA.get());
     }
 
