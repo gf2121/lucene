@@ -19,6 +19,8 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -114,6 +116,10 @@ public abstract class MultiLevelSkipListReader implements Closeable {
     return lastDoc;
   }
 
+
+  private static AtomicInteger NEED_SKIP_DATA = new AtomicInteger(0);
+  private static AtomicInteger READ_SKIP_DATA = new AtomicInteger(0);
+
   /**
    * Skips entries to the first beyond the current whose document number is greater than or equal to
    * <i>target</i>. Returns the current doc count.
@@ -128,17 +134,20 @@ public abstract class MultiLevelSkipListReader implements Closeable {
     }
 
     while (level >= 0) {
-      if (target > skipDoc[level]) {
-        if (!loadNextSkip(level)) {
-          continue;
-        }
-      } else {
-        // no more skips on this level, go down one level
-        if (level > 0 && lastChildPointer > skipStream[level - 1].getFilePointer()) {
-          seekChild(level - 1);
-        }
-        level--;
+      while (target > skipDoc[level]) {
+        READ_SKIP_DATA.incrementAndGet();
+        loadNextSkip(level);
       }
+      // no more skips on this level, go down one level
+      if (level > 0 && lastChildPointer > skipStream[level - 1].getFilePointer()) {
+        seekChild(level - 1);
+      }
+      level--;
+      NEED_SKIP_DATA.incrementAndGet();
+    }
+
+    if ((READ_SKIP_DATA.get() + NEED_SKIP_DATA.incrementAndGet()) % 1000 == 0) {
+      System.out.printf("read: %d, need %d\n", READ_SKIP_DATA.get(), NEED_SKIP_DATA.get());
     }
 
     return numSkipped[0] - skipInterval[0] - 1;
@@ -158,7 +167,6 @@ public abstract class MultiLevelSkipListReader implements Closeable {
       if (numberOfSkipLevels > level) numberOfSkipLevels = level;
       return false;
     }
-
     // read next skip entry
     skipDoc[level] += readSkipData(level, skipStream[level]);
 
