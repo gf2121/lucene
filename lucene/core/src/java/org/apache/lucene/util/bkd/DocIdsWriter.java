@@ -308,22 +308,16 @@ final class DocIdsWriter {
   private void readDelta16(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     final int min = in.readVInt();
     forUtil.decode16(in, scratch, count, min);
-    for (int i = 0; i < count; i++) {
-      visitor.visit(scratch[i]);
-    }
+    visitor.visit(scratch, count);
   }
 
   private void readInts24(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     forUtil.decode24(in, scratch, count);
-    for (int i = 0; i < count; i++) {
-      visitor.visit(scratch[i]);
-    }
+    visitor.visit(scratch, count);
   }
 
   private void readInts32(IndexInput in, int count, IntersectVisitor visitor) throws IOException {
     in.readInts(scratch, 0, count);
-    for (int i = 0; i < count; i++) {
-      visitor.visit(scratch[i]);
-    }
+    visitor.visit(scratch, count);
   }
 }

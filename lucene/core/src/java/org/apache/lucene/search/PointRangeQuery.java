@@ -179,6 +179,11 @@ public abstract class PointRangeQuery extends Query {
           }
 
           @Override
+          public void visit(int[] docID, int count) throws IOException {
+            adder.add(docID, count);
+          }
+
+          @Override
           public void visit(DocIdSetIterator iterator) throws IOException {
             adder.add(iterator);
           }
@@ -215,6 +220,14 @@ public abstract class PointRangeQuery extends Query {
           public void visit(int docID) {
             result.clear(docID);
             cost[0]--;
+          }
+
+          @Override
+          public void visit(int[] docID, int count) throws IOException {
+            for (int i = 0; i < count; i++) {
+              result.clear(docID[i]);
+            }
+            cost[0] -= count;
           }
 
           @Override

@@ -44,6 +44,12 @@ public final class DocIdSetBuilder {
   public abstract static class BulkAdder {
     public abstract void add(int doc);
 
+    public void add(int[] docs, int count) {
+      for (int i=0; i<count; i++) {
+        add(docs[i]);
+      }
+    }
+
     public void add(DocIdSetIterator iterator) throws IOException {
       int docID;
       while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -90,6 +96,12 @@ public final class DocIdSetBuilder {
 
     BufferAdder(Buffer buffer) {
       this.buffer = buffer;
+    }
+
+    @Override
+    public void add(int[] docs, int count) {
+      System.arraycopy(docs, 0, buffer.array, buffer.length, count);
+      buffer.length += count;
     }
 
     @Override

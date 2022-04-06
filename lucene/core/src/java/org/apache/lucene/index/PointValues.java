@@ -287,6 +287,12 @@ public abstract class PointValues {
      */
     void visit(int docID) throws IOException;
 
+    default void visit(int[] docID, int count) throws IOException {
+      for (int i = 0; i < count; i++) {
+        visit(docID[i]);
+      }
+    }
+
     /**
      * Similar to {@link IntersectVisitor#visit(int)}, but a bulk visit and implements may have
      * their optimizations.
