@@ -22,11 +22,7 @@ import java.util.List;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.ConjunctionUtils;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -116,8 +112,15 @@ public class FastTaxonomyFacetCounts extends IntTaxonomyFacets {
   private void countAll(IndexReader reader) throws IOException {
     assert values != null;
     for (LeafReaderContext context : reader.leaves()) {
-      SortedNumericDocValues multiValued =
-          context.reader().getSortedNumericDocValues(indexFieldName);
+      LeafReader leafReader = context.reader();
+      SortedNumericDocValues multiValued;
+
+      if (leafReader instanceof CodecReader) {
+        FieldInfo fieldInfo = leafReader.getFieldInfos().fieldInfo(indexFieldName);
+        multiValued = ((CodecReader) leafReader).getDocValuesReader().getMergeInstance().getSortedNumeric(fieldInfo);
+      } else {
+        multiValued = context.reader().getSortedNumericDocValues(indexFieldName);
+      }
       if (multiValued == null) {
         continue;
       }
