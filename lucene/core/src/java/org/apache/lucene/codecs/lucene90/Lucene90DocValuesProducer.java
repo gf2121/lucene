@@ -508,28 +508,141 @@ final class Lucene90DocValuesProducer extends DocValuesProducer {
               getDirectReaderInstance(slice, entry.bitsPerValue, 0L, entry.numValues);
           if (entry.table != null) {
             final long[] table = entry.table;
-            return new DenseNumericDocValues(maxDoc) {
-              @Override
-              public long longValue() throws IOException {
-                return table[(int) values.get(doc)];
-              }
+            return switch (entry.bitsPerValue) {
+              case 1 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return table[(int) BPVReader.get1(slice, 0, doc)];
+                }
+              };
+              case 2 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return table[(int) BPVReader.get2(slice, 0, doc)];
+                }
+              };
+              case 4 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return table[(int) BPVReader.get4(slice, 0, doc)];
+                }
+              };
+              case 8 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return table[(int) BPVReader.get8(slice, 0, doc)];
+                }
+              };
+              case 12 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return table[(int) BPVReader.get12(slice, 0, doc)];
+                }
+              };
+              case 16 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return table[(int) BPVReader.get16(slice, 0, doc)];
+                }
+              };
+              default -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return table[(int) values.get(doc)];
+                }
+              };
             };
           } else if (entry.gcd == 1 && entry.minValue == 0) {
-            // Common case for ordinals, which are encoded as numerics
-            return new DenseNumericDocValues(maxDoc) {
-              @Override
-              public long longValue() throws IOException {
-                return values.get(doc);
-              }
+            return switch (entry.bitsPerValue) {
+              case 1 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return BPVReader.get1(slice, 0, doc);
+                }
+              };
+              case 2 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return BPVReader.get2(slice, 0, doc);
+                }
+              };
+              case 4 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return BPVReader.get4(slice, 0, doc);
+                }
+              };
+              case 8 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return BPVReader.get8(slice, 0, doc);
+                }
+              };
+              case 12 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return BPVReader.get12(slice, 0, doc);
+                }
+              };
+              case 16 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return BPVReader.get16(slice, 0, doc);
+                }
+              };
+              default -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return values.get(doc);
+                }
+              };
             };
           } else {
             final long mul = entry.gcd;
             final long delta = entry.minValue;
-            return new DenseNumericDocValues(maxDoc) {
-              @Override
-              public long longValue() throws IOException {
-                return mul * values.get(doc) + delta;
-              }
+            return switch (entry.bitsPerValue) {
+              case 1 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return mul * BPVReader.get1(slice, 0, doc) + delta;
+                }
+              };
+              case 2 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return mul * BPVReader.get2(slice, 0, doc) + delta;
+                }
+              };
+              case 4 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return mul * BPVReader.get4(slice, 0, doc) + delta;
+                }
+              };
+              case 8 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return mul * BPVReader.get8(slice, 0, doc) + delta;
+                }
+              };
+              case 12 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return mul * BPVReader.get12(slice, 0, doc) + delta;
+                }
+              };
+              case 16 -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return mul * BPVReader.get16(slice, 0, doc) + delta;
+                }
+              };
+              default -> new DenseNumericDocValues(maxDoc) {
+                @Override
+                public long longValue() throws IOException {
+                  return mul * values.get(doc) + delta;
+                }
+              };
             };
           }
         }
