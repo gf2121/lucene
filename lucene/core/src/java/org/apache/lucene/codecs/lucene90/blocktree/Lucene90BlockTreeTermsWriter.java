@@ -562,6 +562,9 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
         synchronized (PROFILE_INFOS) {
           PROFILE_INFOS.sort(Comparator.comparingLong(o -> o.bytesUsed));
           System.out.println("FST built " + PROFILE_INFOS.size() + " times");
+          System.out.println("pct50 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.5)));
+          System.out.println("pct75 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.75)));
+          System.out.println("pct90 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.9)));
           System.out.println("pct99 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.99)));
           System.out.println("pct999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.999)));
           System.out.println("pct9999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.9999)));
