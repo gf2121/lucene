@@ -569,6 +569,7 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
           System.out.println("pct999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.999)));
           System.out.println("pct9999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.9999)));
           System.out.println("max " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() - 1)));
+          System.out.println();
         }
       }
 
