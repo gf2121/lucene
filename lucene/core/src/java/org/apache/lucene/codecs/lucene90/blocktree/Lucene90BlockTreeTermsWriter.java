@@ -466,13 +466,13 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
       final long bytesUsed;
       final long estimateSize;
       final int pageBits;
-      final double estimateOverFactor;
+      final int pageNum;
 
       private ProfileInfo(long bytesUsed, long estimateSize, int pageBits) {
         this.bytesUsed = bytesUsed;
         this.estimateSize = estimateSize;
         this.pageBits = pageBits;
-        this.estimateOverFactor = (double) estimateSize / bytesUsed;
+        this.pageNum = (int)(bytesUsed / (1L << pageBits)) + 1;
       }
 
       @Override
@@ -481,7 +481,7 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
             "bytesUsed=" + bytesUsed +
             ", estimateSize=" + estimateSize +
             ", pageBits=" + pageBits +
-            ", estimateOverFactor=" + estimateOverFactor +
+            ", pageNum=" + pageNum +
             '}';
       }
     }
@@ -561,7 +561,7 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
         PROFILE_INFOS.add(new ProfileInfo(index.numBytes(), estimateSize, pageBits));
         if ((PROFILE_INFOS.size() % 10000) == 0) {
           List<ProfileInfo> infos = new ArrayList<>(PROFILE_INFOS);
-          infos.sort(Comparator.comparingDouble(o -> o.estimateOverFactor));
+          infos.sort(Comparator.comparingDouble(o -> o.pageNum));
           System.out.println("FST built " + infos.size() + " times");
           System.out.println("min " + infos.get(0));
           System.out.println("pct50 " + infos.get((int) (infos.size() * 0.5)));
