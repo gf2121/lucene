@@ -528,7 +528,7 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
         }
       }
       int estimateBitsRequired = PackedInts.bitsRequired(estimateSize);
-      int pageBits = Math.min(15, Math.max(3, estimateBitsRequired));
+      int pageBits = Math.min(15, Math.max(6, estimateBitsRequired));
 
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       final FSTCompiler<BytesRef> fstCompiler =
