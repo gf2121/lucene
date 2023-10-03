@@ -525,7 +525,6 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
           for (FST<BytesRef> subIndex : block.subIndices) {
             estimateSize += subIndex.numBytes();
           }
-          block.subIndices = null;
         }
       }
       int pageBits = Math.min(15, PackedInts.bitsRequired(estimateSize));
