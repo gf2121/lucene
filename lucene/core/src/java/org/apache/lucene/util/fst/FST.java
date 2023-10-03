@@ -503,6 +503,10 @@ public final class FST<T> implements Accountable {
     return size;
   }
 
+  public long numBytes() {
+    return bytes.getPosition();
+  }
+
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(input=" + inputType + ",output=" + outputs;

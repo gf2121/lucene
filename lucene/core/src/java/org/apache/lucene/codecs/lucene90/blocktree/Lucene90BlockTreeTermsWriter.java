@@ -19,6 +19,8 @@ package org.apache.lucene.codecs.lucene90.blocktree;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.codecs.BlockTermState;
@@ -52,6 +54,7 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.packed.PackedInts;
 
 /*
   TODO:
@@ -459,6 +462,32 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
       return "BLOCK: prefix=" + brToString(prefix);
     }
 
+    private static class ProfileInfo {
+      final long bytesUsed;
+      final long estimateSize;
+      final int pageBits;
+      final double estimateOverFactor;
+
+      private ProfileInfo(long bytesUsed, long estimateSize, int pageBits) {
+        this.bytesUsed = bytesUsed;
+        this.estimateSize = estimateSize;
+        this.pageBits = pageBits;
+        this.estimateOverFactor = (double) estimateSize / bytesUsed;
+      }
+
+      @Override
+      public String toString() {
+        return "ProfileInfo{" +
+            "bytesUsed=" + bytesUsed +
+            ", estimateSize=" + estimateSize +
+            ", pageBits=" + pageBits +
+            ", estimateOverFactor=" + estimateOverFactor +
+            '}';
+      }
+    }
+
+    private static final List<ProfileInfo> PROFILE_INFOS = Collections.synchronizedList(new ArrayList<>());
+
     public void compileIndex(
         List<PendingBlock> blocks,
         ByteBuffersDataOutput scratchBytes,
@@ -490,10 +519,22 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
+      long estimateSize = prefix.length;
+      for (PendingBlock block : blocks) {
+        if (block.subIndices != null) {
+          for (FST<BytesRef> subIndex : block.subIndices) {
+            estimateSize += subIndex.numBytes();
+          }
+          block.subIndices = null;
+        }
+      }
+      int pageBits = Math.min(15, PackedInts.bitsRequired(estimateSize));
+
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       final FSTCompiler<BytesRef> fstCompiler =
           new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs)
               .shouldShareNonSingletonNodes(false)
+              .bytesPageBits(pageBits)
               .build();
       // if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
@@ -515,6 +556,18 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
       }
 
       index = fstCompiler.compile();
+
+      PROFILE_INFOS.add(new ProfileInfo(index.numBytes(), estimateSize, pageBits));
+      if ((PROFILE_INFOS.size() % 10000) == 0) {
+        synchronized (PROFILE_INFOS) {
+          PROFILE_INFOS.sort(Comparator.comparingLong(o -> o.bytesUsed));
+          System.out.println("FST built " + PROFILE_INFOS.size() + " times");
+          System.out.println("pct99 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.99)));
+          System.out.println("pct999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.999)));
+          System.out.println("pct9999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.9999)));
+          System.out.println("max " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() - 1)));
+        }
+      }
 
       assert subIndices == null;
 
