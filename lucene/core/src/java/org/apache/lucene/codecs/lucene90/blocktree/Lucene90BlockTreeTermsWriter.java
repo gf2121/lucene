@@ -560,15 +560,17 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
       synchronized (PROFILE_INFOS) {
         PROFILE_INFOS.add(new ProfileInfo(index.numBytes(), estimateSize, pageBits));
         if ((PROFILE_INFOS.size() % 10000) == 0) {
-          PROFILE_INFOS.sort(Comparator.comparingLong(o -> o.bytesUsed));
-          System.out.println("FST built " + PROFILE_INFOS.size() + " times");
-          System.out.println("pct50 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.5)));
-          System.out.println("pct75 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.75)));
-          System.out.println("pct90 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.9)));
-          System.out.println("pct99 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.99)));
-          System.out.println("pct999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.999)));
-          System.out.println("pct9999 " + PROFILE_INFOS.get((int) (PROFILE_INFOS.size() * 0.9999)));
-          System.out.println("max " + PROFILE_INFOS.get(PROFILE_INFOS.size() - 1));
+          List<ProfileInfo> infos = new ArrayList<>(PROFILE_INFOS);
+          infos.sort(Comparator.comparingDouble(o -> o.estimateOverFactor));
+          System.out.println("FST built " + infos.size() + " times");
+          System.out.println("min " + infos.get(0));
+          System.out.println("pct50 " + infos.get((int) (infos.size() * 0.5)));
+          System.out.println("pct75 " + infos.get((int) (infos.size() * 0.75)));
+          System.out.println("pct90 " + infos.get((int) (infos.size() * 0.9)));
+          System.out.println("pct99 " + infos.get((int) (infos.size() * 0.99)));
+          System.out.println("pct999 " + infos.get((int) (infos.size() * 0.999)));
+          System.out.println("pct9999 " + infos.get((int) (infos.size() * 0.9999)));
+          System.out.println("max " + infos.get(infos.size() - 1));
           System.out.println();
         }
       }
