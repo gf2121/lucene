@@ -35,6 +35,11 @@ public abstract class DocIdSet implements Accountable {
           return DocIdSetIterator.empty();
         }
 
+        //        @Override
+        //        public int count(int min, int max) {
+        //          return 0;
+        //        }
+
         // we explicitly provide no random access, as this filter is 100% sparse and iterator exits
         // faster
         @Override
@@ -57,6 +62,22 @@ public abstract class DocIdSet implements Accountable {
       }
 
       @Override
+      public int countAll() {
+        return maxDoc;
+      }
+
+      @Override
+      public int count(int min, int max) {
+        if (min >= maxDoc) {
+          return 0;
+        }
+        if (max > maxDoc) {
+          max = maxDoc;
+        }
+        return max - min;
+      }
+
+      @Override
       public Bits bits() throws IOException {
         return new Bits.MatchAllBits(maxDoc);
       }
@@ -73,6 +94,21 @@ public abstract class DocIdSet implements Accountable {
    * null</code> if there are no docs that match.
    */
   public abstract DocIdSetIterator iterator() throws IOException;
+
+  public int countAll() throws IOException {
+    return count(0, DocIdSetIterator.NO_MORE_DOCS);
+  }
+
+  public int count(int min, int max) throws IOException {
+    DocIdSetIterator iterator = iterator();
+    int count = 0;
+    int doc = iterator.advance(min);
+    while (doc < max) {
+      count++;
+      doc = iterator.nextDoc();
+    }
+    return count;
+  }
 
   // TODO: somehow this class should express the cost of
   // iteration vs the cost of random access Bits; for

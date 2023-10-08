@@ -202,9 +202,9 @@ public abstract class Weight implements SegmentCacheable {
    * @lucene.internal
    */
   protected static class DefaultBulkScorer extends BulkScorer {
-    private final Scorer scorer;
-    private final DocIdSetIterator iterator;
-    private final TwoPhaseIterator twoPhase;
+    protected final Scorer scorer;
+    protected final DocIdSetIterator iterator;
+    protected final TwoPhaseIterator twoPhase;
 
     /** Sole constructor. */
     public DefaultBulkScorer(Scorer scorer) {

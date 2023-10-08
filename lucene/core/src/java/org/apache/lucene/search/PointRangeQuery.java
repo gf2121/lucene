@@ -29,7 +29,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ArrayUtil.ByteArrayComparator;
-import org.apache.lucene.util.BitSetIterator;
+import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 
@@ -122,7 +122,7 @@ public abstract class PointRangeQuery extends Query {
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
 
-    return new ConstantScoreWeight(this, boost) {
+    return new DocIdSetWeight(this, boost) {
 
       private final ByteArrayComparator comparator = ArrayUtil.getUnsignedComparator(bytesPerDim);
 
@@ -282,7 +282,8 @@ public abstract class PointRangeQuery extends Query {
       }
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      public DocIdSetScorerSupplier docIdSetScorerSupplier(LeafReaderContext context)
+          throws IOException {
         LeafReader reader = context.reader();
 
         PointValues values = reader.getPointValues(field);
@@ -310,7 +311,12 @@ public abstract class PointRangeQuery extends Query {
         final Weight weight = this;
         if (allDocsMatch) {
           // all docs have a value and all points are within bounds, so everything matches
-          return new ScorerSupplier() {
+          return new DocIdSetScorerSupplier() {
+            @Override
+            protected DocIdSet computeDocIdSet() throws IOException {
+              return DocIdSet.all(reader.maxDoc());
+            }
+
             @Override
             public Scorer get(long leadCost) {
               return new ConstantScoreScorer(
@@ -323,14 +329,10 @@ public abstract class PointRangeQuery extends Query {
             }
           };
         } else {
-          return new ScorerSupplier() {
-
-            final DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-            final IntersectVisitor visitor = getIntersectVisitor(result);
-            long cost = -1;
+          return new DocIdSetScorerSupplier() {
 
             @Override
-            public Scorer get(long leadCost) throws IOException {
+            protected DocIdSet computeDocIdSet() throws IOException {
               if (values.getDocCount() == reader.maxDoc()
                   && values.getDocCount() == values.size()
                   && cost() > reader.maxDoc() / 2) {
@@ -341,13 +343,20 @@ public abstract class PointRangeQuery extends Query {
                 result.set(0, reader.maxDoc());
                 long[] cost = new long[] {reader.maxDoc()};
                 values.intersect(getInverseIntersectVisitor(result, cost));
-                final DocIdSetIterator iterator = new BitSetIterator(result, cost[0]);
-                return new ConstantScoreScorer(weight, score(), scoreMode, iterator);
+                return new BitDocIdSet(result);
               }
 
               values.intersect(visitor);
-              DocIdSetIterator iterator = result.build().iterator();
-              return new ConstantScoreScorer(weight, score(), scoreMode, iterator);
+              return result.build();
+            }
+
+            final DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
+            final IntersectVisitor visitor = getIntersectVisitor(result);
+            long cost = -1;
+
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              return new ConstantScoreScorer(weight, score(), scoreMode, getDocIdSet().iterator());
             }
 
             @Override

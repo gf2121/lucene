@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.util;
 
+import java.io.IOException;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -55,6 +56,42 @@ public class BitDocIdSet extends DocIdSet {
   @Override
   public DocIdSetIterator iterator() {
     return new BitSetIterator(set, cost);
+  }
+
+  @Override
+  public int count(int min, int max) throws IOException {
+    if (set instanceof FixedBitSet fixedBitSet) {
+      if (min >= fixedBitSet.length()) {
+        return 0;
+      }
+      if (max > fixedBitSet.length()) {
+        max = set.length();
+      }
+
+      long[] bits = fixedBitSet.getBits();
+      int startWord = min >> 6;
+      int endWord = (max - 1) >> 6;
+      long startmask = -1L << min;
+      long endmask = -1L >>> -max;
+
+      if (startWord == endWord) {
+        return Long.bitCount(bits[startWord] & (startmask & endmask));
+      }
+
+      int cnt = Long.bitCount(bits[startWord] & startmask) + Long.bitCount(bits[endWord] & endmask);
+      for (int i = startWord + 1; i < endWord; i++) {
+        cnt += Long.bitCount(bits[i]);
+      }
+      return cnt;
+    } else {
+      // TODO impl sparse
+      return super.count(min, max);
+    }
+  }
+
+  @Override
+  public int countAll() {
+    return set.cardinality();
   }
 
   @Override

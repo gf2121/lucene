@@ -38,6 +38,24 @@ final class IntArrayDocIdSet extends DocIdSet {
   }
 
   @Override
+  public int countAll() {
+    return length;
+  }
+
+  @Override
+  public int count(int min, int max) throws IOException {
+    int begin = Arrays.binarySearch(docs, 0, length, min);
+    if (begin < 0) {
+      begin = -1 - begin;
+    }
+    int end = Arrays.binarySearch(docs, 0, length, max);
+    if (end < 0) {
+      end = -1 - end;
+    }
+    return end - begin;
+  }
+
+  @Override
   public long ramBytesUsed() {
     return BASE_RAM_BYTES_USED + RamUsageEstimator.sizeOf(docs);
   }

@@ -143,7 +143,7 @@ public abstract class PointInSetQuery extends Query implements Accountable {
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
 
-    return new ConstantScoreWeight(this, boost) {
+    return new DocIdSetWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -155,7 +155,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
       }
 
       @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      public DocIdSetScorerSupplier docIdSetScorerSupplier(LeafReaderContext context)
+          throws IOException {
         final Weight weight = this;
         LeafReader reader = context.reader();
 
@@ -187,15 +188,20 @@ public abstract class PointInSetQuery extends Query implements Accountable {
         if (numDims == 1) {
           // We optimize this common case, effectively doing a merge sort of the indexed values vs
           // the queried set:
-          return new ScorerSupplier() {
+          return new DocIdSetScorerSupplier() {
+
             long cost = -1; // calculate lazily, only once
 
             @Override
-            public Scorer get(long leadCost) throws IOException {
+            protected DocIdSet computeDocIdSet() throws IOException {
               DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
               values.intersect(new MergePointVisitor(sortedPackedPoints, result));
-              DocIdSetIterator iterator = result.build().iterator();
-              return new ConstantScoreScorer(weight, score(), scoreMode, iterator);
+              return result.build();
+            }
+
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              return new ConstantScoreScorer(weight, score(), scoreMode, getDocIdSet().iterator());
             }
 
             @Override
@@ -220,11 +226,12 @@ public abstract class PointInSetQuery extends Query implements Accountable {
           // could efficiently intersect against the
           // index, which is probably tricky!
 
-          return new ScorerSupplier() {
+          return new DocIdSetScorerSupplier() {
+
             long cost = -1; // calculate lazily, only once
 
             @Override
-            public Scorer get(long leadCost) throws IOException {
+            protected DocIdSet computeDocIdSet() throws IOException {
               DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
               SinglePointVisitor visitor = new SinglePointVisitor(result);
               TermIterator iterator = sortedPackedPoints.iterator();
@@ -232,7 +239,12 @@ public abstract class PointInSetQuery extends Query implements Accountable {
                 visitor.setPoint(point);
                 values.intersect(visitor);
               }
-              return new ConstantScoreScorer(weight, score(), scoreMode, result.build().iterator());
+              return result.build();
+            }
+
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              return new ConstantScoreScorer(weight, score(), scoreMode, getDocIdSet().iterator());
             }
 
             @Override
