@@ -241,7 +241,7 @@ public final class BytesRefHash implements Accountable {
     bytesUsed.addAndGet(Integer.BYTES * (long) -hashSize);
   }
 
-  private static final List<Integer> LENS = new ArrayList<>();
+  private final List<Integer> LENS = new ArrayList<>();
 
   /**
    * Adds a new {@link BytesRef}
@@ -256,7 +256,7 @@ public final class BytesRefHash implements Accountable {
   public int add(BytesRef bytes) {
     synchronized (LENS) {
       LENS.add(bytes.length);
-      if (LENS.size() % 5000000 == 0) {
+      if (LENS.size() % 100000 == 0) {
         System.out.println("BytesRef added " + LENS.size() + " times.");
         LENS.sort(Integer::compare);
         int last = LENS.size() - 1;
