@@ -247,8 +247,8 @@ public final class BytesRefHash implements Accountable {
   public int add(BytesRef bytes) {
     synchronized (LENS) {
       LENS.add(bytes.length);
-      if (LENS.size() % 100000 == 0) {
-        System.out.println("BytesRef added " + bytes.length + " times.");
+      if (LENS.size() % 1000000 == 0) {
+        System.out.println("BytesRef added " + LENS.size() + " times.");
         LENS.sort(Integer::compare);
         int last = LENS.size() -1;
         System.out.println("pct0: " + LENS.get((int) (last * 0.00)));
