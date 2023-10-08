@@ -20,7 +20,9 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SHIFT;
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 
@@ -230,6 +232,8 @@ public final class BytesRefHash implements Accountable {
     bytesUsed.addAndGet(Integer.BYTES * (long) -hashSize);
   }
 
+  private static final List<Integer> LENS = new ArrayList<>();
+
   /**
    * Adds a new {@link BytesRef}
    *
@@ -241,6 +245,27 @@ public final class BytesRefHash implements Accountable {
    *     ByteBlockPool#BYTE_BLOCK_SIZE}
    */
   public int add(BytesRef bytes) {
+    synchronized (LENS) {
+      LENS.add(bytes.length);
+      if (LENS.size() % 100000 == 0) {
+        System.out.println("BytesRef added " + bytes.length + " times.");
+        LENS.sort(Integer::compare);
+        int last = LENS.size() -1;
+        System.out.println("pct0: " + LENS.get((int) (last * 0.00)));
+        System.out.println("pct5: " + LENS.get((int) (last * 0.05)));
+        System.out.println("pct10: " + LENS.get((int) (last * 0.1)));
+        System.out.println("pct20: " + LENS.get((int) (last * 0.2)));
+        System.out.println("pct30: " + LENS.get((int) (last * 0.3)));
+        System.out.println("pct50: " + LENS.get((int) (last * 0.5)));
+        System.out.println("pct75: " + LENS.get((int) (last * 0.75)));
+        System.out.println("pct90: " + LENS.get((int) (last * 0.9)));
+        System.out.println("pct95: " + LENS.get((int) (last * 0.95)));
+        System.out.println("pct99: " + LENS.get((int) (last * 0.99)));
+        System.out.println("pct999: " + LENS.get((int) (last * 0.999)));
+        System.out.println("pct9999: " + LENS.get((int) (last * 0.9999)));
+        System.out.println("pct100: " + LENS.get(last));
+      }
+    }
     assert bytesStart != null : "Bytesstart is null - not initialized";
     final int length = bytes.length;
     // final position
