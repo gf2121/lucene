@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 
 /**
@@ -70,12 +71,16 @@ public final class BytesRefHash implements Accountable {
     this(new ByteBlockPool(new DirectAllocator()));
   }
 
-  /** Creates a new {@link BytesRefHash} */
+  /**
+   * Creates a new {@link BytesRefHash}
+   */
   public BytesRefHash(ByteBlockPool pool) {
     this(pool, DEFAULT_CAPACITY, new DirectBytesStartArray(DEFAULT_CAPACITY));
   }
 
-  /** Creates a new {@link BytesRefHash} */
+  /**
+   * Creates a new {@link BytesRefHash}
+   */
   public BytesRefHash(ByteBlockPool pool, int capacity, BytesStartArray bytesStartArray) {
     hashSize = capacity;
     hashHalfSize = hashSize >> 1;
@@ -106,7 +111,7 @@ public final class BytesRefHash implements Accountable {
    * #size()})
    *
    * @param bytesID the id
-   * @param ref the {@link BytesRef} to populate
+   * @param ref     the {@link BytesRef} to populate
    * @return the given BytesRef instance populated with the bytes for the given bytesID
    */
   public BytesRef get(int bytesID, BytesRef ref) {
@@ -206,7 +211,9 @@ public final class BytesRefHash implements Accountable {
     }
   }
 
-  /** Clears the {@link BytesRef} which maps to the given {@link BytesRef} */
+  /**
+   * Clears the {@link BytesRef} which maps to the given {@link BytesRef}
+   */
   public void clear(boolean resetPool) {
     lastCount = count;
     count = 0;
@@ -225,7 +232,9 @@ public final class BytesRefHash implements Accountable {
     clear(true);
   }
 
-  /** Closes the BytesRefHash and releases all internally used memory */
+  /**
+   * Closes the BytesRefHash and releases all internally used memory
+   */
   public void close() {
     clear(true);
     ids = null;
@@ -239,23 +248,21 @@ public final class BytesRefHash implements Accountable {
    *
    * @param bytes the bytes to hash
    * @return the id the given bytes are hashed if there was no mapping for the given bytes,
-   *     otherwise <code>(-(id)-1)</code>. This guarantees that the return value will always be
-   *     &gt;= 0 if the given bytes haven't been hashed before.
+   * otherwise <code>(-(id)-1)</code>. This guarantees that the return value will always be
+   * &gt;= 0 if the given bytes haven't been hashed before.
    * @throws MaxBytesLengthExceededException if the given bytes are {@code > 2 +} {@link
-   *     ByteBlockPool#BYTE_BLOCK_SIZE}
+   *                                         ByteBlockPool#BYTE_BLOCK_SIZE}
    */
   public int add(BytesRef bytes) {
     synchronized (LENS) {
       LENS.add(bytes.length);
-      if (LENS.size() % 1000000 == 0) {
+      if (LENS.size() % 5000000 == 0) {
         System.out.println("BytesRef added " + LENS.size() + " times.");
         LENS.sort(Integer::compare);
-        int last = LENS.size() -1;
+        int last = LENS.size() - 1;
         System.out.println("pct0: " + LENS.get((int) (last * 0.00)));
-        System.out.println("pct5: " + LENS.get((int) (last * 0.05)));
         System.out.println("pct10: " + LENS.get((int) (last * 0.1)));
-        System.out.println("pct20: " + LENS.get((int) (last * 0.2)));
-        System.out.println("pct30: " + LENS.get((int) (last * 0.3)));
+        System.out.println("pct25: " + LENS.get((int) (last * 0.25)));
         System.out.println("pct50: " + LENS.get((int) (last * 0.5)));
         System.out.println("pct75: " + LENS.get((int) (last * 0.75)));
         System.out.println("pct90: " + LENS.get((int) (last * 0.9)));
@@ -264,6 +271,27 @@ public final class BytesRefHash implements Accountable {
         System.out.println("pct999: " + LENS.get((int) (last * 0.999)));
         System.out.println("pct9999: " + LENS.get((int) (last * 0.9999)));
         System.out.println("pct100: " + LENS.get(last));
+
+        int[] lens = new int[size()];
+        BytesRef scratch = new BytesRef();
+        for (int i = 1; i < size(); i++) {
+          get(i, scratch);
+          lens[i] = scratch.length;
+        }
+        int lastOne = size() - 1;
+        Arrays.sort(lens);
+        System.out.println("after dedup size: " + size());
+        System.out.println("pct0: " + lens[(int) (lastOne * 0.00)]);
+        System.out.println("pct10: " + lens[(int) (lastOne * 0.10)]);
+        System.out.println("pct25: " + lens[(int) (lastOne * 0.25)]);
+        System.out.println("pct50: " + lens[(int) (lastOne * 0.50)]);
+        System.out.println("pct75: " + lens[(int) (lastOne * 0.75)]);
+        System.out.println("pct90: " + lens[(int) (lastOne * 0.90)]);
+        System.out.println("pct95: " + lens[(int) (lastOne * 0.95)]);
+        System.out.println("pct99: " + lens[(int) (lastOne * 0.99)]);
+        System.out.println("pct999: " + lens[(int) (lastOne * 0.999)]);
+        System.out.println("pct9999: " + lens[(int) (lastOne * 0.9999)]);
+        System.out.println("pct100: " + lens[lastOne]);
       }
     }
     assert bytesStart != null : "Bytesstart is null - not initialized";
@@ -496,7 +524,9 @@ public final class BytesRefHash implements Accountable {
     }
   }
 
-  /** Manages allocation of the per-term addresses. */
+  /**
+   * Manages allocation of the per-term addresses.
+   */
   public abstract static class BytesStartArray {
     /**
      * Initializes the BytesStartArray. This call will allocate memory
@@ -524,7 +554,7 @@ public final class BytesRefHash implements Accountable {
      * The {@link BytesRefHash} uses this reference to track it memory usage
      *
      * @return a {@link AtomicLong} reference holding the number of bytes used by this {@link
-     *     BytesStartArray}.
+     * BytesStartArray}.
      */
     public abstract Counter bytesUsed();
   }
