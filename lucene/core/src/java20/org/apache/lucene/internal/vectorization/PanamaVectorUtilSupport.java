@@ -79,7 +79,7 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
       return sum;
     } else {
       int sum = 0;
-      for (int i=from; i<to; i++) {
+      for (int i = from; i < to; i++) {
         sum += Long.bitCount(longs[i]);
       }
       return sum;
