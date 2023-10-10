@@ -62,9 +62,9 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
 
   @Override
   public int bitCount(long[] longs, int from, int to) {
+    int i = from;
+    int sum = 0;
     if (INT_SPECIES_PREF_BIT_SIZE >= 256) {
-      int i = from;
-      int sum = 0;
       int upperBound = PREF_LONG_SPECIES.loopBound(to - from) + from;
       LongVector acc = LongVector.zero(PREF_LONG_SPECIES);
       for (; i < upperBound; i += PREF_LONG_SPECIES.length()) {
@@ -73,17 +73,11 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
         acc = acc.add(bitCount);
       }
       sum += (int) acc.reduceLanes(VectorOperators.ADD);
-      for (; i < longs.length; i++) {
-        sum += Long.bitCount(longs[i]);
-      }
-      return sum;
-    } else {
-      int sum = 0;
-      for (int i = from; i < to; i++) {
-        sum += Long.bitCount(longs[i]);
-      }
-      return sum;
     }
+    for (; i < longs.length; i++) {
+      sum += Long.bitCount(longs[i]);
+    }
+    return sum;
   }
 
   @Override
