@@ -19,6 +19,7 @@ package org.apache.lucene.internal.vectorization;
 import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.IntVector;
+import jdk.incubator.vector.LongVector;
 import jdk.incubator.vector.ShortVector;
 import jdk.incubator.vector.Vector;
 import jdk.incubator.vector.VectorOperators;
@@ -33,6 +34,8 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
   private static final VectorSpecies<Byte> PREF_BYTE_SPECIES;
   private static final VectorSpecies<Short> PREF_SHORT_SPECIES;
 
+  private static final VectorSpecies<Long> PREF_LONG_SPECIES;
+
   static {
     if (INT_SPECIES_PREF_BIT_SIZE >= 256) {
       PREF_BYTE_SPECIES =
@@ -41,9 +44,13 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
       PREF_SHORT_SPECIES =
           ShortVector.SPECIES_MAX.withShape(
               VectorShape.forBitSize(IntVector.SPECIES_PREFERRED.vectorBitSize() >> 1));
+      PREF_LONG_SPECIES =
+          LongVector.SPECIES_MAX.withShape(
+              VectorShape.forBitSize(IntVector.SPECIES_PREFERRED.vectorBitSize() << 1));
     } else {
       PREF_BYTE_SPECIES = null;
       PREF_SHORT_SPECIES = null;
+      PREF_LONG_SPECIES = null;
     }
   }
 
@@ -51,6 +58,32 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
 
   PanamaVectorUtilSupport(boolean useIntegerVectors) {
     this.useIntegerVectors = useIntegerVectors;
+  }
+
+  @Override
+  public int bitCount(long[] longs, int from, int to) {
+    if (INT_SPECIES_PREF_BIT_SIZE >= 256) {
+      int i = from;
+      int sum = 0;
+      int upperBound = PREF_LONG_SPECIES.loopBound(to - from) + from;
+      LongVector acc = LongVector.zero(PREF_LONG_SPECIES);
+      for (; i < upperBound; i += PREF_LONG_SPECIES.length()) {
+        LongVector longVector = LongVector.fromArray(PREF_LONG_SPECIES, longs, i);
+        LongVector bitCount = longVector.lanewise(VectorOperators.BIT_COUNT);
+        acc = acc.add(bitCount);
+      }
+      sum += (int) acc.reduceLanes(VectorOperators.ADD);
+      for (; i < longs.length; i++) {
+        sum += Long.bitCount(longs[i]);
+      }
+      return sum;
+    } else {
+      int sum = 0;
+      for (int i=from; i<to; i++) {
+        sum += Long.bitCount(longs[i]);
+      }
+      return sum;
+    }
   }
 
   @Override

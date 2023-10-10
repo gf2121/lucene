@@ -29,6 +29,13 @@ public final class VectorUtil {
   private VectorUtil() {}
 
   /**
+   * Sum bit count of all longs within {@code from} (inclusive) and {@code to} (exclusive)
+   */
+  public static int bitCount(long[] words, int from, int to) {
+    return IMPL.bitCount(words, from, to);
+  }
+
+  /**
    * Returns the vector dot product of the two vectors.
    *
    * @throws IllegalArgumentException if the vectors' dimensions differ.

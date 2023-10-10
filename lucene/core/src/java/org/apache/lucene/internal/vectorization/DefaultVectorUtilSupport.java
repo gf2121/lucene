@@ -22,6 +22,15 @@ final class DefaultVectorUtilSupport implements VectorUtilSupport {
   DefaultVectorUtilSupport() {}
 
   @Override
+  public int bitCount(long[] longs, int from, int to) {
+    int sum = 0;
+    for (int i=from; i<to; i++) {
+      sum += Long.bitCount(longs[i]);
+    }
+    return sum;
+  }
+
+  @Override
   public float dotProduct(float[] a, float[] b) {
     float res = 0f;
     /*

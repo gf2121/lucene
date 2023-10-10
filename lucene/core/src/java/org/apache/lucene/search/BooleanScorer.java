@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Objects;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.VectorUtil;
 
 /**
  * {@link BulkScorer} that is used for pure disjunctions and disjunctions that have low values of
@@ -184,11 +185,7 @@ final class BooleanScorer extends BulkScorer {
         // We can't just count bits in that case
         return super.count();
       }
-      int count = 0;
-      for (long l : matching) {
-        count += Long.bitCount(l);
-      }
-      return count;
+      return VectorUtil.bitCount(matching, 0, matching.length);
     }
   }
 

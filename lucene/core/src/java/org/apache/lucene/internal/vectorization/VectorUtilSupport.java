@@ -24,6 +24,8 @@ package org.apache.lucene.internal.vectorization;
  */
 public interface VectorUtilSupport {
 
+  int bitCount(long[] longs, int from, int to);
+
   /** Calculates the dot product of the given float arrays. */
   float dotProduct(float[] a, float[] b);
 
