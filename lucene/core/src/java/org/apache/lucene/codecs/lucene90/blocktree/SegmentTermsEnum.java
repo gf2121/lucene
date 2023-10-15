@@ -886,11 +886,6 @@ final class SegmentTermsEnum extends BaseTermsEnum {
     }
     if (arcLen == 1) {
       outputBytes[output.length] = arc.bytes[arc.offset];
-    } else if (arcLen == 2) {
-      int outputLen = output.length;
-      int arcOff = arc.offset;
-      outputBytes[outputLen] = arc.bytes[arcOff];
-      outputBytes[outputLen + 1] = arc.bytes[arcOff + 1];
     } else {
       System.arraycopy(arc.bytes, arc.offset, outputBytes, output.length, arc.length);
     }
