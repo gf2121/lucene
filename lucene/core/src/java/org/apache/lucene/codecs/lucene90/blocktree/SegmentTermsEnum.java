@@ -398,6 +398,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         }
         targetUpto++;
       }
+      System.out.println("first up to:" + targetUpto);
 
       if (cmp == 0) {
         final int targetUptoMid = targetUpto;
@@ -426,6 +427,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         }
         targetUpto = targetUptoMid;
       }
+      System.out.println("second up to:" + targetUpto);
 
       if (cmp < 0) {
         // Common case: target term is after current
@@ -508,6 +510,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
           fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader);
 
       if (nextArc == null) {
+        System.out.println("final up to:" + targetUpto);
 
         // Index is exhausted
         // if (DEBUG) {
