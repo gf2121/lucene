@@ -190,7 +190,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
       // TODO: we could be more efficient for the next()
       // case by using current arc as starting point,
       // passed to findTargetArc
-      arc = fr.index.findTargetArc(target, arc, getArc(1 + idx), fstReader);
+      arc = fr.index.findTargetArc(target, arc, getArc(1 + idx), fstReader, false);
       assert arc != null;
       SegmentTermsEnum.appendArc(output, arc.output());
       idx++;

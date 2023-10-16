@@ -183,7 +183,7 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
   }
 
   @Override
-  public Output read(DataInput in) throws IOException {
+  public Output read(DataInput in, Output reuse) throws IOException {
     int len = in.readVInt();
     BytesRef bytes;
     if (len == 0) {

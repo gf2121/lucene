@@ -58,19 +58,19 @@ public abstract class Outputs<T> {
   }
 
   /** Decode an output value previously written with {@link #write(Object, DataOutput)}. */
-  public abstract T read(DataInput in) throws IOException;
+  public abstract T read(DataInput in, T reuse) throws IOException;
 
   /** Skip the output; defaults to just calling {@link #read} and discarding the result. */
   public void skipOutput(DataInput in) throws IOException {
-    read(in);
+    read(in, null);
   }
 
   /**
    * Decode an output value previously written with {@link #writeFinalOutput(Object, DataOutput)}.
-   * By default this just calls {@link #read(DataInput)}.
+   * By default this just calls {@link #read(DataInput, Object)}.
    */
-  public T readFinalOutput(DataInput in) throws IOException {
-    return read(in);
+  public T readFinalOutput(DataInput in, T reuse) throws IOException {
+    return read(in, reuse);
   }
 
   /**

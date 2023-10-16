@@ -634,7 +634,7 @@ public class FSTTermsReader extends FieldsProducer {
         if (!canGrow(top)) {
           return null;
         }
-        frame.fstArc = fst.readFirstRealTargetArc(top.fstArc.target(), frame.fstArc, fstReader);
+        frame.fstArc = fst.readFirstRealTargetArc(top.fstArc.target(), frame.fstArc, fstReader, false);
         frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label());
         // if (TEST) System.out.println(" loadExpand frame="+frame);
         if (frame.fsaState == -1) {
@@ -650,7 +650,7 @@ public class FSTTermsReader extends FieldsProducer {
           return null;
         }
         while (!frame.fstArc.isLast()) {
-          frame.fstArc = fst.readNextRealArc(frame.fstArc, fstReader);
+          frame.fstArc = fst.readNextRealArc(frame.fstArc, fstReader, false);
           frame.fsaState = fsa.step(top.fsaState, frame.fstArc.label());
           if (frame.fsaState != -1) {
             break;
@@ -762,13 +762,13 @@ public class FSTTermsReader extends FieldsProducer {
       // System.out.println(arc);
       if (FST.targetHasArcs(arc) && !seen.get((int) node)) {
         seen.set((int) node);
-        fst.readFirstRealTargetArc(node, arc, reader);
+        fst.readFirstRealTargetArc(node, arc, reader, false);
         while (true) {
           queue.add(new FST.Arc<T>().copyFrom(arc));
           if (arc.isLast()) {
             break;
           } else {
-            fst.readNextRealArc(arc, reader);
+            fst.readNextRealArc(arc, reader, false);
           }
         }
       }

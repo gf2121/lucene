@@ -366,7 +366,7 @@ public final class SynonymGraphFilter extends TokenFilter {
                 ignoreCase ? Character.toLowerCase(codePoint) : codePoint,
                 scratchArc,
                 scratchArc,
-                fstReader)
+                fstReader, false)
             == null) {
           break byToken;
         }
@@ -389,7 +389,7 @@ public final class SynonymGraphFilter extends TokenFilter {
 
       // See if the FST can continue matching (ie, needs to
       // see the next input token):
-      if (fst.findTargetArc(SynonymMap.WORD_SEPARATOR, scratchArc, scratchArc, fstReader) == null) {
+      if (fst.findTargetArc(SynonymMap.WORD_SEPARATOR, scratchArc, scratchArc, fstReader, false) == null) {
         // No further rules can match here; we're done
         // searching for matching rules starting at the
         // current input position.

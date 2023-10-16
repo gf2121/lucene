@@ -116,7 +116,7 @@ public final class CharSequenceOutputs extends Outputs<CharsRef> {
   }
 
   @Override
-  public CharsRef read(DataInput in) throws IOException {
+  public CharsRef read(DataInput in, CharsRef reuse) throws IOException {
     final int len = in.readVInt();
     if (len == 0) {
       return NO_OUTPUT;

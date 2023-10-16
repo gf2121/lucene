@@ -720,7 +720,7 @@ public class AnalyzingSuggester extends Lookup {
 
         int count = 0;
         for (FSTUtil.Path<Pair<Long, BytesRef>> path : prefixPaths) {
-          if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader) != null) {
+          if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader, false) != null) {
             // This node has END_BYTE arc leaving, meaning it's an
             // "exact" match:
             count++;
@@ -743,7 +743,7 @@ public class AnalyzingSuggester extends Lookup {
         // pruned our exact match from one of these nodes
         // ...:
         for (FSTUtil.Path<Pair<Long, BytesRef>> path : prefixPaths) {
-          if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader) != null) {
+          if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader, false) != null) {
             // This node has END_BYTE arc leaving, meaning it's an
             // "exact" match:
             searcher.addStartPaths(

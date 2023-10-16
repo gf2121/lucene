@@ -86,7 +86,7 @@ public final class PositiveIntOutputs extends Outputs<Long> {
   }
 
   @Override
-  public Long read(DataInput in) throws IOException {
+  public Long read(DataInput in, Long reuse) throws IOException {
     long v = in.readVLong();
     if (v == 0) {
       return NO_OUTPUT;

@@ -115,7 +115,7 @@ public final class IntSequenceOutputs extends Outputs<IntsRef> {
   }
 
   @Override
-  public IntsRef read(DataInput in) throws IOException {
+  public IntsRef read(DataInput in, IntsRef reuse) throws IOException {
     final int len = in.readVInt();
     if (len == 0) {
       return NO_OUTPUT;

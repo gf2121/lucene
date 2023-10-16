@@ -442,7 +442,7 @@ public final class FST<T> implements Accountable {
       if (numBytes > 0) {
         reader.setPosition(numBytes - 1);
       }
-      emptyOutput = outputs.readFinalOutput(reader);
+      emptyOutput = outputs.readFinalOutput(reader, null);
     } else {
       emptyOutput = null;
     }
@@ -678,7 +678,7 @@ public final class FST<T> implements Accountable {
         } else {
           arc.arcIdx = arc.numArcs() - 2;
           arc.posArcsStart = in.getPosition();
-          readNextRealArc(arc, in);
+          readNextRealArc(arc, in, false);
         }
       } else {
         arc.flags = flags;
@@ -704,7 +704,7 @@ public final class FST<T> implements Accountable {
         // Undo the byte flags we read:
         in.skipBytes(-1);
         arc.nextArc = in.getPosition();
-        readNextRealArc(arc, in);
+        readNextRealArc(arc, in, false);
       }
       assert arc.isLast();
       return arc;
@@ -742,11 +742,11 @@ public final class FST<T> implements Accountable {
       // arc.isLast() + " output=" + outputs.outputToString(arc.output));
       return arc;
     } else {
-      return readFirstRealTargetArc(follow.target(), arc, in);
+      return readFirstRealTargetArc(follow.target(), arc, in, false);
     }
   }
 
-  public Arc<T> readFirstRealTargetArc(long nodeAddress, Arc<T> arc, final BytesReader in)
+  public Arc<T> readFirstRealTargetArc(long nodeAddress, Arc<T> arc, final BytesReader in, boolean allowReuse)
       throws IOException {
     in.setPosition(nodeAddress);
     // System.out.println("   flags=" + arc.flags);
@@ -771,7 +771,7 @@ public final class FST<T> implements Accountable {
       arc.bytesPerArc = 0;
     }
 
-    return readNextRealArc(arc, in);
+    return readNextRealArc(arc, in, allowReuse);
   }
 
   /**
@@ -795,9 +795,9 @@ public final class FST<T> implements Accountable {
       if (arc.nextArc() <= 0) {
         throw new IllegalArgumentException("cannot readNextArc when arc.isLast()=true");
       }
-      return readFirstRealTargetArc(arc.nextArc(), arc, in);
+      return readFirstRealTargetArc(arc.nextArc(), arc, in, false);
     } else {
-      return readNextRealArc(arc, in);
+      return readNextRealArc(arc, in, false);
     }
   }
 
@@ -857,22 +857,23 @@ public final class FST<T> implements Accountable {
     in.setPosition(arc.posArcsStart() - idx * (long) arc.bytesPerArc());
     arc.arcIdx = idx;
     arc.flags = in.readByte();
-    return readArc(arc, in);
+    return readArc(arc, in, false);
   }
 
   /**
    * Reads a present direct addressing node arc, with the provided index in the label range.
    *
    * @param rangeIndex The index of the arc in the label range. It must be present. The real arc
-   *     offset is computed based on the presence bits of the direct addressing node.
+   *                   offset is computed based on the presence bits of the direct addressing node.
+   * @param allowReuse
    */
-  public Arc<T> readArcByDirectAddressing(Arc<T> arc, final BytesReader in, int rangeIndex)
+  public Arc<T> readArcByDirectAddressing(Arc<T> arc, final BytesReader in, int rangeIndex, boolean allowReuse)
       throws IOException {
     assert BitTable.assertIsValid(arc, in);
     assert rangeIndex >= 0 && rangeIndex < arc.numArcs();
     assert BitTable.isBitSet(rangeIndex, arc, in);
     int presenceIndex = BitTable.countBitsUpTo(rangeIndex, arc, in);
-    return readArcByDirectAddressing(arc, in, rangeIndex, presenceIndex);
+    return readArcByDirectAddressing(arc, in, rangeIndex, presenceIndex, allowReuse);
   }
 
   /**
@@ -880,27 +881,27 @@ public final class FST<T> implements Accountable {
    * corresponding presence index (which is the count of presence bits before it).
    */
   private Arc<T> readArcByDirectAddressing(
-      Arc<T> arc, final BytesReader in, int rangeIndex, int presenceIndex) throws IOException {
+      Arc<T> arc, final BytesReader in, int rangeIndex, int presenceIndex, boolean allowReuse) throws IOException {
     in.setPosition(arc.posArcsStart() - presenceIndex * (long) arc.bytesPerArc());
     arc.arcIdx = rangeIndex;
     arc.presenceIndex = presenceIndex;
     arc.flags = in.readByte();
-    return readArc(arc, in);
+    return readArc(arc, in, allowReuse);
   }
 
   /**
    * Reads the last arc of a direct addressing node. This method is equivalent to call {@link
-   * #readArcByDirectAddressing(Arc, BytesReader, int)} with {@code rangeIndex} equal to {@code
+   * #readArcByDirectAddressing(Arc, BytesReader, int, boolean)} with {@code rangeIndex} equal to {@code
    * arc.numArcs() - 1}, but it is faster.
    */
   public Arc<T> readLastArcByDirectAddressing(Arc<T> arc, final BytesReader in) throws IOException {
     assert BitTable.assertIsValid(arc, in);
     int presenceIndex = BitTable.countBits(arc, in) - 1;
-    return readArcByDirectAddressing(arc, in, arc.numArcs() - 1, presenceIndex);
+    return readArcByDirectAddressing(arc, in, arc.numArcs() - 1, presenceIndex, false);
   }
 
   /** Never returns null, but you should never call this if arc.isLast() is true. */
-  public Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in) throws IOException {
+  public Arc<T> readNextRealArc(Arc<T> arc, final BytesReader in, boolean allowReuse) throws IOException {
 
     // TODO: can't assert this because we call from readFirstArc
     // assert !flag(arc.flags, BIT_LAST_ARC);
@@ -918,7 +919,7 @@ public final class FST<T> implements Accountable {
         assert BitTable.assertIsValid(arc, in);
         assert arc.arcIdx() == -1 || BitTable.isBitSet(arc.arcIdx(), arc, in);
         int nextIndex = BitTable.nextBitSet(arc.arcIdx(), arc, in);
-        return readArcByDirectAddressing(arc, in, nextIndex, arc.presenceIndex + 1);
+        return readArcByDirectAddressing(arc, in, nextIndex, arc.presenceIndex + 1, allowReuse);
 
       default:
         // Variable length arcs - linear search.
@@ -926,7 +927,7 @@ public final class FST<T> implements Accountable {
         in.setPosition(arc.nextArc());
         arc.flags = in.readByte();
     }
-    return readArc(arc, in);
+    return readArc(arc, in, allowReuse);
   }
 
   /**
@@ -934,7 +935,7 @@ public final class FST<T> implements Accountable {
    * Precondition: The arc flags byte has already been read and set; the given BytesReader is
    * positioned just after the arc flags byte.
    */
-  private Arc<T> readArc(Arc<T> arc, BytesReader in) throws IOException {
+  private Arc<T> readArc(Arc<T> arc, BytesReader in, boolean allowReuse) throws IOException {
     if (arc.nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING) {
       arc.label = arc.firstLabel() + arc.arcIdx();
     } else {
@@ -942,13 +943,13 @@ public final class FST<T> implements Accountable {
     }
 
     if (arc.flag(BIT_ARC_HAS_OUTPUT)) {
-      arc.output = outputs.read(in);
+      arc.output = outputs.read(in, allowReuse ? arc.output : null);
     } else {
       arc.output = outputs.getNoOutput();
     }
 
     if (arc.flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-      arc.nextFinalOutput = outputs.readFinalOutput(in);
+      arc.nextFinalOutput = outputs.readFinalOutput(in, allowReuse ? arc.output : null);
     } else {
       arc.nextFinalOutput = outputs.getNoOutput();
     }
@@ -1008,7 +1009,7 @@ public final class FST<T> implements Accountable {
    * Finds an arc leaving the incoming arc, replacing the arc in place. This returns null if the arc
    * was not found, else the incoming arc.
    */
-  public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc, BytesReader in)
+  public Arc<T> findTargetArc(int labelToMatch, Arc<T> follow, Arc<T> arc, BytesReader in, boolean allowReuse)
       throws IOException {
 
     if (labelToMatch == END_LABEL) {
@@ -1051,7 +1052,7 @@ public final class FST<T> implements Accountable {
       } else if (!BitTable.isBitSet(arcIndex, arc, in)) {
         return null; // Arc missing in the range.
       }
-      return readArcByDirectAddressing(arc, in, arcIndex);
+      return readArcByDirectAddressing(arc, in, arcIndex, allowReuse);
     } else if (flags == ARCS_FOR_BINARY_SEARCH) {
       arc.numArcs = in.readVInt();
       arc.bytesPerArc = in.readVInt();
@@ -1074,14 +1075,14 @@ public final class FST<T> implements Accountable {
         } else {
           arc.arcIdx = mid - 1;
           // System.out.println("    found!");
-          return readNextRealArc(arc, in);
+          return readNextRealArc(arc, in, false);
         }
       }
       return null;
     }
 
     // Linear scan
-    readFirstRealTargetArc(follow.target(), arc, in);
+    readFirstRealTargetArc(follow.target(), arc, in, allowReuse);
 
     while (true) {
       // System.out.println("  non-bs cycle");
@@ -1096,7 +1097,7 @@ public final class FST<T> implements Accountable {
       } else if (arc.isLast()) {
         return null;
       } else {
-        readNextRealArc(arc, in);
+        readNextRealArc(arc, in, allowReuse);
       }
     }
   }

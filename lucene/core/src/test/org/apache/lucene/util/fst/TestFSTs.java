@@ -1452,7 +1452,7 @@ public class TestFSTs extends LuceneTestCase {
       long prefixOutput = 0;
       FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<>());
       for (int idx = 0; idx < prefix.length(); idx++) {
-        if (fst.findTargetArc(prefix.charAt(idx), arc, arc, reader) == null) {
+        if (fst.findTargetArc(prefix.charAt(idx), arc, arc, reader, false) == null) {
           fail();
         }
         prefixOutput += arc.output();
@@ -1579,7 +1579,7 @@ public class TestFSTs extends LuceneTestCase {
       Pair<Long, Long> prefixOutput = outputs.getNoOutput();
       FST.Arc<Pair<Long, Long>> arc = fst.getFirstArc(new FST.Arc<>());
       for (int idx = 0; idx < prefix.length(); idx++) {
-        if (fst.findTargetArc(prefix.charAt(idx), arc, arc, reader) == null) {
+        if (fst.findTargetArc(prefix.charAt(idx), arc, arc, reader, false) == null) {
           fail();
         }
         prefixOutput = outputs.add(prefixOutput, arc.output());
@@ -1684,7 +1684,7 @@ public class TestFSTs extends LuceneTestCase {
     Arc<BytesRef> arc = new FST.Arc<>();
     fst.getFirstArc(arc);
     FST.BytesReader reader = fst.getBytesReader();
-    arc = fst.findTargetArc('m', arc, arc, reader);
+    arc = fst.findTargetArc('m', arc, arc, reader, false);
     assertNotNull(arc);
     assertEquals(newBytesRef("m"), arc.output());
 
@@ -1693,7 +1693,7 @@ public class TestFSTs extends LuceneTestCase {
 
     fst.getFirstArc(arc);
     try {
-      fst.findTargetArc((int) 'm', arc, arc, reader);
+      fst.findTargetArc((int) 'm', arc, arc, reader, false);
     } catch (
         @SuppressWarnings("unused")
         AssertionError ae) {

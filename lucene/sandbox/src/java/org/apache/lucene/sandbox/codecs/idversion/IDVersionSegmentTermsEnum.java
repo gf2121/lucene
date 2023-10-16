@@ -472,7 +472,7 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
       final FST.Arc<Pair<BytesRef, Long>> nextArc =
-          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader);
+          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader, false);
 
       if (nextArc == null) {
 
@@ -826,7 +826,7 @@ public final class IDVersionSegmentTermsEnum extends BaseTermsEnum {
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
       final FST.Arc<Pair<BytesRef, Long>> nextArc =
-          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader);
+          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader, false);
 
       if (nextArc == null) {
 

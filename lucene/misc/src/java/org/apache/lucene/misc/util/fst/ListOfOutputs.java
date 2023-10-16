@@ -113,8 +113,8 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
   }
 
   @Override
-  public Object read(DataInput in) throws IOException {
-    return outputs.read(in);
+  public Object read(DataInput in, Object reuse) throws IOException {
+    return outputs.read(in, null);
   }
 
   @Override
@@ -123,14 +123,14 @@ public final class ListOfOutputs<T> extends Outputs<Object> {
   }
 
   @Override
-  public Object readFinalOutput(DataInput in) throws IOException {
+  public Object readFinalOutput(DataInput in, Object reuse) throws IOException {
     int count = in.readVInt();
     if (count == 1) {
-      return outputs.read(in);
+      return outputs.read(in, null);
     } else {
       List<T> outputList = new ArrayList<>(count);
       for (int i = 0; i < count; i++) {
-        outputList.add(outputs.read(in));
+        outputList.add(outputs.read(in, null));
       }
       return outputList;
     }

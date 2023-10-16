@@ -52,7 +52,7 @@ public final class Util {
     // Accumulate output as we go
     T output = fst.outputs.getNoOutput();
     for (int i = 0; i < input.length; i++) {
-      if (fst.findTargetArc(input.ints[input.offset + i], arc, arc, fstReader) == null) {
+      if (fst.findTargetArc(input.ints[input.offset + i], arc, arc, fstReader, false) == null) {
         return null;
       }
       output = fst.outputs.add(output, arc.output());
@@ -79,7 +79,7 @@ public final class Util {
     // Accumulate output as we go
     T output = fst.outputs.getNoOutput();
     for (int i = 0; i < input.length; i++) {
-      if (fst.findTargetArc(input.bytes[i + input.offset] & 0xFF, arc, arc, fstReader) == null) {
+      if (fst.findTargetArc(input.bytes[i + input.offset] & 0xFF, arc, arc, fstReader, false) == null) {
         return null;
       }
       output = fst.outputs.add(output, arc.output());
@@ -596,7 +596,7 @@ public final class Util {
 
           final long node = arc.target();
 
-          fst.readFirstRealTargetArc(arc.target(), arc, r);
+          fst.readFirstRealTargetArc(arc.target(), arc, r, false);
 
           // System.out.println("    firstTarget: " + arc);
 
@@ -684,7 +684,7 @@ public final class Util {
               // System.out.println("    break");
               break;
             }
-            fst.readNextRealArc(arc, r);
+            fst.readNextRealArc(arc, r, false);
           }
         }
       }
@@ -844,12 +844,12 @@ public final class Util {
           return arc;
         } else {
           if (BitTable.isBitSet(targetIndex, arc, in)) {
-            fst.readArcByDirectAddressing(arc, in, targetIndex);
+            fst.readArcByDirectAddressing(arc, in, targetIndex, false);
             assert arc.label() == label;
           } else {
             int ceilIndex = BitTable.nextBitSet(targetIndex, arc, in);
             assert ceilIndex != -1;
-            fst.readArcByDirectAddressing(arc, in, ceilIndex);
+            fst.readArcByDirectAddressing(arc, in, ceilIndex, false);
             assert arc.label() > label;
           }
           return arc;
@@ -870,7 +870,7 @@ public final class Util {
 
     // Variable length arcs in a linear scan list,
     // or special arc with label == FST.END_LABEL.
-    fst.readFirstRealTargetArc(follow.target(), arc, in);
+    fst.readFirstRealTargetArc(follow.target(), arc, in, false);
 
     while (true) {
       // System.out.println("  non-bs cycle");
@@ -880,7 +880,7 @@ public final class Util {
       } else if (arc.isLast()) {
         return null;
       } else {
-        fst.readNextRealArc(arc, in);
+        fst.readNextRealArc(arc, in, false);
       }
     }
   }

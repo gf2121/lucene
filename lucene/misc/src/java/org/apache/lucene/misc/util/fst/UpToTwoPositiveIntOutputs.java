@@ -174,7 +174,7 @@ public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
   }
 
   @Override
-  public Object read(DataInput in) throws IOException {
+  public Object read(DataInput in, Object reuse) throws IOException {
     final long code = in.readVLong();
     if ((code & 1) == 0) {
       // single long

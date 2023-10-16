@@ -125,7 +125,7 @@ public class MappingCharFilter extends BaseCharFilter {
               if (ch == -1) {
                 break;
               }
-              if ((arc = map.findTargetArc(ch, arc, scratchArc, fstReader)) == null) {
+              if ((arc = map.findTargetArc(ch, arc, scratchArc, fstReader, false)) == null) {
                 // Dead end
                 break;
               }

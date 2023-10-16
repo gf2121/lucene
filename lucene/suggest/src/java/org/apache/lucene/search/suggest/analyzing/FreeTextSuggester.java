@@ -748,7 +748,7 @@ public class FreeTextSuggester extends Lookup {
     int pos = scratch.offset;
     int end = pos + scratch.length;
     while (pos < end) {
-      if (fst.findTargetArc(bytes[pos++] & 0xff, arc, arc, bytesReader) == null) {
+      if (fst.findTargetArc(bytes[pos++] & 0xff, arc, arc, bytesReader, false) == null) {
         return null;
       } else {
         output = fst.outputs.add(output, arc.output());

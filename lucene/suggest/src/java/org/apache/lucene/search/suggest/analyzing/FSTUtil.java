@@ -96,7 +96,7 @@ public class FSTUtil {
         final int min = t.min;
         final int max = t.max;
         if (min == max) {
-          final FST.Arc<T> nextArc = fst.findTargetArc(t.min, path.fstNode, scratchArc, fstReader);
+          final FST.Arc<T> nextArc = fst.findTargetArc(t.min, path.fstNode, scratchArc, fstReader, false);
           if (nextArc != null) {
             final IntsRefBuilder newInput = new IntsRefBuilder();
             newInput.copyInts(currentInput.get());
@@ -130,7 +130,7 @@ public class FSTUtil {
                     fst.outputs.add(path.output, nextArc.output()),
                     newInput));
             final int label = nextArc.label(); // used in assert
-            nextArc = nextArc.isLast() ? null : fst.readNextRealArc(nextArc, fstReader);
+            nextArc = nextArc.isLast() ? null : fst.readNextRealArc(nextArc, fstReader, false);
             assert nextArc == null || label < nextArc.label()
                 : "last: " + label + " next: " + nextArc.label();
           }

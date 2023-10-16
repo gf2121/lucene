@@ -83,7 +83,7 @@ public final class NoOutputs extends Outputs<Object> {
   }
 
   @Override
-  public Object read(DataInput in) {
+  public Object read(DataInput in, Object reuse) {
     // assert false;
     // return null;
     return NO_OUTPUT;

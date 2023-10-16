@@ -57,7 +57,7 @@ public abstract class TokenInfoFST {
     final FST.BytesReader fstReader = fst.getBytesReader();
     // TODO: jump to cacheFloor, readNextRealArc to ceiling? (just be careful we don't add bugs)
     for (int i = 0; i < rootCache.length; i++) {
-      if (fst.findTargetArc(cacheFloor + i, firstArc, arc, fstReader) != null) {
+      if (fst.findTargetArc(cacheFloor + i, firstArc, arc, fstReader, false) != null) {
         rootCache[i] = new Arc<Long>().copyFrom(arc);
       }
     }
@@ -77,7 +77,7 @@ public abstract class TokenInfoFST {
         return arc;
       }
     } else {
-      return fst.findTargetArc(ch, follow, arc, fstReader);
+      return fst.findTargetArc(ch, follow, arc, fstReader, false);
     }
   }
 

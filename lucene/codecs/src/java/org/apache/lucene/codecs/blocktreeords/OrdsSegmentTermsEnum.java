@@ -423,7 +423,7 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
       final FST.Arc<Output> nextArc =
-          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader);
+          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader, false);
 
       if (nextArc == null) {
 
@@ -709,7 +709,7 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
       final int targetLabel = target.bytes[target.offset + targetUpto] & 0xFF;
 
       final FST.Arc<Output> nextArc =
-          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader);
+          fr.index.findTargetArc(targetLabel, arc, getArc(1 + targetUpto), fstReader, false);
 
       if (nextArc == null) {
 
@@ -1228,7 +1228,7 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
       if (FST.targetHasArcs(arc)) {
         // System.out.println("  targetHasArcs");
         result.grow(1 + upto);
-        fr.index.readFirstRealTargetArc(arc.target(), arc, fstReader);
+        fr.index.readFirstRealTargetArc(arc.target(), arc, fstReader, false);
 
         if (arc.bytesPerArc() != 0 && arc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH) {
           // System.out.println("  array arcs");
@@ -1248,7 +1248,7 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
             if ((flags & FST.BIT_ARC_HAS_OUTPUT) != 0) {
               minArcOutput =
                   OrdsBlockTreeTermsWriter.FST_OUTPUTS.add(
-                      output, OrdsBlockTreeTermsWriter.FST_OUTPUTS.read(fstReader));
+                      output, OrdsBlockTreeTermsWriter.FST_OUTPUTS.read(fstReader, null));
             } else {
               minArcOutput = output;
             }
@@ -1308,7 +1308,7 @@ public final class OrdsSegmentTermsEnum extends BaseTermsEnum {
             } else {
               // System.out.println("  next arc");
               // Read next arc in this node:
-              fr.index.readNextRealArc(arc, fstReader);
+              fr.index.readNextRealArc(arc, fstReader, false);
             }
           }
         }

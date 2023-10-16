@@ -298,7 +298,7 @@ public class Dictionary {
   static IntsRef nextArc(
       FST<IntsRef> fst, FST.Arc<IntsRef> arc, FST.BytesReader reader, IntsRef output, int ch) {
     try {
-      if (fst.findTargetArc(ch, arc, arc, reader) == null) {
+      if (fst.findTargetArc(ch, arc, arc, reader, false) == null) {
         return null;
       }
     } catch (IOException bogus) {

@@ -384,7 +384,7 @@ public class FSTCompletion {
     // can use FSTCompletion at once...
     final FST.BytesReader fstReader = automaton.getBytesReader();
     for (int i = utf8.offset; i < max; i++) {
-      if (automaton.findTargetArc(utf8.bytes[i] & 0xff, arc, arc, fstReader) == null) {
+      if (automaton.findTargetArc(utf8.bytes[i] & 0xff, arc, arc, fstReader, false) == null) {
         // No matching prefixes, return an empty result.
         return false;
       }

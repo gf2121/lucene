@@ -138,7 +138,7 @@ public final class StemmerOverrideFilter extends TokenFilter {
                 ignoreCase ? Character.toLowerCase(codePoint) : codePoint,
                 scratchArc,
                 scratchArc,
-                fstReader)
+                fstReader, false)
             == null) {
           return null;
         }

@@ -220,7 +220,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
   }
 
   @Override
-  public TermData read(DataInput in) throws IOException {
+  public TermData read(DataInput in, TermData reuse) throws IOException {
     byte[] bytes = null;
     int docFreq = 0;
     long totalTermFreq = -1;

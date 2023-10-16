@@ -19,6 +19,7 @@ package org.apache.lucene.util.fst;
 import java.io.IOException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
@@ -117,15 +118,23 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
   }
 
   @Override
-  public BytesRef read(DataInput in) throws IOException {
+  public BytesRef read(DataInput in, BytesRef reuse) throws IOException {
     final int len = in.readVInt();
     if (len == 0) {
       return NO_OUTPUT;
     } else {
-      final BytesRef output = new BytesRef(len);
-      in.readBytes(output.bytes, 0, len);
-      output.length = len;
-      return output;
+      if (reuse == null) {
+        final BytesRef output = new BytesRef(len);
+        in.readBytes(output.bytes, 0, len);
+        output.length = len;
+        return output;
+      } else {
+        reuse.bytes = ArrayUtil.grow(reuse.bytes, len);
+        in.readBytes(reuse.bytes, 0, len);
+        reuse.offset = 0;
+        reuse.length = len;
+        return reuse;
+      }
     }
   }
 

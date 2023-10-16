@@ -188,7 +188,7 @@ abstract class FSTEnum<T> {
       if (targetIndex < 0) {
         targetIndex = -1;
       } else if (BitTable.isBitSet(targetIndex, arc, in)) {
-        fst.readArcByDirectAddressing(arc, in, targetIndex);
+        fst.readArcByDirectAddressing(arc, in, targetIndex, false);
         assert arc.label() == targetLabel;
         // found -- copy pasta from below
         output[upto] = fst.outputs.add(output[upto - 1], arc.output());
@@ -202,7 +202,7 @@ abstract class FSTEnum<T> {
       // Not found, return the next arc (ceil).
       int ceilIndex = BitTable.nextBitSet(targetIndex, arc, in);
       assert ceilIndex != -1;
-      fst.readArcByDirectAddressing(arc, in, ceilIndex);
+      fst.readArcByDirectAddressing(arc, in, ceilIndex, false);
       assert arc.label() > targetLabel;
       pushFirst();
       return null;
@@ -361,7 +361,7 @@ abstract class FSTEnum<T> {
     } else {
       // Within label range.
       if (BitTable.isBitSet(targetIndex, arc, in)) {
-        fst.readArcByDirectAddressing(arc, in, targetIndex);
+        fst.readArcByDirectAddressing(arc, in, targetIndex, false);
         assert arc.label() == targetLabel;
         // found -- copy pasta from below
         output[upto] = fst.outputs.add(output[upto - 1], arc.output());
@@ -375,7 +375,7 @@ abstract class FSTEnum<T> {
       // Scan backwards to find a floor arc.
       int floorIndex = BitTable.previousBitSet(targetIndex, arc, in);
       assert floorIndex != -1;
-      fst.readArcByDirectAddressing(arc, in, floorIndex);
+      fst.readArcByDirectAddressing(arc, in, floorIndex, false);
       assert arc.label() < targetLabel;
       assert arc.isLast() || fst.readNextArcLabel(arc, in) > targetLabel;
       pushLast();
@@ -446,7 +446,7 @@ abstract class FSTEnum<T> {
         // Take the preceding arc, even if the target is present.
         int floorIndex = BitTable.previousBitSet(targetIndex, arc, in);
         if (floorIndex > 0) {
-          fst.readArcByDirectAddressing(arc, in, floorIndex);
+          fst.readArcByDirectAddressing(arc, in, floorIndex, false);
         }
       }
     }
@@ -575,7 +575,7 @@ abstract class FSTEnum<T> {
 
     while (true) {
       // System.out.println("  cycle target=" + (targetLabel == -1 ? "-1" : (char) targetLabel));
-      final FST.Arc<T> nextArc = fst.findTargetArc(targetLabel, arc, getArc(upto), fstReader);
+      final FST.Arc<T> nextArc = fst.findTargetArc(targetLabel, arc, getArc(upto), fstReader, false);
       if (nextArc == null) {
         // short circuit
         // upto--;

@@ -150,9 +150,9 @@ public class PairOutputs<A, B> extends Outputs<PairOutputs.Pair<A, B>> {
   }
 
   @Override
-  public Pair<A, B> read(DataInput in) throws IOException {
-    A output1 = outputs1.read(in);
-    B output2 = outputs2.read(in);
+  public Pair<A, B> read(DataInput in, Pair<A, B> reuse) throws IOException {
+    A output1 = outputs1.read(in, null);
+    B output2 = outputs2.read(in, null);
     return newPair(output1, output2);
   }
 

@@ -213,7 +213,7 @@ public class FSTTester<T> {
       // System.out.println("   loop i=" + i + " label=" + label + " output=" +
       // fst.outputs.outputToString(output) + " curArc: target=" + arc.target + " isFinal?=" +
       // arc.isFinal());
-      if (fst.findTargetArc(label, arc, arc, fstReader) == null) {
+      if (fst.findTargetArc(label, arc, arc, fstReader, false) == null) {
         // System.out.println("    not found");
         if (prefixLength != null) {
           prefixLength[0] = i;

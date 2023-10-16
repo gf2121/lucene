@@ -83,7 +83,7 @@ class ConvTable {
         char ch = sb.charAt(j);
 
         try {
-          if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
+          if (fst.findTargetArc(ch, arc, arc, bytesReader, false) == null) {
             break;
           }
           output = fst.outputs.add(output, arc.output());
