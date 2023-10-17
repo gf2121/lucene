@@ -17,6 +17,8 @@
 package org.apache.lucene.util.fst;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
@@ -90,6 +92,10 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
     }
   }
 
+  private static final AtomicInteger ADD_COUNT = new AtomicInteger();
+  private static final AtomicInteger SKIP_COUNT = new AtomicInteger();
+  private static final AtomicInteger READ_COUNT = new AtomicInteger();
+
   @Override
   public BytesRef add(BytesRef prefix, BytesRef output) {
     assert prefix != null;
@@ -101,6 +107,9 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
     } else {
       assert prefix.length > 0;
       assert output.length > 0;
+      if (ADD_COUNT.incrementAndGet() % 100 == 0) {
+        System.out.println("add: " + ADD_COUNT.get() + " times, skip: " + SKIP_COUNT.get() + " times, " + "read: " + READ_COUNT.get() + " times.");
+      }
       BytesRef result = new BytesRef(prefix.length + output.length);
       System.arraycopy(prefix.bytes, prefix.offset, result.bytes, 0, prefix.length);
       System.arraycopy(output.bytes, output.offset, result.bytes, prefix.length, output.length);
@@ -122,6 +131,9 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
     if (len == 0) {
       return NO_OUTPUT;
     } else {
+      if (READ_COUNT.incrementAndGet() % 100 == 0) {
+        System.out.println("add: " + ADD_COUNT.get() + " times, skip: " + SKIP_COUNT.get() + " times, " + "read: " + READ_COUNT.get() + " times.");
+      }
       final BytesRef output = new BytesRef(len);
       in.readBytes(output.bytes, 0, len);
       output.length = len;
@@ -131,6 +143,9 @@ public final class ByteSequenceOutputs extends Outputs<BytesRef> {
 
   @Override
   public void skipOutput(DataInput in) throws IOException {
+    if (SKIP_COUNT.incrementAndGet() % 100 == 0) {
+      System.out.println("add: " + ADD_COUNT.get() + " times, skip: " + SKIP_COUNT.get() + " times, " + "read: " + READ_COUNT.get() + " times.");
+    }
     final int len = in.readVInt();
     if (len != 0) {
       in.skipBytes(len);
