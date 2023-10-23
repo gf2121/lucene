@@ -669,7 +669,6 @@ public final class BPIndexReorderer {
                 public void accept(long value) throws IOException {
                   int doc = (int) value;
                   int termID = (int) (value >>> 32);
-                  System.out.println("doc: " + doc + " termID: " + termID);
                   if (doc != prevDoc) {
                     if (bufferLen != 0) {
                       writeMonotonicInts(buffer, bufferLen, termIDs);
@@ -953,11 +952,12 @@ public final class BPIndexReorderer {
         if (isFinal) {
           finalBlockSize = bufferUsed;
         }
+        long fp = output.getFilePointer();
+        fps.writeVLong(fp - lastFp);
+        lastFp = fp;
         for (int i = 0; i < bufferUsed; i++) {
           output.writeLong(buffer[i]);
         }
-        long fp = output.getFilePointer();
-        fps.writeVLong(fp - lastFp);
         lastFp = fp;
         blockNum++;
         bufferUsed = 0;
@@ -1004,6 +1004,7 @@ public final class BPIndexReorderer {
             }
             fp += index.readVLong();
           }
+          value.seek(fp);
           for (int j = 0; j < finalBlockSize; j++) {
             consumer.accept(value.readLong());
           }
