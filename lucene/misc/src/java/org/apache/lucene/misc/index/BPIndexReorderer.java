@@ -784,17 +784,24 @@ public final class BPIndexReorderer {
       throws IOException {
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
 
+    long writePostingsTook, buildForwardIndexTook, reorderTook, entryCount;
     final int maxDoc = reader.maxDoc();
     ForwardIndex forwardIndex = null;
     IndexOutput postingsOutput = null;
     boolean success = false;
     try {
       postingsOutput = trackingDir.createTempOutput("postings", "", IOContext.DEFAULT);
+      long start = System.currentTimeMillis();
       int numTerms = writePostings(reader, fields, trackingDir, postingsOutput);
+      entryCount = postingsOutput.getFilePointer() / 8;
       CodecUtil.writeFooter(postingsOutput);
+      writePostingsTook = System.currentTimeMillis() - start;
+
       postingsOutput.close();
       final ForwardIndex finalForwardIndex =
           forwardIndex = buildForwardIndex(trackingDir, postingsOutput.getName(), maxDoc, numTerms);
+      buildForwardIndexTook = System.currentTimeMillis() - start - writePostingsTook;
+
       trackingDir.deleteFile(postingsOutput.getName());
       postingsOutput = null;
 
@@ -819,7 +826,12 @@ public final class BPIndexReorderer {
           task.compute();
         }
       }
-
+      reorderTook = System.currentTimeMillis() - start - writePostingsTook - buildForwardIndexTook;
+      System.out.println("entry(docId, termId) count: " + entryCount
+          + "\nwrite postings took: " + writePostingsTook
+          + "\nbuild forward index took: " + buildForwardIndexTook
+          + "\nreorder took: " + reorderTook
+      );
       success = true;
       return sortedDocs;
     } finally {
