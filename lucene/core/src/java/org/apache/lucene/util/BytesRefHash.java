@@ -154,17 +154,7 @@ public final class BytesRefHash implements Accountable {
         : "Change the following sorter to a StringSorter if you are increasing the load factor.";
     final int tmpOffset = count;
     final long start = System.currentTimeMillis();
-    new StableStringSorter(BytesRefComparator.NATURAL) {
-
-      @Override
-      protected void save(int i, int j) {
-        compact[tmpOffset + j] = compact[i];
-      }
-
-      @Override
-      protected void restore(int i, int j) {
-        System.arraycopy(compact, tmpOffset + i, compact, i, j - i);
-      }
+    new StringSorter(BytesRefComparator.NATURAL) {
 
       @Override
       protected void swap(int i, int j) {
