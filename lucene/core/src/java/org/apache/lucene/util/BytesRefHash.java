@@ -180,7 +180,9 @@ public final class BytesRefHash implements Accountable {
     }.sort(0, count);
     final long end = System.currentTimeMillis();
     TOOK.addAndGet(end - start);
-    System.out.println("took: " + (end - start) + ", total took: " + TOOK.get());
+    if (count > 100000) {
+      System.out.println("sort " + count + " terms, took: " + (end - start) + ", total took: " + TOOK.get());
+    }
     return compact;
   }
 
