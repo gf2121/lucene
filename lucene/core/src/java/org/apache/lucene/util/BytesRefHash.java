@@ -137,6 +137,8 @@ public final class BytesRefHash implements Accountable {
     return ids;
   }
 
+  private static final AtomicLong TOOK = new AtomicLong();
+
   /**
    * Returns the values array sorted by the referenced byte values.
    *
@@ -151,6 +153,7 @@ public final class BytesRefHash implements Accountable {
     assert count * 2 <= compact.length
         : "Change the following sorter to a StringSorter if you are increasing the load factor.";
     final int tmpOffset = count;
+    final long start = System.currentTimeMillis();
     new StableStringSorter(BytesRefComparator.NATURAL) {
 
       @Override
@@ -175,6 +178,9 @@ public final class BytesRefHash implements Accountable {
         pool.fillBytesRef(result, bytesStart[compact[i]]);
       }
     }.sort(0, count);
+    final long end = System.currentTimeMillis();
+    TOOK.addAndGet(end - start);
+    System.out.println(TOOK.get());
     return compact;
   }
 
