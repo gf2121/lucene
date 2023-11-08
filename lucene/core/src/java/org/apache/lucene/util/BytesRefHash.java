@@ -34,6 +34,9 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
  * @lucene.internal
  */
 public final class BytesRefHash implements Accountable {
+
+
+  public static boolean STABLE_SORT = false;
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class)
           +
@@ -154,35 +157,50 @@ public final class BytesRefHash implements Accountable {
         : "Change the following sorter to a StringSorter if you are increasing the load factor.";
     final int tmpOffset = count;
     final long start = System.currentTimeMillis();
-    new StableStringSorter(BytesRefComparator.NATURAL) {
+    if (STABLE_SORT) {
+      new StableStringSorter(BytesRefComparator.NATURAL) {
 
-      @Override
-      protected void save(int i, int j) {
-        compact[tmpOffset + j] = compact[i];
-      }
+        @Override
+        protected void save(int i, int j) {
+          compact[tmpOffset + j] = compact[i];
+        }
 
-      @Override
-      protected void restore(int i, int j) {
-        System.arraycopy(compact, tmpOffset + i, compact, i, j - i);
-      }
+        @Override
+        protected void restore(int i, int j) {
+          System.arraycopy(compact, tmpOffset + i, compact, i, j - i);
+        }
 
-      @Override
-      protected void swap(int i, int j) {
-        int tmp = compact[i];
-        compact[i] = compact[j];
-        compact[j] = tmp;
-      }
+        @Override
+        protected void swap(int i, int j) {
+          int tmp = compact[i];
+          compact[i] = compact[j];
+          compact[j] = tmp;
+        }
 
-      @Override
-      protected void get(BytesRefBuilder builder, BytesRef result, int i) {
-        pool.fillBytesRef(result, bytesStart[compact[i]]);
-      }
-    }.sort(0, count);
-    final long end = System.currentTimeMillis();
-    TOOK.addAndGet(end - start);
-    if (count > 100000) {
-      System.out.println("sort " + count + " terms, took: " + (end - start) + ", total took: " + TOOK.get());
+        @Override
+        protected void get(BytesRefBuilder builder, BytesRef result, int i) {
+          pool.fillBytesRef(result, bytesStart[compact[i]]);
+        }
+      }.sort(0, count);
+    } else {
+      new StringSorter(BytesRefComparator.NATURAL) {
+
+        @Override
+        protected void swap(int i, int j) {
+          int tmp = compact[i];
+          compact[i] = compact[j];
+          compact[j] = tmp;
+        }
+
+        @Override
+        protected void get(BytesRefBuilder builder, BytesRef result, int i) {
+          pool.fillBytesRef(result, bytesStart[compact[i]]);
+        }
+      }.sort(0, count);
     }
+    final long end = System.currentTimeMillis();
+    System.out.println("use stable sort: " + STABLE_SORT  + ", sort " + count + " terms, took: " + (end - start) + "ms");
+
     return compact;
   }
 
