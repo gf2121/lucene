@@ -3,6 +3,7 @@ package org.apache.lucene;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -16,9 +17,13 @@ import org.apache.lucene.util.BytesRefHash;
 
 public class Run {
 
+  private static Random r = new Random(0);
+
   public static void main(String[] args) throws Exception {
+    r = new Random(0);
     BytesRefHash.STABLE_SORT = false;
     doTest();
+    r = new Random(0);
     BytesRefHash.STABLE_SORT = true;
     doTest();
   }
@@ -33,7 +38,7 @@ public class Run {
     for (int i = 0; i < 60000000; i++) {
       Document document = new Document();
       byte[] bytes = new byte[16];
-      ThreadLocalRandom.current().nextBytes(bytes);
+      r.nextBytes(bytes);
       BytesRef bytesRef = new BytesRef(bytes);
       document.add(new StringField("id", bytesRef, Field.Store.NO));
       writer.addDocument(document);

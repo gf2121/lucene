@@ -157,6 +157,8 @@ public final class BytesRefHash implements Accountable {
         : "Change the following sorter to a StringSorter if you are increasing the load factor.";
     final int tmpOffset = count;
     final long start = System.currentTimeMillis();
+    AtomicLong swap = new AtomicLong(0);
+    AtomicLong counter = new AtomicLong(0);
     if (STABLE_SORT) {
       new StableStringSorter(BytesRefComparator.NATURAL) {
 
@@ -172,6 +174,7 @@ public final class BytesRefHash implements Accountable {
 
         @Override
         protected void swap(int i, int j) {
+          swap.incrementAndGet();
           int tmp = compact[i];
           compact[i] = compact[j];
           compact[j] = tmp;
@@ -179,6 +182,7 @@ public final class BytesRefHash implements Accountable {
 
         @Override
         protected void get(BytesRefBuilder builder, BytesRef result, int i) {
+          counter.incrementAndGet();
           pool.fillBytesRef(result, bytesStart[compact[i]]);
         }
       }.sort(0, count);
@@ -187,6 +191,7 @@ public final class BytesRefHash implements Accountable {
 
         @Override
         protected void swap(int i, int j) {
+          swap.incrementAndGet();
           int tmp = compact[i];
           compact[i] = compact[j];
           compact[j] = tmp;
@@ -194,12 +199,17 @@ public final class BytesRefHash implements Accountable {
 
         @Override
         protected void get(BytesRefBuilder builder, BytesRef result, int i) {
+          counter.incrementAndGet();
           pool.fillBytesRef(result, bytesStart[compact[i]]);
         }
       }.sort(0, count);
     }
     final long end = System.currentTimeMillis();
-    System.out.println("use stable sort: " + STABLE_SORT  + ", sort " + count + " terms, took: " + (end - start) + "ms");
+    System.out.println("use stable sort: " + STABLE_SORT  + "," +
+        " sort " + count + " terms," +
+        " took: " + (end - start) + "ms," +
+        " get BytesRef " + counter.get() + " times," +
+        " swap " + swap.get() + " times.");
 
     return compact;
   }
