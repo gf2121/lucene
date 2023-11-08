@@ -2,9 +2,7 @@ package org.apache.lucene;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -21,10 +19,10 @@ public class Run {
 
   public static void main(String[] args) throws Exception {
     r = new Random(0);
-    BytesRefHash.STABLE_SORT = false;
+    BytesRefHash.OPTIMIZED = false;
     doTest();
     r = new Random(0);
-    BytesRefHash.STABLE_SORT = true;
+    BytesRefHash.OPTIMIZED = true;
     doTest();
   }
 

@@ -45,6 +45,10 @@ public abstract class MSBRadixSorter extends Sorter {
 
   protected final int maxLength;
 
+  public long fallbackTook = 0;
+  public long reorderTook = 0;
+  public long buildHistogramTook = 0;
+
   /**
    * Sole constructor.
    *
@@ -127,11 +131,15 @@ public abstract class MSBRadixSorter extends Sorter {
   public void sort(int from, int to) {
     checkRange(from, to);
     sort(from, to, 0, 0);
+    System.out.print("build histogram took: " + buildHistogramTook + "ms, reorder took: " + reorderTook + "ms, fallback sort took: " + fallbackTook + "ms, ");
   }
 
   protected void sort(int from, int to, int k, int l) {
     if (to - from <= LENGTH_THRESHOLD || l >= LEVEL_THRESHOLD) {
+      long start = System.currentTimeMillis();
       getFallbackSorter(k).sort(from, to);
+      long end = System.currentTimeMillis();
+      fallbackTook += end - start;
     } else {
       radixSort(from, to, k, l);
     }
@@ -149,8 +157,11 @@ public abstract class MSBRadixSorter extends Sorter {
       Arrays.fill(histogram, 0);
     }
 
+    long start = System.currentTimeMillis();
     final int commonPrefixLength =
         computeCommonPrefixLengthAndBuildHistogram(from, to, k, histogram);
+    long end = System.currentTimeMillis();
+    buildHistogramTook += end - start;
     if (commonPrefixLength > 0) {
       // if there are no more chars to compare or if all entries fell into the
       // first bucket (which means strings are shorter than k) then we are done
@@ -165,7 +176,10 @@ public abstract class MSBRadixSorter extends Sorter {
     int[] startOffsets = histogram;
     int[] endOffsets = this.endOffsets;
     sumHistogram(histogram, endOffsets);
+    start = System.currentTimeMillis();
     reorder(from, to, startOffsets, endOffsets, k);
+    end = System.currentTimeMillis();
+    reorderTook += end - start;
     endOffsets = startOffsets;
 
     if (k + 1 < maxLength) {
@@ -229,8 +243,6 @@ public abstract class MSBRadixSorter extends Sorter {
         if (b != commonPrefix[j]) {
           commonPrefixLength = j;
           if (commonPrefixLength == 0) { // we have no common prefix
-            histogram[commonPrefix[0] + 1] = i - from;
-            histogram[b + 1] = 1;
             break outer;
           }
           break;
@@ -241,7 +253,7 @@ public abstract class MSBRadixSorter extends Sorter {
     if (i < to) {
       // the loop got broken because there is no common prefix
       assert commonPrefixLength == 0;
-      buildHistogram(i + 1, to, k, histogram);
+      buildHistogram(commonPrefix[0] + 1, i - from, i, to, k, histogram);
     } else {
       assert commonPrefixLength > 0;
       histogram[commonPrefix[0] + 1] = to - from;
@@ -254,7 +266,9 @@ public abstract class MSBRadixSorter extends Sorter {
    * Build an histogram of the k-th characters of values occurring between offsets {@code from} and
    * {@code to}, using {@link #getBucket}.
    */
-  private void buildHistogram(int from, int to, int k, int[] histogram) {
+  protected void buildHistogram(
+      int commonBucket, int commonLen, int from, int to, int k, int[] histogram) {
+    histogram[commonBucket] = commonLen;
     for (int i = from; i < to; ++i) {
       histogram[getBucket(i, k)]++;
     }

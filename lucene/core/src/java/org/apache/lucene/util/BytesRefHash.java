@@ -35,8 +35,7 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
  */
 public final class BytesRefHash implements Accountable {
 
-
-  public static boolean STABLE_SORT = false;
+  public static boolean OPTIMIZED = true;
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class)
           +
@@ -157,33 +156,95 @@ public final class BytesRefHash implements Accountable {
         : "Change the following sorter to a StringSorter if you are increasing the load factor.";
     final int tmpOffset = count;
     final long start = System.currentTimeMillis();
-    AtomicLong swap = new AtomicLong(0);
-    AtomicLong counter = new AtomicLong(0);
-    if (STABLE_SORT) {
-      new StableStringSorter(BytesRefComparator.NATURAL) {
+    System.out.print((OPTIMIZED ? "CANDIDATE" : "BASELINE") + ": " + " sort " + count + " terms, ");
+    if (OPTIMIZED) {
+      new MSBRadixSorter(Integer.MAX_VALUE) {
+
+        final BytesRef scratchBytes1 = new BytesRef();
+        final BytesRef scratchBytes2 = new BytesRef();
+        final BytesRef pivot = new BytesRef();
+        private int k;
 
         @Override
-        protected void save(int i, int j) {
-          compact[tmpOffset + j] = compact[i];
+        protected void buildHistogram(
+            int prefixCommonBucket, int prefixCommonLen, int from, int to, int k, int[] histogram) {
+          this.k = k;
+          histogram[prefixCommonBucket] = prefixCommonLen;
+          Arrays.fill(
+              compact, tmpOffset + from - prefixCommonLen, tmpOffset + from, prefixCommonBucket);
+          for (int i = from; i < to; ++i) {
+            int b = getBucket(i, k);
+            compact[tmpOffset + i] = b;
+            histogram[b]++;
+          }
+        }
+
+        private void swapBucketCache(int i, int j) {
+          int tmp = compact[tmpOffset + i];
+          compact[tmpOffset + i] = compact[tmpOffset + j];
+          compact[tmpOffset + j] = tmp;
         }
 
         @Override
-        protected void restore(int i, int j) {
-          System.arraycopy(compact, tmpOffset + i, compact, i, j - i);
+        protected void reorder(int from, int to, int[] startOffsets, int[] endOffsets, int k) {
+          assert this.k == k;
+          for (int i = 0; i < HISTOGRAM_SIZE; ++i) {
+            final int limit = endOffsets[i];
+            for (int h1 = startOffsets[i]; h1 < limit; h1 = startOffsets[i]) {
+              final int i1 = from + h1;
+              final int b = compact[tmpOffset + i1];
+              final int h2 = startOffsets[b]++;
+              final int i2 = from + h2;
+              swap(i1, i2);
+              swapBucketCache(i1, i2);
+            }
+          }
         }
 
         @Override
         protected void swap(int i, int j) {
-          swap.incrementAndGet();
           int tmp = compact[i];
           compact[i] = compact[j];
           compact[j] = tmp;
         }
 
         @Override
-        protected void get(BytesRefBuilder builder, BytesRef result, int i) {
-          counter.incrementAndGet();
-          pool.fillBytesRef(result, bytesStart[compact[i]]);
+        protected int byteAt(int i, int k) {
+          get(scratchBytes1, i);
+          return BytesRefComparator.NATURAL.byteAt(scratchBytes1, k);
+        }
+
+        private void get(BytesRef b, int i) {
+          pool.fillBytesRef(b, bytesStart[compact[i]]);
+        }
+
+        @Override
+        protected Sorter getFallbackSorter(int k) {
+          MSBRadixSorter outer = this;
+          return new IntroSorter() {
+            @Override
+            protected void swap(int i, int j) {
+              outer.swap(i, j);
+            }
+
+            @Override
+            protected int compare(int i, int j) {
+              get(scratchBytes1, i);
+              get(scratchBytes2, j);
+              return scratchBytes1.compareTo(scratchBytes2);
+            }
+
+            @Override
+            protected void setPivot(int i) {
+              get(pivot, i);
+            }
+
+            @Override
+            protected int comparePivot(int j) {
+              get(scratchBytes1, j);
+              return pivot.compareTo(scratchBytes1);
+            }
+          };
         }
       }.sort(0, count);
     } else {
@@ -191,7 +252,6 @@ public final class BytesRefHash implements Accountable {
 
         @Override
         protected void swap(int i, int j) {
-          swap.incrementAndGet();
           int tmp = compact[i];
           compact[i] = compact[j];
           compact[j] = tmp;
@@ -199,17 +259,12 @@ public final class BytesRefHash implements Accountable {
 
         @Override
         protected void get(BytesRefBuilder builder, BytesRef result, int i) {
-          counter.incrementAndGet();
           pool.fillBytesRef(result, bytesStart[compact[i]]);
         }
       }.sort(0, count);
     }
     final long end = System.currentTimeMillis();
-    System.out.println("use stable sort: " + STABLE_SORT  + "," +
-        " sort " + count + " terms," +
-        " took: " + (end - start) + "ms," +
-        " get BytesRef " + counter.get() + " times," +
-        " swap " + swap.get() + " times.");
+    System.out.print("total took: " + (end - start) + "ms.\n");
 
     return compact;
   }
