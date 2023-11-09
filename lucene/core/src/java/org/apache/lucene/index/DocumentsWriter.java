@@ -489,7 +489,10 @@ final class DocumentsWriter implements Closeable, Accountable {
           boolean dwptSuccess = false;
           try {
             // flush concurrently without locking
+            long start = System.currentTimeMillis();
             final FlushedSegment newSegment = flushingDWPT.flush(flushNotifications);
+            long end = System.currentTimeMillis();
+            System.out.println("flush took: " + (end - start) + "ms.\n");
             ticketQueue.addSegment(ticket, newSegment);
             dwptSuccess = true;
           } finally {
