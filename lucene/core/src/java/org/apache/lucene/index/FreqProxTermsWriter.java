@@ -98,7 +98,7 @@ final class FreqProxTermsWriter extends TermsHash {
         long start = System.currentTimeMillis();
         perField.sortTerms();
         long end = System.currentTimeMillis();
-        System.out.println("field: " + perField.getFieldName() + ", sort " + perField.getNumTerms() + " terms, took " + (end - start) + "ms.");
+        System.out.println("field: " + perField.getFieldName() + ", sort " + perField.getNumTerms() + " terms, took " + (end - start) + " ms.");
         assert perField.indexOptions != IndexOptions.NONE;
         allFields.add(perField);
       }
