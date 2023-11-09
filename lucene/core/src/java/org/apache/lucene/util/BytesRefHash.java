@@ -139,8 +139,6 @@ public final class BytesRefHash implements Accountable {
     return ids;
   }
 
-  private static final AtomicLong TOOK = new AtomicLong();
-
   /**
    * Returns the values array sorted by the referenced byte values.
    *
@@ -149,56 +147,58 @@ public final class BytesRefHash implements Accountable {
    */
   public int[] sort() {
     final int[] compact = compact();
-
-    // We do not really need "stable" here. But since we allocated the extra O(n) memory anyway we
-    // can use this stable sorter to speed it up ~35%.
-    assert count * 2 <= compact.length
-        : "Change the following sorter to a StringSorter if you are increasing the load factor.";
+    assert count * 2 <= compact.length : "We need load factor <= 0.5f to speed up this sort";
     final int tmpOffset = count;
-    final long start = System.currentTimeMillis();
     System.out.print((OPTIMIZED ? "CANDIDATE" : "BASELINE") + ": " + " sort " + count + " terms, ");
+    final long start = System.currentTimeMillis();
     if (OPTIMIZED) {
-      new MSBRadixSorter(Integer.MAX_VALUE) {
-
-        final BytesRef scratchBytes1 = new BytesRef();
-        final BytesRef scratchBytes2 = new BytesRef();
-        final BytesRef pivot = new BytesRef();
-        private int k;
+      new StringSorter(BytesRefComparator.NATURAL) {
 
         @Override
-        protected void buildHistogram(
-            int prefixCommonBucket, int prefixCommonLen, int from, int to, int k, int[] histogram) {
-          this.k = k;
-          histogram[prefixCommonBucket] = prefixCommonLen;
-          Arrays.fill(
-              compact, tmpOffset + from - prefixCommonLen, tmpOffset + from, prefixCommonBucket);
-          for (int i = from; i < to; ++i) {
-            int b = getBucket(i, k);
-            compact[tmpOffset + i] = b;
-            histogram[b]++;
-          }
-        }
+        protected Sorter radixSorter(BytesRefComparator cmp) {
+          return new MSBStringRadixSorter(cmp) {
 
-        private void swapBucketCache(int i, int j) {
-          int tmp = compact[tmpOffset + i];
-          compact[tmpOffset + i] = compact[tmpOffset + j];
-          compact[tmpOffset + j] = tmp;
-        }
+            private int k;
 
-        @Override
-        protected void reorder(int from, int to, int[] startOffsets, int[] endOffsets, int k) {
-          assert this.k == k;
-          for (int i = 0; i < HISTOGRAM_SIZE; ++i) {
-            final int limit = endOffsets[i];
-            for (int h1 = startOffsets[i]; h1 < limit; h1 = startOffsets[i]) {
-              final int i1 = from + h1;
-              final int b = compact[tmpOffset + i1];
-              final int h2 = startOffsets[b]++;
-              final int i2 = from + h2;
-              swap(i1, i2);
-              swapBucketCache(i1, i2);
+            @Override
+            protected void buildHistogram(
+                int prefixCommonBucket,
+                int prefixCommonLen,
+                int from,
+                int to,
+                int k,
+                int[] histogram) {
+              this.k = k;
+              histogram[prefixCommonBucket] = prefixCommonLen;
+              Arrays.fill(
+                  compact, tmpOffset + from - prefixCommonLen, tmpOffset + from, prefixCommonBucket);
+              for (int i = from; i < to; ++i) {
+                int b = getBucket(i, k);
+                compact[tmpOffset + i] = b;
+                histogram[b]++;
+              }
             }
-          }
+
+            private void swapBucketCache(int i, int j) {
+              swap(i, j);
+              int tmp = compact[tmpOffset + i];
+              compact[tmpOffset + i] = compact[tmpOffset + j];
+              compact[tmpOffset + j] = tmp;
+            }
+
+            @Override
+            protected void reorder(int from, int to, int[] startOffsets, int[] endOffsets, int k) {
+              assert this.k == k;
+              for (int i = 0; i < HISTOGRAM_SIZE; ++i) {
+                final int limit = endOffsets[i];
+                for (int h1 = startOffsets[i]; h1 < limit; h1 = startOffsets[i]) {
+                  final int b = compact[tmpOffset + from + h1];
+                  final int h2 = startOffsets[b]++;
+                  swapBucketCache(from + h1, from + h2);
+                }
+              }
+            }
+          };
         }
 
         @Override
@@ -209,45 +209,12 @@ public final class BytesRefHash implements Accountable {
         }
 
         @Override
-        protected int byteAt(int i, int k) {
-          get(scratchBytes1, i);
-          return BytesRefComparator.NATURAL.byteAt(scratchBytes1, k);
-        }
-
-        private void get(BytesRef b, int i) {
-          pool.fillBytesRef(b, bytesStart[compact[i]]);
-        }
-
-        @Override
-        protected Sorter getFallbackSorter(int k) {
-          MSBRadixSorter outer = this;
-          return new IntroSorter() {
-            @Override
-            protected void swap(int i, int j) {
-              outer.swap(i, j);
-            }
-
-            @Override
-            protected int compare(int i, int j) {
-              get(scratchBytes1, i);
-              get(scratchBytes2, j);
-              return scratchBytes1.compareTo(scratchBytes2);
-            }
-
-            @Override
-            protected void setPivot(int i) {
-              get(pivot, i);
-            }
-
-            @Override
-            protected int comparePivot(int j) {
-              get(scratchBytes1, j);
-              return pivot.compareTo(scratchBytes1);
-            }
-          };
+        protected void get(BytesRefBuilder builder, BytesRef result, int i) {
+          pool.fillBytesRef(result, bytesStart[compact[i]]);
         }
       }.sort(0, count);
-    } else {
+    }
+    else {
       new StringSorter(BytesRefComparator.NATURAL) {
 
         @Override
@@ -265,7 +232,6 @@ public final class BytesRefHash implements Accountable {
     }
     final long end = System.currentTimeMillis();
     System.out.print("total took: " + (end - start) + "ms.\n");
-
     return compact;
   }
 
