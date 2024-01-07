@@ -176,13 +176,16 @@ public class TestBytesRefHash extends LuceneTestCase {
         hash.add(ref.get());
         strings.add(str);
       }
-      int[] sort = hash.sort();
-      assertTrue(strings.size() < sort.length);
-      int i = 0;
-      BytesRef scratch = new BytesRef();
-      for (String string : strings) {
-        ref.copyChars(string);
-        assertEquals(ref.get(), hash.get(sort[i++], scratch));
+      // test duplicate sort
+      for (int iter = 0; iter < 3; iter++) {
+        int[] sort = hash.sort();
+        assertTrue(strings.size() < sort.length);
+        int i = 0;
+        BytesRef scratch = new BytesRef();
+        for (String string : strings) {
+          ref.copyChars(string);
+          assertEquals(ref.get(), hash.get(sort[i++], scratch));
+        }
       }
       hash.clear();
       assertEquals(0, hash.size());
