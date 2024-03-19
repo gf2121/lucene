@@ -528,6 +528,10 @@ public final class IndexedDISI extends DocIdSetIterator {
 
   @Override
   public int nextDoc() throws IOException {
+    if (index != -1 && index + 1 < nextBlockIndex) {
+      method.nextWithinBlock(this);
+      return doc;
+    }
     return advance(doc + 1);
   }
 
@@ -542,6 +546,15 @@ public final class IndexedDISI extends DocIdSetIterator {
 
   enum Method {
     SPARSE {
+      @Override
+      void nextWithinBlock(IndexedDISI disi) throws IOException {
+        final int doc = Short.toUnsignedInt(disi.slice.readShort());
+        disi.index++;
+        disi.doc = disi.block | doc;
+        disi.exists = true;
+        disi.nextExistDocInBlock = doc;
+      }
+
       @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
         final int targetInBlock = target & 0xFFFF;
@@ -589,6 +602,37 @@ public final class IndexedDISI extends DocIdSetIterator {
       }
     },
     DENSE {
+      @Override
+      void nextWithinBlock(IndexedDISI disi) throws IOException {
+        final int target = disi.doc + 1;
+
+        if ((target & 0x3F) == 0) {
+          // We are at the last bit of this word
+          disi.word = disi.slice.readLong();
+          disi.numberOfOnes += Long.bitCount(disi.word);
+          disi.wordIndex++;
+        }
+
+        long leftBits = disi.word >>> target;
+        if (leftBits != 0L) {
+          disi.doc = target + Long.numberOfTrailingZeros(leftBits);
+          disi.index = disi.numberOfOnes - Long.bitCount(leftBits);
+          return;
+        }
+
+        // There were no set bits at the wanted position. Move forward until one is reached
+        while (true) {
+          disi.wordIndex++;
+          disi.word = disi.slice.readLong();
+          if (disi.word != 0) {
+            disi.index = disi.numberOfOnes;
+            disi.numberOfOnes += Long.bitCount(disi.word);
+            disi.doc = disi.block | (disi.wordIndex << 6) | Long.numberOfTrailingZeros(disi.word);
+            return;
+          }
+        }
+      }
+
       @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
         final int targetInBlock = target & 0xFFFF;
@@ -670,6 +714,15 @@ public final class IndexedDISI extends DocIdSetIterator {
         return true;
       }
     };
+
+    /**
+     * Get the next doc from the block. This is default to advanceWithinBlock(disi, tagert + 1) but
+     * could be faster in some implementations.
+     */
+    void nextWithinBlock(IndexedDISI disi) throws IOException {
+      boolean result = advanceWithinBlock(disi, disi.doc + 1);
+      assert result : "nextWithinBlock need to called with the next doc exists in this block";
+    }
 
     /**
      * Advance to the first doc from the block that is equal to or greater than {@code target}.
