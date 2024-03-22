@@ -222,22 +222,16 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         }
       }
 
-      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
+      int[] minDoc = new int[] {maxDocVisited};
       PointValues.IntersectVisitor visitor =
           new PointValues.IntersectVisitor() {
-            DocIdSetBuilder.BulkAdder adder;
-
-            @Override
-            public void grow(int count) {
-              adder = result.grow(count);
-            }
 
             @Override
             public void visit(int docID) {
               if (docID <= maxDocVisited) {
                 return; // Already visited or skipped
               }
-              adder.add(docID);
+              minDoc[0] = Math.min(minDoc[0], docID);
             }
 
             @Override
@@ -255,7 +249,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
                 if (cmp < 0) return;
               }
-              adder.add(docID); // doc is competitive
+              minDoc[0] = Math.min(minDoc[0], docID); // doc is competitive
             }
 
             @Override
@@ -273,9 +267,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
                 if (cmp < 0) return PointValues.Relation.CELL_OUTSIDE_QUERY;
               }
               if ((maxValueAsBytes != null
-                      && bytesComparator.compare(maxPackedValue, 0, maxValueAsBytes, 0) > 0)
+                  && bytesComparator.compare(maxPackedValue, 0, maxValueAsBytes, 0) > 0)
                   || (minValueAsBytes != null
-                      && bytesComparator.compare(minPackedValue, 0, minValueAsBytes, 0) < 0)) {
+                  && bytesComparator.compare(minPackedValue, 0, minValueAsBytes, 0) < 0)) {
                 return PointValues.Relation.CELL_CROSSES_QUERY;
               }
               return PointValues.Relation.CELL_INSIDE_QUERY;
@@ -296,7 +290,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         return;
       }
       pointValues.intersect(visitor);
-      competitiveIterator = result.build().iterator();
+      competitiveIterator = minDoc[0] == maxDoc ? DocIdSetIterator.empty() : DocIdSetIterator.range(minDoc[0], maxDoc);
       iteratorCost = competitiveIterator.cost();
       updateSkipInterval(true);
     }
