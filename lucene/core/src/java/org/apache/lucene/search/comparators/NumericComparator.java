@@ -222,7 +222,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         }
       }
 
-      int[] minDoc = new int[] {maxDocVisited};
+      int[] minDoc = new int[] {maxDoc};
       PointValues.IntersectVisitor visitor =
           new PointValues.IntersectVisitor() {
 
