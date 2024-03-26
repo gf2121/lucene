@@ -166,7 +166,6 @@ import org.apache.lucene.store.FileSwitchDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MergeInfo;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
@@ -190,7 +189,6 @@ import org.apache.lucene.tests.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CommandLineUtil;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -498,31 +496,9 @@ public abstract class LuceneTestCase extends Assert {
     LEAVE_TEMPORARY = defaultValue;
   }
 
-  /**
-   * Returns true, if MMapDirectory supports unmapping on this platform (required for Windows), or
-   * if we are not on Windows.
-   */
-  public static boolean hasWorkingMMapOnWindows() {
-    return !Constants.WINDOWS || MMapDirectory.UNMAP_SUPPORTED;
-  }
-
-  /**
-   * Assumes that the current MMapDirectory implementation supports unmapping, so the test will not
-   * fail on Windows.
-   *
-   * @see #hasWorkingMMapOnWindows()
-   */
-  public static void assumeWorkingMMapOnWindows() {
-    assumeTrue(MMapDirectory.UNMAP_NOT_SUPPORTED_REASON, hasWorkingMMapOnWindows());
-  }
-
   /** Filesystem-based {@link Directory} implementations. */
   private static final List<String> FS_DIRECTORIES =
-      Arrays.asList(
-          "NIOFSDirectory",
-          // NIOFSDirectory as replacement for MMapDirectory if unmapping is not supported on
-          // Windows (to make randomization stable):
-          hasWorkingMMapOnWindows() ? "MMapDirectory" : "NIOFSDirectory");
+      Arrays.asList("NIOFSDirectory", "MMapDirectory");
 
   /** All {@link Directory} implementations. */
   private static final List<String> CORE_DIRECTORIES;
@@ -1802,18 +1778,19 @@ public abstract class LuceneTestCase extends Assert {
   public static IOContext newIOContext(Random random, IOContext oldContext) {
     final int randomNumDocs = random.nextInt(4192);
     final int size = random.nextInt(512) * randomNumDocs;
-    if (oldContext.flushInfo != null) {
+    if (oldContext.flushInfo() != null) {
       // Always return at least the estimatedSegmentSize of
       // the incoming IOContext:
       return new IOContext(
-          new FlushInfo(randomNumDocs, Math.max(oldContext.flushInfo.estimatedSegmentSize, size)));
-    } else if (oldContext.mergeInfo != null) {
+          new FlushInfo(
+              randomNumDocs, Math.max(oldContext.flushInfo().estimatedSegmentSize(), size)));
+    } else if (oldContext.mergeInfo() != null) {
       // Always return at least the estimatedMergeBytes of
       // the incoming IOContext:
       return new IOContext(
           new MergeInfo(
               randomNumDocs,
-              Math.max(oldContext.mergeInfo.estimatedMergeBytes, size),
+              Math.max(oldContext.mergeInfo().estimatedMergeBytes(), size),
               random.nextBoolean(),
               TestUtil.nextInt(random, 1, 100)));
     } else {

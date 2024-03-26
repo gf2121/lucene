@@ -14,21 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.core.tests;
+package org.apache.lucene.store;
 
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.tests.util.LuceneTestCase;
-import org.junit.Assert;
+import java.io.IOException;
+import java.lang.foreign.MemorySegment;
+import java.util.Optional;
+import org.apache.lucene.util.Constants;
 
-public class TestMMap extends LuceneTestCase {
-  public void testUnmapSupported() {
-    final Module module = MMapDirectory.class.getModule();
-    Assert.assertTrue("Lucene Core is not loaded as module", module.isNamed());
-    Assert.assertTrue(
-        "Lucene Core can't read 'jdk.unsupported' module",
-        module.getLayer().findModule("jdk.unsupported").map(module::canRead).orElse(false));
+@SuppressWarnings("preview")
+abstract class NativeAccess {
 
-    // check that MMapDirectory can unmap by running the autodetection logic:
-    Assert.assertTrue(MMapDirectory.UNMAP_NOT_SUPPORTED_REASON, MMapDirectory.UNMAP_SUPPORTED);
+  /** Invoke the {@code madvise} call for the given {@link MemorySegment}. */
+  public abstract void madvise(MemorySegment segment, IOContext context) throws IOException;
+
+  /**
+   * Return the NativeAccess instance for this platform. At moment we only support Linux and MacOS
+   */
+  public static Optional<NativeAccess> getImplementation() {
+    if (Constants.LINUX || Constants.MAC_OS_X) {
+      return PosixNativeAccess.getInstance();
+    }
+    return Optional.empty();
   }
 }

@@ -375,7 +375,7 @@ public abstract class PointValues {
   public final long estimatePointCount(IntersectVisitor visitor) {
     try {
       final PointTree pointTree = getPointTree();
-      final long count = estimatePointCount(visitor, pointTree);
+      final long count = estimatePointCount(visitor, pointTree, Long.MAX_VALUE);
       assert pointTree.moveToParent() == false;
       return count;
     } catch (IOException ioe) {
@@ -383,8 +383,19 @@ public abstract class PointValues {
     }
   }
 
-  private long estimatePointCount(IntersectVisitor visitor, PointTree pointTree)
-      throws IOException {
+  /**
+   * Estimate the number of documents that would be matched by {@link #intersect} with the given
+   * {@link IntersectVisitor}. The estimation will terminate when the point count get greater than
+   * up bound. That said, if the return value is less than the upperBound, it is the accurate
+   * estimated point value, otherwise it means the number of points in the tree is greater than or
+   * equals to the upperBound.
+   *
+   * <p>TODO: will broad-first help estimation terminate earlier?
+   *
+   * @lucene.internal
+   */
+  public static long estimatePointCount(
+      IntersectVisitor visitor, PointTree pointTree, long upperBound) throws IOException {
     Relation r = visitor.compare(pointTree.getMinPackedValue(), pointTree.getMaxPackedValue());
     switch (r) {
       case CELL_OUTSIDE_QUERY:
@@ -398,8 +409,8 @@ public abstract class PointValues {
         if (pointTree.moveToChild()) {
           long cost = 0;
           do {
-            cost += estimatePointCount(visitor, pointTree);
-          } while (pointTree.moveToSibling());
+            cost += estimatePointCount(visitor, pointTree, upperBound - cost);
+          } while (cost < upperBound && pointTree.moveToSibling());
           pointTree.moveToParent();
           return cost;
         } else {

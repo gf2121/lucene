@@ -74,7 +74,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
           ByteBuffersDataOutput::new,
           (fileName, content) -> {
             cacheSize.addAndGet(content.size());
-            return ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS_LUCENE.apply(fileName, content);
+            return ByteBuffersDirectory.OUTPUT_AS_MANY_BUFFERS.apply(fileName, content);
           });
 
   private final long maxMergeSizeBytes;
@@ -223,10 +223,10 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     // size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
 
     long bytes = 0;
-    if (context.mergeInfo != null) {
-      bytes = context.mergeInfo.estimatedMergeBytes;
-    } else if (context.flushInfo != null) {
-      bytes = context.flushInfo.estimatedSegmentSize;
+    if (context.mergeInfo() != null) {
+      bytes = context.mergeInfo().estimatedMergeBytes();
+    } else if (context.flushInfo() != null) {
+      bytes = context.flushInfo().estimatedSegmentSize();
     } else {
       return false;
     }
