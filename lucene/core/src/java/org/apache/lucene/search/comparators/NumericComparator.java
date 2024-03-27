@@ -431,12 +431,14 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
       final int minBlockLength = minBlockLength();
 
       final LSBRadixSorter sorter = new LSBRadixSorter();
-      int[] docs = IntsRef.EMPTY_INTS;
+      int[] buffer = IntsRef.EMPTY_INTS;
       int index = 0;
       int blockMaxDoc = -1;
       boolean docsInOrder = true;
       long blockMinValue = Long.MAX_VALUE;
       long blockMaxValue = Long.MIN_VALUE;
+      long leafMinValue;
+      long leafMaxValue;
 
       private DisjunctionBuildVisitor() {
         super(minValueAsLong, maxValueAsLong, maxDocVisited);
@@ -444,17 +446,23 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
       @Override
       public void grow(int count) {
-        docs = ArrayUtil.grow(docs, index + count + 1);
+        buffer = ArrayUtil.grow(buffer, index + count + 1);
       }
 
       @Override
-      protected void consumeDoc(int doc) {
-        docs[index++] = doc;
+      protected void consumeDoc(int doc) throws IOException {
         if (doc >= blockMaxDoc) {
           blockMaxDoc = doc;
         } else {
-          docsInOrder = false;
+          if (index >= minBlockLength) {
+            update();
+            blockMaxValue = leafMaxValue;
+            blockMinValue = leafMinValue;
+          } else {
+            docsInOrder = false;
+          }
         }
+        buffer[index++] = doc;
       }
 
       void intersectLeaves(PointValues.PointTree pointTree) throws IOException {
@@ -468,28 +476,24 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
               } while (pointTree.moveToSibling());
               pointTree.moveToParent();
             } else {
+              leafMinValue = bytesAsLong(pointTree.getMinPackedValue());
+              leafMaxValue = bytesAsLong(pointTree.getMaxPackedValue());
+              blockMinValue = Math.min(blockMinValue, leafMinValue);
+              blockMaxValue = Math.max(blockMaxValue, leafMaxValue);
               if (r == PointValues.Relation.CELL_CROSSES_QUERY) {
                 pointTree.visitDocValues(this);
               } else {
                 pointTree.visitDocIDs(this);
               }
-              updateMinMax(
-                  bytesAsLong(pointTree.getMinPackedValue()),
-                  bytesAsLong(pointTree.getMaxPackedValue()));
+              if (index >= minBlockLength) {
+                update();
+                blockMinValue = Long.MAX_VALUE;
+                blockMaxValue = Long.MIN_VALUE;
+              }
             }
           }
           case CELL_OUTSIDE_QUERY -> {}
           default -> throw new IllegalStateException("unreachable code");
-        }
-      }
-
-      void updateMinMax(long leafMinValue, long leafMaxValue) throws IOException {
-        this.blockMinValue = Math.min(blockMinValue, leafMinValue);
-        this.blockMaxValue = Math.max(blockMaxValue, leafMaxValue);
-        if (index >= minBlockLength) {
-          update();
-          this.blockMinValue = Long.MAX_VALUE;
-          this.blockMaxValue = Long.MIN_VALUE;
         }
       }
 
@@ -501,14 +505,13 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
             reverse == false
                 ? Math.max(blockMinValue, minValueAsLong)
                 : Math.min(blockMaxValue, maxValueAsLong);
-
+        int[] docs = ArrayUtil.copyOfSubArray(buffer, 0, index + 1);
         if (docsInOrder == false) {
           sorter.sort(PackedInts.bitsRequired(blockMaxDoc), docs, index);
         }
         docs[index] = DocIdSetIterator.NO_MORE_DOCS;
         DocIdSetIterator iter = new IntArrayDocIdSet(docs, index).iterator();
         adder.accept(new DisiAndMostCompetitiveValue(iter, mostCompetitiveValue));
-        docs = IntsRef.EMPTY_INTS;
         index = 0;
         blockMaxDoc = -1;
         docsInOrder = true;
@@ -638,7 +641,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
       return PointValues.Relation.CELL_INSIDE_QUERY;
     }
 
-    void consumeDoc(int doc) {
+    void consumeDoc(int doc) throws IOException {
       throw new UnsupportedOperationException();
     }
   }
