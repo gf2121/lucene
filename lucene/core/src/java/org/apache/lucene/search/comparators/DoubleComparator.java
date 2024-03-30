@@ -17,9 +17,6 @@
 
 package org.apache.lucene.search.comparators;
 
-import java.io.IOException;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.util.NumericUtils;
 
@@ -28,35 +25,11 @@ import org.apache.lucene.util.NumericUtils;
  * skipping functionality - an iterator that can skip over non-competitive documents.
  */
 public class DoubleComparator extends NumericComparator<Double> {
-  private final double[] values;
-  protected double topValue;
-  protected double bottom;
 
   public DoubleComparator(
       int numHits, String field, Double missingValue, boolean reverse, Pruning pruning) {
-    super(field, missingValue != null ? missingValue : 0.0, reverse, pruning, Double.BYTES);
-    values = new double[numHits];
-  }
-
-  @Override
-  public int compare(int slot1, int slot2) {
-    return Double.compare(values[slot1], values[slot2]);
-  }
-
-  @Override
-  public void setTopValue(Double value) {
-    super.setTopValue(value);
-    topValue = value;
-  }
-
-  @Override
-  public Double value(int slot) {
-    return Double.valueOf(values[slot]);
-  }
-
-  @Override
-  protected long missingValueAsComparableLong() {
-    return NumericUtils.doubleToSortableLong(missingValue);
+    super(
+        numHits, field, missingValue != null ? missingValue : 0.0, reverse, pruning, Double.BYTES);
   }
 
   @Override
@@ -65,55 +38,12 @@ public class DoubleComparator extends NumericComparator<Double> {
   }
 
   @Override
-  public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-    return new DoubleLeafComparator(context);
+  protected long valueToComparableLong(Double value) {
+    return NumericUtils.doubleToSortableLong(value);
   }
 
-  /** Leaf comparator for {@link DoubleComparator} that provides skipping functionality */
-  public class DoubleLeafComparator extends NumericLeafComparator {
-
-    public DoubleLeafComparator(LeafReaderContext context) throws IOException {
-      super(context);
-    }
-
-    private double getValueForDoc(int doc) throws IOException {
-      if (docValues.advanceExact(doc)) {
-        return Double.longBitsToDouble(docValues.longValue());
-      } else {
-        return missingValue;
-      }
-    }
-
-    @Override
-    public void setBottom(int slot) throws IOException {
-      bottom = values[slot];
-      super.setBottom(slot);
-    }
-
-    @Override
-    public int compareBottom(int doc) throws IOException {
-      return Double.compare(bottom, getValueForDoc(doc));
-    }
-
-    @Override
-    public int compareTop(int doc) throws IOException {
-      return Double.compare(topValue, getValueForDoc(doc));
-    }
-
-    @Override
-    public void copy(int slot, int doc) throws IOException {
-      values[slot] = getValueForDoc(doc);
-      super.copy(slot, doc);
-    }
-
-    @Override
-    protected long bottomAsComparableLong() {
-      return NumericUtils.doubleToSortableLong(bottom);
-    }
-
-    @Override
-    protected long topAsComparableLong() {
-      return NumericUtils.doubleToSortableLong(topValue);
-    }
+  @Override
+  protected Double comparableLongToValue(long comparableLong) {
+    return NumericUtils.sortableLongToDouble(comparableLong);
   }
 }

@@ -56,12 +56,16 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
   protected boolean hitsThresholdReached;
   protected boolean queueFull;
   protected Pruning pruning;
+  private final long[] values;
+  protected long topValue;
+  protected long bottom;
 
   protected NumericComparator(
-      String field, T missingValue, boolean reverse, Pruning pruning, int bytesCount) {
+      int numHits, String field, T missingValue, boolean reverse, Pruning pruning, int bytesCount) {
+    this.values = new long[numHits];
     this.field = field;
     this.missingValue = missingValue;
-    this.missingValueAsLong = missingValueAsComparableLong();
+    this.missingValueAsLong = valueToComparableLong(missingValue);
     this.reverse = reverse;
     this.pruning = pruning;
     this.bytesCount = bytesCount;
@@ -70,6 +74,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
   @Override
   public void setTopValue(T value) {
     topValueSet = true;
+    topValue = valueToComparableLong(value);
   }
 
   @Override
@@ -82,12 +87,33 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     pruning = Pruning.NONE;
   }
 
-  protected abstract long missingValueAsComparableLong();
+  @Override
+  public int compare(int slot1, int slot2) {
+    return Long.compare(values[slot1], values[slot2]);
+  }
 
+  @Override
+  public T value(int slot) {
+    return comparableLongToValue(values[slot]);
+  }
+
+  @Override
+  public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
+    return new NumericLeafComparator(context);
+  }
+
+  /**
+   * Decodes a byte array {@code bytes} to long such that unsigned byte order comparison is
+   * consistent with {@link Long#compare(long, long)}.
+   */
   protected abstract long sortableBytesToLong(byte[] bytes);
 
+  protected abstract long valueToComparableLong(T value);
+
+  protected abstract T comparableLongToValue(long comparableLong);
+
   /** Leaf comparator for {@link NumericComparator} that provides skipping functionality */
-  public abstract class NumericLeafComparator implements LeafFieldComparator {
+  public class NumericLeafComparator implements LeafFieldComparator {
     private final LeafReaderContext context;
     protected final NumericDocValues docValues;
     private final PointValues pointValues;
@@ -168,12 +194,32 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
     @Override
     public void setBottom(int slot) throws IOException {
+      bottom = values[slot];
       queueFull = true; // if we are setting bottom, it means that we have collected enough hits
       updateCompetitiveIterator(); // update an iterator if we set a new bottom
     }
 
+    private long getValueForDoc(int doc) throws IOException {
+      if (docValues.advanceExact(doc)) {
+        return docValues.longValue();
+      } else {
+        return missingValueAsLong;
+      }
+    }
+
+    @Override
+    public int compareBottom(int doc) throws IOException {
+      return Long.compare(bottom, getValueForDoc(doc));
+    }
+
+    @Override
+    public int compareTop(int doc) throws IOException {
+      return Long.compare(topValue, getValueForDoc(doc));
+    }
+
     @Override
     public void copy(int slot, int doc) throws IOException {
+      values[slot] = getValueForDoc(doc);
       maxDocVisited = doc;
     }
 
@@ -310,12 +356,12 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
      */
     private void encodeBottom() {
       if (reverse == false) {
-        maxValueAsLong = bottomAsComparableLong();
+        maxValueAsLong = bottom;
         if (pruning == Pruning.GREATER_THAN_OR_EQUAL_TO && maxValueAsLong != Long.MIN_VALUE) {
           maxValueAsLong--;
         }
       } else {
-        minValueAsLong = bottomAsComparableLong();
+        minValueAsLong = bottom;
         if (pruning == Pruning.GREATER_THAN_OR_EQUAL_TO && minValueAsLong != Long.MAX_VALUE) {
           minValueAsLong++;
         }
@@ -330,7 +376,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
      */
     private void encodeTop() {
       if (reverse == false) {
-        minValueAsLong = topAsComparableLong();
+        minValueAsLong = topValue;
         if (singleSort
             && pruning == Pruning.GREATER_THAN_OR_EQUAL_TO
             && queueFull
@@ -338,7 +384,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
           minValueAsLong++;
         }
       } else {
-        maxValueAsLong = topAsComparableLong();
+        maxValueAsLong = topValue;
         if (singleSort
             && pruning == Pruning.GREATER_THAN_OR_EQUAL_TO
             && queueFull
@@ -352,14 +398,14 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
       // if queue is full, always compare with bottom,
       // if not, check if we can compare with topValue
       if (queueFull) {
-        int result = Long.compare(missingValueAsLong, bottomAsComparableLong());
+        int result = Long.compare(missingValueAsLong, bottom);
         // in reverse (desc) sort missingValue is competitive when it's greater or equal to bottom,
         // in asc sort missingValue is competitive when it's smaller or equal to bottom
         return reverse
             ? (pruning == Pruning.GREATER_THAN_OR_EQUAL_TO ? result > 0 : result >= 0)
             : (pruning == Pruning.GREATER_THAN_OR_EQUAL_TO ? result < 0 : result <= 0);
       } else if (leafTopSet) {
-        int result = Long.compare(missingValueAsLong, topAsComparableLong());
+        int result = Long.compare(missingValueAsLong, topValue);
         // in reverse (desc) sort missingValue is competitive when it's smaller or equal to
         // topValue,
         // in asc sort missingValue is competitive when it's greater or equal to topValue
@@ -397,9 +443,5 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         }
       };
     }
-
-    protected abstract long bottomAsComparableLong();
-
-    protected abstract long topAsComparableLong();
   }
 }

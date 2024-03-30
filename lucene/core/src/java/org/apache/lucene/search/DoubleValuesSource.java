@@ -534,7 +534,7 @@ public abstract class DoubleValuesSource implements SegmentCacheable {
         public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
           DoubleValuesHolder holder = new DoubleValuesHolder();
 
-          return new DoubleComparator.DoubleLeafComparator(context) {
+          return new NumericLeafComparator(context) {
             LeafReaderContext ctx;
 
             @Override

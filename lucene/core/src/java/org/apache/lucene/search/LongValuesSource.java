@@ -343,7 +343,7 @@ public abstract class LongValuesSource implements SegmentCacheable {
         public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
           LongValuesHolder holder = new LongValuesHolder();
 
-          return new LongComparator.LongLeafComparator(context) {
+          return new NumericLeafComparator(context) {
             LeafReaderContext ctx;
 
             @Override

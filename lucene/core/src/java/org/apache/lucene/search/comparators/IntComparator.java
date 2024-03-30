@@ -17,9 +17,6 @@
 
 package org.apache.lucene.search.comparators;
 
-import java.io.IOException;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.util.NumericUtils;
 
@@ -28,35 +25,10 @@ import org.apache.lucene.util.NumericUtils;
  * skipping functionality – an iterator that can skip over non-competitive documents.
  */
 public class IntComparator extends NumericComparator<Integer> {
-  private final int[] values;
-  protected int topValue;
-  protected int bottom;
 
   public IntComparator(
       int numHits, String field, Integer missingValue, boolean reverse, Pruning pruning) {
-    super(field, missingValue != null ? missingValue : 0, reverse, pruning, Integer.BYTES);
-    values = new int[numHits];
-  }
-
-  @Override
-  public int compare(int slot1, int slot2) {
-    return Integer.compare(values[slot1], values[slot2]);
-  }
-
-  @Override
-  public void setTopValue(Integer value) {
-    super.setTopValue(value);
-    topValue = value;
-  }
-
-  @Override
-  public Integer value(int slot) {
-    return Integer.valueOf(values[slot]);
-  }
-
-  @Override
-  protected long missingValueAsComparableLong() {
-    return missingValue;
+    super(numHits, field, missingValue != null ? missingValue : 0, reverse, pruning, Integer.BYTES);
   }
 
   @Override
@@ -65,55 +37,12 @@ public class IntComparator extends NumericComparator<Integer> {
   }
 
   @Override
-  public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-    return new IntLeafComparator(context);
+  protected long valueToComparableLong(Integer value) {
+    return value;
   }
 
-  /** Leaf comparator for {@link IntComparator} that provides skipping functionality */
-  public class IntLeafComparator extends NumericLeafComparator {
-
-    public IntLeafComparator(LeafReaderContext context) throws IOException {
-      super(context);
-    }
-
-    private int getValueForDoc(int doc) throws IOException {
-      if (docValues.advanceExact(doc)) {
-        return (int) docValues.longValue();
-      } else {
-        return missingValue;
-      }
-    }
-
-    @Override
-    public void setBottom(int slot) throws IOException {
-      bottom = values[slot];
-      super.setBottom(slot);
-    }
-
-    @Override
-    public int compareBottom(int doc) throws IOException {
-      return Integer.compare(bottom, getValueForDoc(doc));
-    }
-
-    @Override
-    public int compareTop(int doc) throws IOException {
-      return Integer.compare(topValue, getValueForDoc(doc));
-    }
-
-    @Override
-    public void copy(int slot, int doc) throws IOException {
-      values[slot] = getValueForDoc(doc);
-      super.copy(slot, doc);
-    }
-
-    @Override
-    protected long bottomAsComparableLong() {
-      return bottom;
-    }
-
-    @Override
-    protected long topAsComparableLong() {
-      return topValue;
-    }
+  @Override
+  protected Integer comparableLongToValue(long comparableLong) {
+    return (int) comparableLong;
   }
 }

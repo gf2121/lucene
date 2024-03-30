@@ -17,9 +17,6 @@
 
 package org.apache.lucene.search.comparators;
 
-import java.io.IOException;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.util.NumericUtils;
 
@@ -28,35 +25,10 @@ import org.apache.lucene.util.NumericUtils;
  * functionality – an iterator that can skip over non-competitive documents.
  */
 public class LongComparator extends NumericComparator<Long> {
-  private final long[] values;
-  protected long topValue;
-  protected long bottom;
 
   public LongComparator(
       int numHits, String field, Long missingValue, boolean reverse, Pruning pruning) {
-    super(field, missingValue != null ? missingValue : 0L, reverse, pruning, Long.BYTES);
-    values = new long[numHits];
-  }
-
-  @Override
-  public int compare(int slot1, int slot2) {
-    return Long.compare(values[slot1], values[slot2]);
-  }
-
-  @Override
-  public void setTopValue(Long value) {
-    super.setTopValue(value);
-    topValue = value;
-  }
-
-  @Override
-  public Long value(int slot) {
-    return Long.valueOf(values[slot]);
-  }
-
-  @Override
-  protected long missingValueAsComparableLong() {
-    return missingValue;
+    super(numHits, field, missingValue != null ? missingValue : 0L, reverse, pruning, Long.BYTES);
   }
 
   @Override
@@ -65,55 +37,12 @@ public class LongComparator extends NumericComparator<Long> {
   }
 
   @Override
-  public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-    return new LongLeafComparator(context);
+  protected long valueToComparableLong(Long value) {
+    return value;
   }
 
-  /** Leaf comparator for {@link LongComparator} that provides skipping functionality */
-  public class LongLeafComparator extends NumericLeafComparator {
-
-    public LongLeafComparator(LeafReaderContext context) throws IOException {
-      super(context);
-    }
-
-    private long getValueForDoc(int doc) throws IOException {
-      if (docValues.advanceExact(doc)) {
-        return docValues.longValue();
-      } else {
-        return missingValue;
-      }
-    }
-
-    @Override
-    public void setBottom(int slot) throws IOException {
-      bottom = values[slot];
-      super.setBottom(slot);
-    }
-
-    @Override
-    public int compareBottom(int doc) throws IOException {
-      return Long.compare(bottom, getValueForDoc(doc));
-    }
-
-    @Override
-    public int compareTop(int doc) throws IOException {
-      return Long.compare(topValue, getValueForDoc(doc));
-    }
-
-    @Override
-    public void copy(int slot, int doc) throws IOException {
-      values[slot] = getValueForDoc(doc);
-      super.copy(slot, doc);
-    }
-
-    @Override
-    protected long bottomAsComparableLong() {
-      return bottom;
-    }
-
-    @Override
-    protected long topAsComparableLong() {
-      return topValue;
-    }
+  @Override
+  protected Long comparableLongToValue(long comparableLong) {
+    return comparableLong;
   }
 }

@@ -159,7 +159,7 @@ public class ToParentBlockJoinSortField extends SortField {
         numHits, getField(), (Integer) missingValue, getReverse(), Pruning.NONE) {
       @Override
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-        return new IntLeafComparator(context) {
+        return new NumericLeafComparator(context) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
               throws IOException {
@@ -184,7 +184,7 @@ public class ToParentBlockJoinSortField extends SortField {
         numHits, getField(), (Long) missingValue, getReverse(), Pruning.NONE) {
       @Override
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-        return new LongLeafComparator(context) {
+        return new NumericLeafComparator(context) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
               throws IOException {
@@ -209,7 +209,7 @@ public class ToParentBlockJoinSortField extends SortField {
         numHits, getField(), (Float) missingValue, getReverse(), Pruning.NONE) {
       @Override
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-        return new FloatLeafComparator(context) {
+        return new NumericLeafComparator(context) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
               throws IOException {
@@ -241,7 +241,7 @@ public class ToParentBlockJoinSortField extends SortField {
         numHits, getField(), (Double) missingValue, getReverse(), Pruning.NONE) {
       @Override
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
-        return new DoubleLeafComparator(context) {
+        return new NumericLeafComparator(context) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
               throws IOException {
