@@ -1,6 +1,8 @@
 package org.apache.lucene.codecs.lucene90.blocktree;
 
 import java.io.IOException;
+import java.util.stream.IntStream;
+
 import org.apache.lucene.store.IndexInput;
 
 class TrieReader {
@@ -44,7 +46,6 @@ class TrieReader {
   }
 
   private void load(Node node, long code, Node parent) throws IOException {
-    System.out.println(code);
     node.parent = parent;
     if ((code & 0x1) == 0) {
       node.fp = code >>> 1;
@@ -69,20 +70,50 @@ class TrieReader {
   }
 
   boolean lookupChild(byte targetLabel, Node parent, Node child) throws IOException {
-    if (parent.isLeaf) return false;
+    if (parent.isLeaf) {
+      return false;
+    }
+
+    int target = targetLabel & 0xFF;
     long positionBytesFp = parent.fp + META_BYTES;
     arcsIn.seek(positionBytesFp);
-    int position =
-        parent.childrenStrategy.position(
-            targetLabel, arcsIn, parent.positionBytes, parent.minChildrenLabel);
-    System.out.println("label: " + targetLabel + " position: " + position);
+    int position;
+    if (target <= parent.minChildrenLabel) {
+      position = target == parent.minChildrenLabel ? 0 : -1;
+    } else {
+      position =
+          parent.childrenStrategy.lookup(
+              target, arcsIn, parent.positionBytes, parent.minChildrenLabel);
+    }
+//        System.out.println();
+//        System.out.println(" lookup: " + target);
+//        System.out.println(" parent info: ");
+//        System.out.println(" parent label: " + parent.label);
+//        System.out.println(" parent fp: " + parent.fp);
+//        System.out.println(" parent min child label: " + parent.minChildrenLabel);
+//        System.out.println(" parent strategy: " + parent.childrenStrategy);
+//        System.out.println(" parent position bytes: " + parent.positionBytes);
+//        arcsIn.seek(positionBytesFp);
+//        System.out.println(" parent position bytes info: ");
+//        IntStream.range(0, parent.positionBytes).forEach(i -> {
+//          try {
+//            System.out.print((arcsIn.readByte() & 0xFF) + ", ");
+//          } catch (IOException e) {
+//            throw new RuntimeException(e);
+//          }
+//        });
+//        System.out.println();
+//        System.out.println(" child position: " + position);
     if (position < 0) {
       return false;
     }
     arcsIn.seek(
         positionBytesFp + parent.positionBytes + (long) parent.childrenCodesBytes * position);
+    //    System.out.println(" code fp: " + arcsIn.getFilePointer());
     long code = readNBytesLong(arcsIn, parent.childrenCodesBytes);
+    child.label = target;
     load(child, code, parent);
+    //    System.out.println(" child code: " + code);
     return true;
   }
 

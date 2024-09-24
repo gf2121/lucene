@@ -10,6 +10,7 @@ import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
@@ -96,20 +97,14 @@ class Trie {
   void save(DataOutput meta, IndexOutput index) throws IOException {
     ByteBuffersDataOutput outputBuffer = new ByteBuffersDataOutput();
     meta.writeVLong(index.getFilePointer()); // index start fp
-    meta.writeVLong(
-        saveArcs(root, index, outputBuffer, new long[256], index.getFilePointer())); // root code
+    meta.writeVLong(saveArcs(root, index, outputBuffer, index.getFilePointer())); // root code
     index.writeLong(0L); // additional 8 bytes for over-read in BIT strategy
     meta.writeVLong(index.getFilePointer()); // index end, output start fp
     outputBuffer.copyTo(index);
     meta.writeVLong(index.getFilePointer()); // output end fp
   }
 
-  long saveArcs(
-      Node node,
-      IndexOutput index,
-      ByteBuffersDataOutput outputsBuffer,
-      long[] codeBuffer,
-      long startFP)
+  long saveArcs(Node node, IndexOutput index, ByteBuffersDataOutput outputsBuffer, long startFP)
       throws IOException {
     final int childrenNum = node.children.size();
 
@@ -121,11 +116,11 @@ class Trie {
       return code;
     }
 
+    long[] codeBuffer = new long[childrenNum];
     long maxCode = 0;
     for (int i = 0; i < childrenNum; i++) {
       Node child = node.children.get(i);
-      codeBuffer[i] = saveArcs(child, index, outputsBuffer, codeBuffer, startFP);
-      System.out.println("label: " + child.label + ", code: " + codeBuffer[i]);
+      codeBuffer[i] = saveArcs(child, index, outputsBuffer, startFP);
       maxCode = Math.max(maxCode, codeBuffer[i]);
     }
 
@@ -145,15 +140,30 @@ class Trie {
       }
     }
 
-    long fp = index.getFilePointer();
+    final long fp = index.getFilePointer();
 
     assert positionStrategy != null;
 
     assert positionBytes >= 0 && positionBytes <= 32;
+//    System.out.println(
+//        "label: "
+//            + node.label
+//            + ", position bytes: "
+//            + positionBytes
+//            + ", strategy: "
+//            + positionStrategy
+//            + ", children num: "
+//            + childrenNum
+//            + ", min child label: "
+//            + minLabel
+//            + ", fp: "
+//            + fp
+//            + ", codes: "
+//            + Arrays.toString(ArrayUtil.copyOfSubArray(codeBuffer, 0, childrenNum)));
     int sign =
         (positionStrategy.priority << 14) // 2bit
             | (positionBytes << 8) // 6 bit
-            | (minLabel & 0xFF); // 8bit
+            | minLabel; // 8bit
 
     index.writeShort((short) sign);
     int codeBytes = Math.max(1, Long.BYTES - (Long.numberOfLeadingZeros(maxCode) >>> 3));
@@ -201,9 +211,8 @@ class Trie {
       }
 
       @Override
-      int position(int targetLabel, IndexInput in, int positionBytes, int minLabel)
+      int lookup(int targetLabel, IndexInput in, int positionBytes, int minLabel)
           throws IOException {
-        if (targetLabel <= minLabel) return targetLabel == minLabel ? 0 : -1;
         final long fp = in.getFilePointer();
         int low = 0;
         int high = positionBytes - 1;
@@ -244,23 +253,19 @@ class Trie {
       }
 
       @Override
-      int position(int targetLabel, IndexInput in, int positionBytes, int minLabel)
+      int lookup(int targetLabel, IndexInput in, int positionBytes, int minLabel)
           throws IOException {
-        if (targetLabel <= minLabel) {
-          return targetLabel == minLabel ? 0 : -1;
-        }
-
         int maxLabel = in.readByte() & 0xFF;
         if (targetLabel >= maxLabel) {
-          return targetLabel == maxLabel ? maxLabel - minLabel - positionBytes : -1;
+          return targetLabel == maxLabel ? maxLabel - minLabel - positionBytes + 1 : -1;
         }
-        if (positionBytes == 0) {
+        if (positionBytes == 1) {
           return targetLabel - minLabel;
         }
 
         final long fp = in.getFilePointer();
         int low = 0;
-        int high = positionBytes - 1;
+        int high = positionBytes - 2;
         while (low <= high) {
           int mid = (low + high) >>> 1;
           in.seek(fp + mid);
@@ -311,11 +316,12 @@ class Trie {
       }
 
       @Override
-      int position(int targetLabel, IndexInput in, int positionBytes, int minLabel)
+      int lookup(int targetLabel, IndexInput in, int positionBytes, int minLabel)
           throws IOException {
-        if (targetLabel <= minLabel) return targetLabel == minLabel ? 0 : -1;
         int bitIndex = targetLabel - minLabel;
-        if (bitIndex > (positionBytes << 3)) return -1;
+        if (bitIndex > (positionBytes << 3)) {
+          return -1;
+        }
 
         long fp = in.getFilePointer();
         int wordIndex = bitIndex >>> 6;
@@ -352,7 +358,7 @@ class Trie {
     abstract void save(List<Node> children, int labelCnt, int positionBytes, IndexOutput output)
         throws IOException;
 
-    abstract int position(int targetLabel, IndexInput in, int positionBytes, int minLabel)
+    abstract int lookup(int targetLabel, IndexInput in, int positionBytes, int minLabel)
         throws IOException;
 
     static PositionStrategy byCode(int code) {
