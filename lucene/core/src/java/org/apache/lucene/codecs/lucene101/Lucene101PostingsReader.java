@@ -305,7 +305,8 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
        * Deltas between consecutive docs are stored using unary coding, ie. {@code delta-1} zero
        * bits followed by a one bit, ie. the block is encoded as an offset plus a bit set.
        */
-      UNARY
+      UNARY,
+      FULL
     }
 
     private ForDeltaUtil forDeltaUtil;
@@ -606,31 +607,30 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
         // block is encoded as a bit set
         assert level0LastDocID != NO_MORE_DOCS;
         docBitSetBase = prevDocID + 1;
-        int numLongs;
+
         if (bitsPerValue == 0) {
           // 0 is used to record that all 128 docs in the block are consecutive
-          numLongs = BLOCK_SIZE / Long.SIZE; // 2
-          docBitSet.set(0, BLOCK_SIZE);
+          encoding = DeltaEncoding.FULL;
         } else {
-          numLongs = -bitsPerValue;
+          int numLongs = -bitsPerValue;
           docIn.readLongs(docBitSet.getBits(), 0, numLongs);
-        }
-        if (needsFreq) {
-          // Note: we know that BLOCK_SIZE bits are set, so no need to compute the cumulative pop
-          // count at the last index, it will be BLOCK_SIZE.
-          // Note: this for loop auto-vectorizes
-          for (int i = 0; i < numLongs - 1; ++i) {
-            docCumulativeWordPopCounts[i] = Long.bitCount(docBitSet.getBits()[i]);
+          if (needsFreq) {
+            // Note: we know that BLOCK_SIZE bits are set, so no need to compute the cumulative pop
+            // count at the last index, it will be BLOCK_SIZE.
+            // Note: this for loop auto-vectorizes
+            for (int i = 0; i < numLongs - 1; ++i) {
+              docCumulativeWordPopCounts[i] = Long.bitCount(docBitSet.getBits()[i]);
+            }
+            for (int i = 1; i < numLongs - 1; ++i) {
+              docCumulativeWordPopCounts[i] += docCumulativeWordPopCounts[i - 1];
+            }
+            docCumulativeWordPopCounts[numLongs - 1] = BLOCK_SIZE;
+            assert docCumulativeWordPopCounts[numLongs - 2]
+                + Long.bitCount(docBitSet.getBits()[numLongs - 1])
+                == BLOCK_SIZE;
           }
-          for (int i = 1; i < numLongs - 1; ++i) {
-            docCumulativeWordPopCounts[i] += docCumulativeWordPopCounts[i - 1];
-          }
-          docCumulativeWordPopCounts[numLongs - 1] = BLOCK_SIZE;
-          assert docCumulativeWordPopCounts[numLongs - 2]
-                  + Long.bitCount(docBitSet.getBits()[numLongs - 1])
-              == BLOCK_SIZE;
+          encoding = DeltaEncoding.UNARY;
         }
-        encoding = DeltaEncoding.UNARY;
       }
       if (indexHasFreq) {
         if (needsFreq) {
@@ -927,6 +927,9 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
           assert next != NO_MORE_DOCS;
           doc = docBitSetBase + next;
           break;
+        case FULL:
+          doc++;
+          break;
       }
 
       ++docBufferUpto;
@@ -971,6 +974,12 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
               // docBufferUpTo != 0 means the block has been iterated.
               docBufferUpto = 1;
             }
+          }
+          break;
+        case FULL:
+          {
+            this.doc = target;
+            this.docBufferUpto = target - docBitSetBase + 1;
           }
           break;
       }
@@ -1036,6 +1045,19 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
                 advance(docBitSetBase + sourceTo);
                 return;
               }
+              doc = level0LastDocID;
+              docBufferUpto = BLOCK_SIZE;
+            }
+            break;
+          case FULL:
+            {
+              final int from = Math.max(0, 1 + doc - offset);
+              if (upTo <= level0LastDocID) {
+                bitSet.set(from, upTo - offset);
+                advance(upTo);
+                return;
+              }
+              bitSet.set(from, level0LastDocID + 1 - offset);
               doc = level0LastDocID;
               docBufferUpto = BLOCK_SIZE;
             }
