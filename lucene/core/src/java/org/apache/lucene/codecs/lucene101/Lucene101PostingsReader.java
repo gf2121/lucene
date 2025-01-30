@@ -626,7 +626,7 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
             }
             docCumulativeWordPopCounts[numLongs - 1] = BLOCK_SIZE;
             assert docCumulativeWordPopCounts[numLongs - 2]
-                + Long.bitCount(docBitSet.getBits()[numLongs - 1])
+                    + Long.bitCount(docBitSet.getBits()[numLongs - 1])
                 == BLOCK_SIZE;
           }
           encoding = DeltaEncoding.UNARY;
@@ -919,6 +919,9 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
       }
 
       switch (encoding) {
+        case FULL:
+          doc++;
+          break;
         case PACKED:
           doc = docBuffer[docBufferUpto];
           break;
@@ -926,9 +929,6 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
           int next = docBitSet.nextSetBit(doc - docBitSetBase + 1);
           assert next != NO_MORE_DOCS;
           doc = docBitSetBase + next;
-          break;
-        case FULL:
-          doc++;
           break;
       }
 
@@ -947,6 +947,12 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
       }
 
       switch (encoding) {
+        case FULL:
+          {
+            this.doc = target;
+            this.docBufferUpto = needsFreq ? target - docBitSetBase + 1 : 1;
+          }
+          break;
         case PACKED:
           {
             int next = VectorUtil.findNextGEQ(docBuffer, target, docBufferUpto, docBufferSize);
@@ -976,12 +982,6 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
             }
           }
           break;
-        case FULL:
-          {
-            this.doc = target;
-            this.docBufferUpto = target - docBitSetBase + 1;
-          }
-          break;
       }
 
       return doc;
@@ -1003,6 +1003,19 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
         }
 
         switch (encoding) {
+          case FULL:
+            {
+              final int from = Math.max(0, 1 + doc - offset);
+              if (upTo <= level0LastDocID) {
+                bitSet.set(from, upTo - offset);
+                advance(upTo);
+                return;
+              }
+              bitSet.set(from, level0LastDocID + 1 - offset);
+              doc = level0LastDocID;
+              docBufferUpto = BLOCK_SIZE;
+            }
+            break;
           case PACKED:
             {
               int start = docBufferUpto;
@@ -1045,19 +1058,6 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
                 advance(docBitSetBase + sourceTo);
                 return;
               }
-              doc = level0LastDocID;
-              docBufferUpto = BLOCK_SIZE;
-            }
-            break;
-          case FULL:
-            {
-              final int from = Math.max(0, 1 + doc - offset);
-              if (upTo <= level0LastDocID) {
-                bitSet.set(from, upTo - offset);
-                advance(upTo);
-                return;
-              }
-              bitSet.set(from, level0LastDocID + 1 - offset);
               doc = level0LastDocID;
               docBufferUpto = BLOCK_SIZE;
             }
