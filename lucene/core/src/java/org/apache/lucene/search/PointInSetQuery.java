@@ -181,9 +181,48 @@ public abstract class PointInSetQuery extends Query implements Accountable {
             @Override
             public Scorer get(long leadCost) throws IOException {
               DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
-              values.intersect(new MergePointVisitor(sortedPackedPoints.iterator(), result));
+              intersectSingleDim(
+                  new MergePointVisitor(sortedPackedPoints.iterator(), result),
+                  values.getPointTree());
               DocIdSetIterator iterator = result.build().iterator();
               return new ConstantScoreScorer(score(), scoreMode, iterator);
+            }
+
+            private void intersectSingleDim(
+                MergePointVisitor visitor, PointValues.PointTree pointTree) throws IOException {
+              Relation r =
+                  visitor.compare(pointTree.getMinPackedValue(), pointTree.getMaxPackedValue());
+              switch (r) {
+                case CELL_OUTSIDE_QUERY:
+                  // This cell is fully outside the query shape: stop recursing
+                  break;
+                case CELL_INSIDE_QUERY:
+                  // This cell is fully inside the query shape: recursively add all points in this
+                  // cell
+                  // without filtering
+                  pointTree.visitDocIDs(visitor);
+                  break;
+                case CELL_CROSSES_QUERY:
+                  // The cell crosses the shape boundary, or the cell fully contains the query, so
+                  // we fall
+                  // through and do full filtering:
+                  if (pointTree.moveToChild()) {
+                    do {
+                      intersectSingleDim(visitor, pointTree);
+                    } while (pointTree.moveToSibling());
+                    pointTree.moveToParent();
+                  } else {
+                    visitor.setCurrentLeafMaxPackedValue(pointTree.getMaxPackedValue());
+                    try {
+                      pointTree.visitDocValues(visitor);
+                    } catch (IntersectionTerminatedException e) {
+                      // ignored
+                    }
+                  }
+                  break;
+                default:
+                  throw new IllegalArgumentException("Unreachable code");
+              }
             }
 
             @Override
@@ -266,6 +305,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
     private BytesRef nextQueryPoint;
     private final ByteArrayComparator comparator;
     private DocIdSetBuilder.BulkAdder adder;
+    private final IntersectionTerminatedException e = new IntersectionTerminatedException();
+    private byte[] currentLeafMaxPackedValue;
 
     public MergePointVisitor(TermIterator iterator, DocIdSetBuilder result) throws IOException {
       this.result = result;
@@ -303,6 +344,10 @@ public abstract class PointInSetQuery extends Query implements Accountable {
       }
     }
 
+    void setCurrentLeafMaxPackedValue(byte[] maxPackedValue) {
+      this.currentLeafMaxPackedValue = maxPackedValue;
+    }
+
     private boolean matches(byte[] packedValue) {
       while (nextQueryPoint != null) {
         int cmp = comparator.compare(nextQueryPoint.bytes, nextQueryPoint.offset, packedValue, 0);
@@ -315,6 +360,12 @@ public abstract class PointInSetQuery extends Query implements Accountable {
           // Query point is after index point, so we don't collect and we return:
           break;
         }
+      }
+      if (nextQueryPoint == null
+          || comparator.compare(
+                  nextQueryPoint.bytes, nextQueryPoint.offset, currentLeafMaxPackedValue, 0)
+              > 0) {
+        throw e;
       }
       return false;
     }
@@ -348,6 +399,17 @@ public abstract class PointInSetQuery extends Query implements Accountable {
 
       // We exhausted all points in the query:
       return Relation.CELL_OUTSIDE_QUERY;
+    }
+  }
+
+  private static class IntersectionTerminatedException extends RuntimeException {
+    private IntersectionTerminatedException() {
+      super();
+    }
+
+    @Override
+    public Throwable fillInStackTrace() {
+      return this;
     }
   }
 
