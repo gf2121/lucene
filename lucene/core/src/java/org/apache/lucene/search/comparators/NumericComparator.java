@@ -30,6 +30,7 @@ import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.IntsRef;
 
 /**
  * Abstract numeric comparator for comparing numeric values. This comparator provides a skipping
@@ -237,6 +238,16 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
                 return; // Already visited or skipped
               }
               adder.add(docID);
+            }
+
+            @Override
+            public void visit(IntsRef ref) {
+              for (int i=0, len = ref.length; i<len;i++) {
+                int docID = ref.ints[i + ref.offset];
+                if (docID > maxDocVisited) {
+                  adder.add(docID);
+                }
+              }
             }
 
             @Override
