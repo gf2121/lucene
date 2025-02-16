@@ -879,6 +879,8 @@ public class BKDReader extends PointValues {
       }
     }
 
+    private int totalSaved = 0;
+
     // read cardinality and point
     private void visitSparseRawDocValues(
         int[] commonPrefixLengths,
@@ -889,7 +891,10 @@ public class BKDReader extends PointValues {
         PointValues.IntersectVisitor visitor)
         throws IOException {
       int i;
+      int iter = 0;
+      int earlyBreak = -1;
       for (i = 0; i < count; ) {
+        iter++;
         int length = in.readVInt();
         for (int dim = 0; dim < config.numDims(); dim++) {
           int prefix = commonPrefixLengths[dim];
@@ -904,13 +909,19 @@ public class BKDReader extends PointValues {
             if (r == Relation.CELL_INSIDE_QUERY) {
               visitor.visit(scratchIterator.docsRef(i, count - i));
             }
-            return;
+            if (earlyBreak == -1) earlyBreak = iter;
           }
         }
         scratchIterator.reset(i, length);
         visitor.visit(scratchIterator, scratchPackedValue);
         i += length;
       }
+      totalSaved += iter - earlyBreak;
+      System.out.println("early break iter: " + earlyBreak
+          + ", final iter: " + iter
+          + ", saved: " + (iter - earlyBreak)
+          + ", total saved: " + totalSaved
+      );
       if (i != count) {
         throw new CorruptIndexException(
             "Sub blocks do not add up to the expected count: " + count + " != " + i, in);
