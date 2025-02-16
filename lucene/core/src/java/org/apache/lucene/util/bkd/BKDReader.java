@@ -889,6 +889,7 @@ public class BKDReader extends PointValues {
         PointValues.IntersectVisitor visitor)
         throws IOException {
       int i;
+      int cardinality = 0;
       for (i = 0; i < count; ) {
         int length = in.readVInt();
         for (int dim = 0; dim < config.numDims(); dim++) {
@@ -898,7 +899,7 @@ public class BKDReader extends PointValues {
               dim * config.bytesPerDim() + prefix,
               config.bytesPerDim() - prefix);
         }
-        if (config.numDims() == 1) {
+        if (config.numDims() == 1 && (++cardinality & 0x03) == 0x00) {
           Relation r = visitor.compare(scratchPackedValue, maxPackedValue);
           if (r != Relation.CELL_CROSSES_QUERY) {
             if (r == Relation.CELL_INSIDE_QUERY) {
