@@ -906,9 +906,6 @@ public class BKDReader extends PointValues {
         if (config.numDims() == 1) {
           Relation r = visitor.compare(scratchPackedValue, maxPackedValue);
           if (r != Relation.CELL_CROSSES_QUERY) {
-            if (r == Relation.CELL_INSIDE_QUERY) {
-              visitor.visit(scratchIterator.docsRef(i, count - i));
-            }
             if (earlyBreak == -1) earlyBreak = iter;
           }
         }
