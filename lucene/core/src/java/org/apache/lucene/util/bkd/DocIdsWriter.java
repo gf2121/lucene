@@ -39,7 +39,7 @@ public final class DocIdsWriter {
   // These signs are legacy, should no longer be used in the writing side.
   private static final byte LEGACY_DELTA_VINT = (byte) 0;
 
-  private static final int[] BATCHES = new int[] {512, 128};
+  private static final int[] BATCHES = new int[] {32};
 
   private final int[] scratch;
 
@@ -324,14 +324,10 @@ public final class DocIdsWriter {
   private static void readDelta16(IndexInput in, int count, int[] docIds) throws IOException {
     final int min = in.readVInt();
     int k = 0;
-    for (int bound = count - 511; k < bound; k += 512) {
-      in.readInts(docIds, k, 256);
+    for (int bound = count - 31; k < bound; k += 32) {
+      in.readInts(docIds, k, 16);
       // Can be inlined to make offsets consistent so that loop get auto-vectorized.
-      inner16(k, docIds, 256, min);
-    }
-    for (int bound = count - 127; k < bound; k += 128) {
-      in.readInts(docIds, k, 64);
-      inner16(k, docIds, 64, min);
+      inner16(k, docIds, 16, min);
     }
     for (; k < count; k++) {
       docIds[k] = Short.toUnsignedInt(in.readShort()) + min;
@@ -348,17 +344,17 @@ public final class DocIdsWriter {
 
   private void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int k = 0;
-    for (int bound = count - 511; k < bound; k += 512) {
-      in.readInts(scratch, k, 384);
-      shift(k, docIDs, scratch, 384);
+    for (int bound = count - 31; k < bound; k += 32) {
+      in.readInts(scratch, k, 24);
+      shift(k, docIDs, scratch, 24);
       // Can be inlined to make offsets consistent so that loop get auto-vectorized.
-      remainder24(k, docIDs, scratch, 128, 256, 384);
+      remainder24(k, docIDs, scratch, 8, 16, 24);
     }
-    for (int bound = count - 127; k < bound; k += 128) {
-      in.readInts(scratch, k, 96);
-      shift(k, docIDs, scratch, 96);
-      remainder24(k, docIDs, scratch, 32, 64, 96);
-    }
+//    for (int bound = count - 127; k < bound; k += 128) {
+//      in.readInts(scratch, k, 96);
+//      shift(k, docIDs, scratch, 96);
+//      remainder24(k, docIDs, scratch, 32, 64, 96);
+//    }
     readScalarInts24(in, count - k, docIDs, k);
   }
 
