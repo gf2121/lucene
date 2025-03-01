@@ -103,10 +103,21 @@ public class DocBatch extends DocIdStream{
 
     switch (type) {
       case ARRAY -> {
-        int targetLen = arrayLength + length;
-        arrayDocs = ArrayUtil.grow(arrayDocs, targetLen);
-        System.arraycopy(docs, offset, arrayDocs, arrayLength, length);
-        arrayLength = targetLen;
+        if (dense(arrayLength + length)) {
+          initBitset();
+          for (int i = 0, to = arrayLength; i < to; i++) {
+            bitset.set(arrayDocs[i] - base);
+          }
+          for (int i = offset, to = offset + length; i < to; i++) {
+            bitset.set(docs[i] - base);
+          }
+          asBitset(bitset);
+        } else {
+          int targetLen = arrayLength + length;
+          arrayDocs = ArrayUtil.grow(arrayDocs, targetLen);
+          System.arraycopy(docs, offset, arrayDocs, arrayLength, length);
+          arrayLength = targetLen;
+        }
       }
       case BITSET -> {
         for (int i = offset, to = offset + length; i < to; i++) {
@@ -157,7 +168,7 @@ public class DocBatch extends DocIdStream{
     switch (type) {
       case ARRAY -> {
         initBitset();
-        for (int i = 0; i < arrayLength; i++) {
+        for (int i = 0, to = arrayLength; i < to; i++) {
           bitset.set(arrayDocs[i] - base);
         }
         asBitset(bitset);
@@ -264,7 +275,6 @@ public class DocBatch extends DocIdStream{
         }
       }
     }
-    maybeTrim();
   }
 
   public void clear() {
@@ -308,9 +318,9 @@ public class DocBatch extends DocIdStream{
   private void andArrayBitset(int[] docs, int length, FixedBitSet bitset) {
     int[] result = ArrayUtil.growNoCopy(arrayDocs, length);
     int k = 0;
-    for (int i = 0; i < length; i++) {
+    for (int i = 0, offset = base; i < length; i++) {
       int doc = docs[i];
-      if (bitset.get(doc - base)) {
+      if (bitset.get(doc - offset)) {
         result[k++] = doc;
       }
     }
@@ -351,7 +361,7 @@ public class DocBatch extends DocIdStream{
     }
   }
 
-  private void maybeTrim() {
+  public void maybeTrim() {
     switch (type) {
       case ARRAY -> {
         if (arrayLength == 0) {

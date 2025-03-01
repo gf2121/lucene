@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -18,7 +17,10 @@ import org.apache.lucene.util.FixedBitSet;
 public class TestDocBatch extends LuceneTestCase {
 
   public void testWiki() throws Exception {
-    Directory directory = new NIOFSDirectory(Paths.get("/Users/bytedance/Documents/projects/lucenebench/indices/wikimediumall.lucene_baseline.Lucene101.dvfields.nd33.3326M/index"));
+    Directory directory =
+        new NIOFSDirectory(
+            Paths.get(
+                "/Users/bytedance/Documents/projects/lucenebench/indices/wikimediumall.lucene_baseline.Lucene101.dvfields.nd33.3326M/index"));
     IndexReader reader = DirectoryReader.open(directory);
     IndexSearcher searcher = new IndexSearcher(reader);
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
@@ -94,8 +96,6 @@ public class TestDocBatch extends LuceneTestCase {
         int bitsUpto = random().nextInt(maxBits + 1 - bits);
         DocIdSetIterator iterator = provider2.append(batch, bits, bitsUpto);
       }
-
-
     }
   }
 
@@ -191,7 +191,7 @@ public class TestDocBatch extends LuceneTestCase {
               doc != DocIdSetIterator.NO_MORE_DOCS;
               doc = iterator.nextDoc()) {
             assertEquals(maxDoc, doc);
-            maxDoc = doc + 1; //exclusive bound
+            maxDoc = doc + 1; // exclusive bound
           }
         } else {
           minDoc = maxDoc = minSize;
@@ -207,7 +207,9 @@ public class TestDocBatch extends LuceneTestCase {
 
     abstract DocBatch batch(DocIdSetIterator iterator, int minBits, int maxBits) throws IOException;
 
-    DocIdSetIterator append(DocBatch docBatch, int minBits, int maxBits) {return null;}
+    DocIdSetIterator append(DocBatch docBatch, int minBits, int maxBits) {
+      return null;
+    }
   }
 
   private void assertDocsEqual(DocIdSetIterator docIdSetIterator, DocBatch batch)

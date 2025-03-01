@@ -1,12 +1,11 @@
 package org.apache.lucene.search;
 
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.FixedBitSet;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 
 public class DenseConjunctionBatchBulkScorer extends BulkScorer {
 
@@ -95,13 +94,17 @@ public class DenseConjunctionBatchBulkScorer extends BulkScorer {
       throw new UnsupportedOperationException();
     }
 
-    for (DocIdSetIterator other : others) {
+    for (int i = 0; i < others.length; i++) {
+      DocIdSetIterator other = others[i];
       if (other.docID() < offset) {
         other.advance(offset);
       }
       other.intoDocBatch(clauseWindowMatches);
       windowMatches.and(clauseWindowMatches);
       clauseWindowMatches.clear();
+      if (i != others.length - 1) {
+        windowMatches.maybeTrim();
+      }
     }
 
     collector.collect(windowMatches);
