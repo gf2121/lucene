@@ -337,12 +337,12 @@ final class BooleanScorerSupplier extends ScorerSupplier {
           && maxDoc >= DenseConjunctionBulkScorer.WINDOW_SIZE
       //          && cost >= maxDoc / DenseConjunctionBulkScorer.DENSITY_THRESHOLD_INVERSE
       ) {
-        if (Run.OPT) {
+//        if (Run.OPT) {
           return new DenseConjunctionBatchBulkScorer(
               filters.stream().map(Scorer::iterator).toList());
-        } else {
-          return new DenseConjunctionBulkScorer(filters.stream().map(Scorer::iterator).toList());
-        }
+//        } else {
+//          return new DenseConjunctionBulkScorer(filters.stream().map(Scorer::iterator).toList());
+//        }
       }
 
       return new DefaultBulkScorer(new ConjunctionScorer(filters, Collections.emptyList()));
@@ -403,13 +403,13 @@ final class BooleanScorerSupplier extends ScorerSupplier {
       if (requiredScoring.isEmpty() && maxDoc >= DenseConjunctionBulkScorer.WINDOW_SIZE
       //          && leadCost >= maxDoc / DenseConjunctionBulkScorer.DENSITY_THRESHOLD_INVERSE
       ) {
-        if (Run.OPT) {
+//        if (Run.OPT) {
           return new DenseConjunctionBatchBulkScorer(
               requiredNoScoring.stream().map(Scorer::iterator).toList());
-        } else {
-          return new DenseConjunctionBulkScorer(
-              requiredNoScoring.stream().map(Scorer::iterator).toList());
-        }
+//        } else {
+//          return new DenseConjunctionBulkScorer(
+//              requiredNoScoring.stream().map(Scorer::iterator).toList());
+//        }
       } else {
         return new ConjunctionBulkScorer(requiredScoring, requiredNoScoring);
       }
