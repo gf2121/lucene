@@ -46,6 +46,7 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.internal.vectorization.PostingDecodingUtil;
 import org.apache.lucene.internal.vectorization.VectorizationProvider;
+import org.apache.lucene.search.DocBatch;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
@@ -1036,6 +1037,86 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
               docBufferUpto = BLOCK_SIZE;
             }
             break;
+        }
+      }
+    }
+
+    @Override
+    public void intoDocBatch(DocBatch batch) throws IOException {
+      int upTo = batch.getUpTo();
+      if (doc >= upTo) {
+        return;
+      }
+//      FixedBitSet bitSet = new FixedBitSet(batch.getSize());
+//      System.out.println("bitset: " + bitSet.cardinality() + ", batch: " + batch.cardinality());
+
+      // Handle the current doc separately, it may be on the previous docBuffer.
+      batch.appendRange(doc, doc + 1);
+//      bitSet.set(doc - batch.getBase());
+//      System.out.println("bitset: " + bitSet.cardinality() + ", batch: " + batch.cardinality());
+
+      for (; ; ) {
+        if (doc == level0LastDocID) {
+          // refill
+          moveToNextLevel0Block();
+        }
+
+        switch (encoding) {
+          case PACKED:
+          {
+            int start = docBufferUpto;
+            int end = computeBufferEndBoundary(upTo);
+            if (end != 0) {
+//              System.out.println("bitset: " + bitSet.cardinality() + ", batch: " + batch.cardinality());
+              batch.appendArray(docBuffer, start, end - start);
+//              bufferIntoBitSet(start, end, bitSet, batch.getBase());
+//              System.out.println("bitset: " + bitSet.cardinality() + ", batch: " + batch.cardinality());
+//              assert bitSet.cardinality() == batch.cardinality();
+
+              doc = docBuffer[end - 1];
+            }
+            docBufferUpto = end;
+            if (end != BLOCK_SIZE) {
+              // Either the block is a tail block, or the block did not fully match, we're done.
+              nextDoc();
+              assert doc >= upTo;
+              return;
+            }
+          }
+          break;
+          case UNARY:
+          {
+            int sourceFrom;
+            if (docBufferUpto == 0) {
+              // start from beginning
+              sourceFrom = 0;
+            } else {
+              // start after the current doc
+              sourceFrom = doc - docBitSetBase + 1;
+            }
+
+            int destFrom = docBitSetBase - batch.getBase() + sourceFrom;
+
+            assert level0LastDocID != NO_MORE_DOCS;
+            int sourceTo = Math.min(upTo, level0LastDocID + 1) - docBitSetBase;
+
+            if (sourceTo > sourceFrom) {
+//              System.out.println("bitset: " + bitSet.cardinality() + ", batch: " + batch.cardinality());
+              batch.appendBitset(docBitSetBase, docBitSet, sourceFrom, sourceTo);
+//              FixedBitSet.orRange(docBitSet, sourceFrom, bitSet, destFrom, sourceTo - sourceFrom);
+//              System.out.println("bitset: " + bitSet.cardinality() + ", batch: " + batch.cardinality());
+//              assert bitSet.cardinality() == batch.cardinality();
+            }
+            if (docBitSetBase + sourceTo <= level0LastDocID) {
+              // We stopped before the end of the current bit set, which means that we're done.
+              // Set the current doc before returning.
+              advance(docBitSetBase + sourceTo);
+              return;
+            }
+            doc = level0LastDocID;
+            docBufferUpto = BLOCK_SIZE;
+          }
+          break;
         }
       }
     }

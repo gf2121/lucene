@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.stream.Stream;
+
+import org.apache.lucene.Run;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Weight.DefaultBulkScorer;
 import org.apache.lucene.util.Bits;
@@ -334,8 +336,11 @@ final class BooleanScorerSupplier extends ScorerSupplier {
 
       if (filters.stream().map(Scorer::twoPhaseIterator).allMatch(Objects::isNull)
           && maxDoc >= DenseConjunctionBulkScorer.WINDOW_SIZE
-          && cost >= maxDoc / DenseConjunctionBulkScorer.DENSITY_THRESHOLD_INVERSE) {
-        return new DenseConjunctionBulkScorer(filters.stream().map(Scorer::iterator).toList());
+//          && cost >= maxDoc / DenseConjunctionBulkScorer.DENSITY_THRESHOLD_INVERSE
+      ) {
+
+          return new DenseConjunctionBatchBulkScorer(filters.stream().map(Scorer::iterator).toList());
+
       }
 
       return new DefaultBulkScorer(new ConjunctionScorer(filters, Collections.emptyList()));
@@ -395,9 +400,12 @@ final class BooleanScorerSupplier extends ScorerSupplier {
         && requiredNoScoring.stream().map(Scorer::twoPhaseIterator).allMatch(Objects::isNull)) {
       if (requiredScoring.isEmpty()
           && maxDoc >= DenseConjunctionBulkScorer.WINDOW_SIZE
-          && leadCost >= maxDoc / DenseConjunctionBulkScorer.DENSITY_THRESHOLD_INVERSE) {
-        return new DenseConjunctionBulkScorer(
-            requiredNoScoring.stream().map(Scorer::iterator).toList());
+//          && leadCost >= maxDoc / DenseConjunctionBulkScorer.DENSITY_THRESHOLD_INVERSE
+      ) {
+
+          return new DenseConjunctionBatchBulkScorer(
+              requiredNoScoring.stream().map(Scorer::iterator).toList());
+
       } else {
         return new ConjunctionBulkScorer(requiredScoring, requiredNoScoring);
       }

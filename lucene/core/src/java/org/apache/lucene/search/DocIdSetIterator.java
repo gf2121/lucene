@@ -258,4 +258,8 @@ public abstract class DocIdSetIterator {
       bitSet.set(doc - offset);
     }
   }
+
+  public void intoDocBatch(DocBatch batch) throws IOException {
+    batch.appendDISI(this);
+  }
 }
