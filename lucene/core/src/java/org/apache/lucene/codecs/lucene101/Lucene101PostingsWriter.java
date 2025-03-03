@@ -40,6 +40,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -48,6 +49,7 @@ import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** Writer for {@link Lucene101PostingsFormat}. */
 public class Lucene101PostingsWriter extends PushPostingsWriterBase {
@@ -388,6 +390,30 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
     }
   }
 
+  private final byte[] encodeBitsArray = new byte[2 * BLOCK_SIZE];
+  private final ByteArrayDataOutput encodeBitsScratch = new ByteArrayDataOutput(encodeBitsArray);
+
+  private int tryEncodeBits(long[] bits, int len) {
+    encodeBitsScratch.reset(encodeBitsArray);
+    int header = 0;
+    for (int i = 0; i < len; i++) {
+      long bit = bits[i];
+      int bitCount = Long.bitCount(bit);
+      if (bitCount >= 7) {
+        encodeBitsScratch.writeLong(bit);
+        continue;
+      }
+      header |= 1 << i;
+      encodeBitsScratch.writeByte((byte) bitCount);
+      while (bit != 0) {
+        int ntz = Long.numberOfTrailingZeros(bit);
+        encodeBitsScratch.writeByte((byte) ntz);
+        bit ^= 1L << ntz;
+      }
+    }
+    return header;
+  }
+
   private void flushDocBlock(boolean finishTerm) throws IOException {
     assert docBufferUpto != 0;
 
@@ -434,10 +460,7 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
       int numBitsNextBitsPerValue = Math.min(Integer.SIZE, bitsPerValue + 1) * BLOCK_SIZE;
       if (sum == BLOCK_SIZE) {
         level0Output.writeByte((byte) 0);
-      } else if (version < VERSION_DENSE_BLOCKS_AS_BITSETS || numBitsNextBitsPerValue <= sum) {
-        level0Output.writeByte((byte) bitsPerValue);
-        forDeltaUtil.encodeDeltas(bitsPerValue, docDeltaBuffer, level0Output);
-      } else {
+      } else if (version >= VERSION_DENSE_BLOCKS_AS_BITSETS && numBitsNextBitsPerValue >= sum) {
         // Storing doc deltas is more efficient using unary coding (ie. storing doc IDs as a bit
         // set)
         spareBitSet.clear(0, numBitSetLongs << 6);
@@ -453,6 +476,33 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
         level0Output.writeByte((byte) -numBitSetLongs);
         for (int i = 0; i < numBitSetLongs; ++i) {
           level0Output.writeLong(spareBitSet.getBits()[i]);
+        }
+      } else {
+        if (sum <= 15 * BLOCK_SIZE) {
+          // we won't try if docs are too sparse - more than 15 bits per value.
+          spareBitSet.clear(0, numBitSetLongs << 6);
+          int s = -1;
+          for (int i : docDeltaBuffer) {
+            s += i;
+            spareBitSet.set(s);
+          }
+
+          int header = tryEncodeBits(spareBitSet.getBits(), numBitSetLongs);
+          assert header >= 0 : header + "";
+          if (encodeBitsScratch.getPosition()
+                  + (PackedInts.unsignedBitsRequired(header) / Byte.SIZE + 1)
+              <= numBitsNextBitsPerValue) {
+            // TODO block size 128 assumption
+            level0Output.writeByte((byte) (-numBitSetLongs - 64));
+            level0Output.writeVInt(header);
+            level0Output.writeBytes(encodeBitsArray, encodeBitsScratch.getPosition());
+          } else {
+            level0Output.writeByte((byte) bitsPerValue);
+            forDeltaUtil.encodeDeltas(bitsPerValue, docDeltaBuffer, level0Output);
+          }
+        } else {
+          level0Output.writeByte((byte) bitsPerValue);
+          forDeltaUtil.encodeDeltas(bitsPerValue, docDeltaBuffer, level0Output);
         }
       }
 

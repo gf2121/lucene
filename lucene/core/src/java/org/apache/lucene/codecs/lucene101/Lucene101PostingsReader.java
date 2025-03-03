@@ -613,7 +613,29 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
           docBitSet.set(0, BLOCK_SIZE);
         } else {
           numLongs = -bitsPerValue;
-          docIn.readLongs(docBitSet.getBits(), 0, numLongs);
+          if (numLongs <= 64) {
+            docIn.readLongs(docBitSet.getBits(), 0, numLongs);
+          } else {
+            numLongs -= 64;
+            int header = docIn.readVInt();
+            long[] bits = docBitSet.getBits();
+            int index = 0;
+            while (header != 0) {
+              int ntz = Integer.numberOfTrailingZeros(header);
+              if (ntz > 0) {
+                docIn.readLongs(bits, index, ntz);
+                index += ntz;
+              }
+              int bitCount = docIn.readByte();
+              long l = 0;
+              for (int i = 0; i < bitCount; i++) {
+                l |= 1L << docIn.readByte();
+              }
+              bits[index++] = l;
+              header >>= ntz + 1;
+            }
+            docIn.readLongs(bits, index, numLongs - index);
+          }
         }
         if (needsFreq) {
           // Note: we know that BLOCK_SIZE bits are set, so no need to compute the cumulative pop
