@@ -634,7 +634,10 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
               bits[index++] = l;
               header >>= ntz + 1;
             }
-            docIn.readLongs(bits, index, numLongs - index);
+            int remainder = numLongs - index;
+            if (remainder > 0) {
+              docIn.readLongs(bits, index, remainder);
+            }
           }
         }
         if (needsFreq) {

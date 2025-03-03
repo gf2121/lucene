@@ -491,9 +491,9 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
           assert header >= 0 : header + "";
           if (encodeBitsScratch.getPosition()
                   + (PackedInts.unsignedBitsRequired(header) / Byte.SIZE + 1)
-              <= numBitsNextBitsPerValue) {
+              <= bitsPerValue * BLOCK_SIZE) {
             // TODO block size 128 assumption
-            level0Output.writeByte((byte) (-numBitSetLongs - 64));
+            level0Output.writeByte((byte) (-(numBitSetLongs + 64)));
             level0Output.writeVInt(header);
             level0Output.writeBytes(encodeBitsArray, encodeBitsScratch.getPosition());
           } else {
