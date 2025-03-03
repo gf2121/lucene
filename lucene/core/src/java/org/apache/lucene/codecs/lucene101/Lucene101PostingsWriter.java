@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.IntStream;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
@@ -394,7 +393,11 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
 
   private final byte[] encodeBitsArray = new byte[2 * BLOCK_SIZE];
   private final ByteArrayDataOutput encodeBitsScratch = new ByteArrayDataOutput(encodeBitsArray);
-  static final int[] bitCountToBytesCache = IntStream.range(0, 65).map(bitCount -> 3 + 6 * bitCount).map(bits -> ((bits - 1) >> 3) + 1).toArray();
+  static final int[] bitCountToBytesCache =
+      IntStream.range(0, 65)
+          .map(bitCount -> 3 + 6 * bitCount)
+          .map(bits -> ((bits - 1) >> 3) + 1)
+          .toArray();
 
   private int tryEncodeBits(long[] bits, int len) {
     encodeBitsScratch.reset(encodeBitsArray);
@@ -504,7 +507,8 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
                   + (PackedInts.unsignedBitsRequired(header) / Byte.SIZE + 1)
               <= bitsPerValue * BLOCK_SIZE) {
             // TODO block size 128 assumption
-//            System.out.println("writing header: " + header + " bits: " + Arrays.toString(ArrayUtil.copyOfSubArray(spareBitSet.getBits(), 0, numBitSetLongs)));
+            //            System.out.println("writing header: " + header + " bits: " +
+            // Arrays.toString(ArrayUtil.copyOfSubArray(spareBitSet.getBits(), 0, numBitSetLongs)));
             level0Output.writeByte((byte) (-(numBitSetLongs + 64)));
             level0Output.writeVInt(header);
             level0Output.writeBytes(encodeBitsArray, encodeBitsScratch.getPosition());
