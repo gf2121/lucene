@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.IntStream;
+
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
@@ -392,6 +394,7 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
 
   private final byte[] encodeBitsArray = new byte[2 * BLOCK_SIZE];
   private final ByteArrayDataOutput encodeBitsScratch = new ByteArrayDataOutput(encodeBitsArray);
+  static final int[] bitCountToBytesCache = IntStream.range(0, 65).map(bitCount -> 3 + 6 * bitCount).map(bits -> ((bits - 1) >> 3) + 1).toArray();
 
   private int tryEncodeBits(long[] bits, int len) {
     encodeBitsScratch.reset(encodeBitsArray);
@@ -399,16 +402,24 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
     for (int i = 0; i < len; i++) {
       long bit = bits[i];
       int bitCount = Long.bitCount(bit);
-      if (bitCount >= 7) {
+      if (bitCount >= 8) { // store bit count 3 bit
         encodeBitsScratch.writeLong(bit);
         continue;
       }
       header |= 1 << i;
-      encodeBitsScratch.writeByte((byte) bitCount);
+      long l = bitCount;
+      int shift = 3;
       while (bit != 0) {
-        int ntz = Long.numberOfTrailingZeros(bit);
-        encodeBitsScratch.writeByte((byte) ntz);
+        long ntz = Long.numberOfTrailingZeros(bit);
+        l |= ntz << shift;
+        shift += 6;
         bit ^= 1L << ntz;
+      }
+      int totalBytes = bitCountToBytesCache[bitCount];
+      assert PackedInts.unsignedBitsRequired(l) <= totalBytes * Byte.SIZE;
+      for (int j = 0; j < totalBytes; j++) {
+        encodeBitsScratch.writeByte((byte) l);
+        l >>>= 8;
       }
     }
     return header;
@@ -493,6 +504,7 @@ public class Lucene101PostingsWriter extends PushPostingsWriterBase {
                   + (PackedInts.unsignedBitsRequired(header) / Byte.SIZE + 1)
               <= bitsPerValue * BLOCK_SIZE) {
             // TODO block size 128 assumption
+//            System.out.println("writing header: " + header + " bits: " + Arrays.toString(ArrayUtil.copyOfSubArray(spareBitSet.getBits(), 0, numBitSetLongs)));
             level0Output.writeByte((byte) (-(numBitSetLongs + 64)));
             level0Output.writeVInt(header);
             level0Output.writeBytes(encodeBitsArray, encodeBitsScratch.getPosition());

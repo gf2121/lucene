@@ -628,15 +628,23 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
                 index += ntz;
                 header >>>= ntz;
               }
-              long l = docIn.readLong();
-              int bitCount = (int) l & 0xFF;
-              long result = 0L;
-              for (int i = 0; i < bitCount; i++) {
-                result |= 1L << (l >>>= 8);
-              }
-              bits[index++] = result;
               header >>>= 1;
-              docIn.seek(docIn.getFilePointer() - Long.BYTES + bitCount + 1);
+              long l = docIn.readLong();
+              int bitCount = (int) l & 0x07;
+              if (bitCount == 0) {
+                bits[index++] = 0L;
+                docIn.seek(docIn.getFilePointer() - 7L);
+              } else {
+                l >>>= 3;
+                long result = 0L;
+                for (int i = 0; i < bitCount; i++) {
+                  result |= 1L << l;
+                  l >>>= 6;
+                }
+                bits[index++] = result;
+                docIn.seek(docIn.getFilePointer() - Long.BYTES
+                    + Lucene101PostingsWriter.bitCountToBytesCache[bitCount]);
+              }
             }
             int remainder = numLongs - index;
             if (remainder > 0) {
@@ -644,6 +652,7 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
             }
           }
         }
+
         if (needsFreq) {
           // Note: we know that BLOCK_SIZE bits are set, so no need to compute the cumulative pop
           // count at the last index, it will be BLOCK_SIZE.
