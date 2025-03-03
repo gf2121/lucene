@@ -50,6 +50,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.store.ReadAdvice;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitUtil;
@@ -625,14 +626,17 @@ public final class Lucene101PostingsReader extends PostingsReaderBase {
               if (ntz > 0) {
                 docIn.readLongs(bits, index, ntz);
                 index += ntz;
+                header >>>= ntz;
               }
-              int bitCount = docIn.readByte();
-              long l = 0;
+              long l = docIn.readLong();
+              int bitCount = (int) l & 0xFF;
+              long result = 0L;
               for (int i = 0; i < bitCount; i++) {
-                l |= 1L << docIn.readByte();
+                result |= 1L << (l >>>= 8);
               }
-              bits[index++] = l;
-              header >>= ntz + 1;
+              bits[index++] = result;
+              header >>>= 1;
+              docIn.seek(docIn.getFilePointer() - Long.BYTES + bitCount + 1);
             }
             int remainder = numLongs - index;
             if (remainder > 0) {
