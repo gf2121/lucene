@@ -15,6 +15,7 @@ class TrieReader {
   private static final long NO_OUTPUT = -1;
 
   static class Node {
+    private long code;
     private long positionFp;
     private long outputFp;
     private boolean isLeaf;
@@ -22,7 +23,6 @@ class TrieReader {
     private int positionBytes;
     private int minChildrenLabel;
     private int childrenCodesBytes;
-    private long minChildrenCode;
 
     int label;
 
@@ -48,11 +48,21 @@ class TrieReader {
     load(root, rootFP);
   }
 
+  private static long readVLong(RandomAccessInput in, long pos) throws IOException {
+    long l = in.readLong(pos);
+    long i = l & 0x7FL;
+    for (int shift = 7; (l & 0x80L) != 0L; shift += 7) {
+      l >>>= 8;
+      i |= (l & 0x7FL) << shift;
+    }
+    return i;
+  }
+
   private void load(Node node, long code) throws IOException {
-    long tail = code & 0x01L;
-    if (tail == 0x01L) {
+    node.code = code;
+    if ((code & 0x01L) == 0x01L) {
       node.isLeaf = true;
-      node.outputFp = code >>> 1;
+      node.outputFp = readVLong(nodesIn, code >>> 1);
       return;
     }
 
@@ -65,16 +75,11 @@ class TrieReader {
     node.positionBytes = (sign >>> 8) & 0x3F;
     node.minChildrenLabel = sign & 0xFF;
     fp += META_BYTES;
-
-    final int fpBits = header & 0x38;
-    final long mask = (1L << fpBits) - 1L;
-    node.minChildrenCode = nodesIn.readLong(fp) & mask;
-    final int fpBytes = fpBits >>> 3;
-    fp += fpBytes;
-
-    if ((header & (1 << 6)) != 0) {
+    final int bits = header & 0x38;
+    if (bits != 0) {
+      long mask = (1L << bits) - 1L;
       node.outputFp = nodesIn.readLong(fp) & mask;
-      node.positionFp = fp + fpBytes;
+      node.positionFp = fp + (bits >> 3);
     } else {
       node.outputFp = NO_OUTPUT;
       node.positionFp = fp;
@@ -119,7 +124,8 @@ class TrieReader {
     final long codeBytes = parent.childrenCodesBytes;
     final long pos = positionBytesStartFp + positionBytes + codeBytes * position;
     final long mask = (1L << (codeBytes << 3)) - 1L;
-    final long code = (nodesIn.readLong(pos) & mask) + parent.minChildrenCode;
+    final long code = parent.code - (nodesIn.readLong(pos) & mask);
+    assert code > 0L;
     child.label = targetLabel;
     load(child, code);
 

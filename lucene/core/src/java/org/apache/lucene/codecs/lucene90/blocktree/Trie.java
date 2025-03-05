@@ -108,21 +108,26 @@ class Trie {
 
     if (childrenNum == 0) {
       assert node.output != null;
-      long code = (outputsBuffer.size() << 1) | 0x1L;
+      long code = ((index.getFilePointer() - startFP) << 1) | 0x01L;
+      index.writeVLong(outputsBuffer.size());
       outputsBuffer.writeBytes(node.output.bytes, node.output.offset, node.output.length);
       return code;
     }
 
     long[] codeBuffer = new long[childrenNum];
-    long maxCode = 0, minCode = Long.MAX_VALUE;
     for (int i = 0; i < childrenNum; i++) {
       Node child = node.children.get(i);
       codeBuffer[i] = saveArcs(child, index, outputsBuffer, startFP);
-      maxCode = Math.max(maxCode, codeBuffer[i]);
-      minCode = Math.min(minCode, codeBuffer[i]);
     }
 
     final long fp = index.getFilePointer() - startFP;
+    final long code = fp << 1;
+    long maxCode = 0;
+    for (int i = 0; i < childrenNum; i++) {
+      assert codeBuffer[i] < code : codeBuffer[i] + " vs " + code;
+      codeBuffer[i] = code - codeBuffer[i];
+      maxCode = Math.max(maxCode, codeBuffer[i]);
+    }
 
     final int minLabel = node.children.getFirst().label;
     final int maxLabel = node.children.getLast().label;
@@ -149,19 +154,14 @@ class Trie {
             | minLabel; // 8bit
     index.writeShort((short) sign);
 
-    int codeBytes = bytesRequired(maxCode - minCode);
-    if (codeBytes == bytesRequired(maxCode)) {
-      minCode = 0L;
-    }
-    int fpBytes = bytesRequired(Math.max(minCode, outputsBuffer.size()));
-    int header = (fpBytes << 3) | codeBytes;
+    int codeBytes = bytesRequired(maxCode);
     if (node.output == null) {
-      index.writeByte((byte) header);
-      writeLongNBytes(minCode, fpBytes, index);
+      index.writeByte((byte) codeBytes);
     } else {
-      index.writeByte((byte) ((1 << 6) | header));
-      writeLongNBytes(minCode, fpBytes, index);
-      writeLongNBytes(outputsBuffer.size(), fpBytes, index);
+      long outputFp = outputsBuffer.size();
+      int bytesRequired = bytesRequired(outputFp);
+      index.writeByte((byte) ((bytesRequired << 3) | codeBytes));
+      writeLongNBytes(outputFp, bytesRequired, index);
       outputsBuffer.writeBytes(node.output.bytes, node.output.offset, node.output.length);
     }
 
@@ -175,9 +175,9 @@ class Trie {
             + (index.getFilePointer() - positionStartFp);
 
     for (int i = 0; i < childrenNum; i++) {
-      writeLongNBytes(codeBuffer[i] - minCode, codeBytes, index);
+      writeLongNBytes(codeBuffer[i], codeBytes, index);
     }
-    return fp << 1;
+    return code;
   }
 
   private static int bytesRequired(long v) {
@@ -188,7 +188,7 @@ class Trie {
     assert bytesRequired(v) <= n;
     for (int j = 0; j < n; j++) {
       out.writeByte((byte) v);
-      v >>= 8;
+      v >>>= 8;
     }
   }
 
