@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene90.blocktree;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.function.IntSupplier;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
@@ -680,26 +681,37 @@ final class SegmentTermsEnumFrame {
     assert prefixMatches(target);
 
     suffixLength = suffixLengthsReader.readVInt();
-    // TODO early terminate when target length unequals suffix + prefix.
-    // But we need to keep the same status with scanToTermLeaf.
     int start = nextEnt;
     int end = entCount - 1;
     // Binary search the entries (terms) in this leaf block:
     int cmp = 0;
+
+    IntSupplier comparator;
+    if (prefixLength + suffixLength != target.length) {
+      comparator =
+          () ->
+              Arrays.compareUnsigned(
+                  suffixBytes,
+                  startBytePos,
+                  startBytePos + suffixLength,
+                  target.bytes,
+                  target.offset + prefixLength,
+                  target.offset + target.length);
+    } else {
+      ArrayUtil.ByteArrayComparator byteArrayComparator =
+          ArrayUtil.getUnsignedComparator(suffixLength);
+      comparator =
+          () ->
+              byteArrayComparator.compare(
+                  suffixBytes, startBytePos, target.bytes, target.offset + prefixLength);
+    }
     while (start <= end) {
       int mid = (start + end) >>> 1;
       nextEnt = mid + 1;
       startBytePos = mid * suffixLength;
 
       // Compare suffix and target.
-      cmp =
-          Arrays.compareUnsigned(
-              suffixBytes,
-              startBytePos,
-              startBytePos + suffixLength,
-              target.bytes,
-              target.offset + prefixLength,
-              target.offset + target.length);
+      cmp = comparator.getAsInt();
       if (cmp < 0) {
         start = mid + 1;
       } else if (cmp > 0) {

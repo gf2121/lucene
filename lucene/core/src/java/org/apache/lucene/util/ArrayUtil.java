@@ -778,7 +778,9 @@ public final class ArrayUtil {
 
   /** Return a comparator for exactly the specified number of bytes. */
   public static ByteArrayComparator getUnsignedComparator(int numBytes) {
-    if (numBytes == Long.BYTES) {
+    if (numBytes == Byte.BYTES) {
+      return (b1, i1, b2, i2) -> Byte.compareUnsigned(b1[i1], b2[i2]);
+    } else if (numBytes == Long.BYTES) {
       // Used by LongPoint, DoublePoint
       return ArrayUtil::compareUnsigned8;
     } else if (numBytes == Integer.BYTES) {

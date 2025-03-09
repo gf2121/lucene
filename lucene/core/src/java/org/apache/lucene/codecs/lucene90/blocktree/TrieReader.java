@@ -119,7 +119,8 @@ class TrieReader {
     }
   }
 
-  private void loadSingleChildNode(long fp, int sign, int term, long termLong, Node node) throws IOException {
+  private void loadSingleChildNode(long fp, int sign, int term, long termLong, Node node)
+      throws IOException {
 
     // [n bytes] floor data
     // [n bytes] encoded output fp | [n bytes] child fp | [1 byte] label
