@@ -656,6 +656,9 @@ final class SegmentTermsEnumFrame {
     return SeekStatus.END;
   }
 
+  private static int TOTAL = 0;
+  private static int WITHIN = 0;
+
   // Target's prefix matches this block's prefix;
   // And all suffixes have the same length in this block,
   // we binary search the entries to check if the suffix matches.
@@ -680,6 +683,22 @@ final class SegmentTermsEnumFrame {
     assert prefixMatches(target);
 
     suffixLength = suffixLengthsReader.readVInt();
+
+    int targetSuffixLeading = target.bytes[target.offset + prefixLength] & 0xFF;
+    int minSuffixLeading = suffixBytes[0] & 0xFF;
+    int maxSuffixLeading = suffixBytes[(entCount - 1) * suffixLength] & 0xFF;
+    TOTAL++;
+    if (targetSuffixLeading >= minSuffixLeading && targetSuffixLeading <= maxSuffixLeading) {
+      WITHIN++;
+    }
+    System.out.println("target leading: " + targetSuffixLeading
+        + " min leading: " + minSuffixLeading
+        + " max leading: " + maxSuffixLeading
+        + " within: " + WITHIN
+        + " total: " + TOTAL
+        + " hit ratio" + String.format("%.2f", (float)WITHIN / (float)TOTAL)
+    );
+
     // TODO early terminate when target length unequals suffix + prefix.
     // But we need to keep the same status with scanToTermLeaf.
     int start = nextEnt;
