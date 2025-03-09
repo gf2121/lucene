@@ -691,16 +691,6 @@ final class SegmentTermsEnumFrame {
     if (targetSuffixLeading >= minSuffixLeading && targetSuffixLeading <= maxSuffixLeading) {
       WITHIN++;
     }
-    System.out.println("target leading: " + targetSuffixLeading
-        + " min leading: " + minSuffixLeading
-        + " max leading: " + maxSuffixLeading
-        + " within: " + WITHIN
-        + " total: " + TOTAL
-        + " hit ratio" + String.format("%.2f", (float)WITHIN / (float)TOTAL)
-        + " ord: " + ord
-        + " suffix length: " + suffixLength
-        + " prefix: " + Arrays.toString(ArrayUtil.copyOfSubArray(target.bytes, target.offset, target.offset + prefixLength))
-    );
 
     // TODO early terminate when target length unequals suffix + prefix.
     // But we need to keep the same status with scanToTermLeaf.
@@ -763,6 +753,19 @@ final class SegmentTermsEnumFrame {
         fillTerm();
       }
     }
+
+    System.out.println("target leading: " + targetSuffixLeading
+        + " min leading: " + minSuffixLeading
+        + " max leading: " + maxSuffixLeading
+        + " within: " + WITHIN
+        + " total: " + TOTAL
+        + " hit ratio" + String.format("%.2f", (float)WITHIN / (float)TOTAL)
+        + " ord: " + ord
+        + " suffix length: " + suffixLength
+        + " prefix: " + Arrays.toString(ArrayUtil.copyOfSubArray(target.bytes, target.offset, target.offset + prefixLength))
+        + " result: " + seekStatus
+    );
+
     // TODO: not consistent that in the
     // not-exact case we don't next() into the next
     // frame here
