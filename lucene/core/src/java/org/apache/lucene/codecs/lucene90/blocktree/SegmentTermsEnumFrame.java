@@ -697,6 +697,9 @@ final class SegmentTermsEnumFrame {
         + " within: " + WITHIN
         + " total: " + TOTAL
         + " hit ratio" + String.format("%.2f", (float)WITHIN / (float)TOTAL)
+        + " ord: " + ord
+        + " suffix length: " + suffixLength
+        + " prefix: " + Arrays.toString(ArrayUtil.copyOfSubArray(target.bytes, target.offset, target.offset + prefixLength))
     );
 
     // TODO early terminate when target length unequals suffix + prefix.
