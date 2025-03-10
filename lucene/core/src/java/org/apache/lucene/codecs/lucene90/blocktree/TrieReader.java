@@ -184,6 +184,7 @@ class TrieReader {
 
   Node lookupChild(int targetLabel, Node parent, Node child) throws IOException {
     int sign = parent.sign;
+    long start = System.nanoTime();
     if (sign == Trie.SIGN_NO_CHILDREN) {
       return null;
     }
@@ -198,6 +199,7 @@ class TrieReader {
       return child;
     }
 
+    long startLookup = System.nanoTime();
     final long positionBytesStartFp = parent.positionFp;
     final int minLabel = parent.minChildrenLabel;
     final int positionBytes = parent.positionBytes;
@@ -210,6 +212,7 @@ class TrieReader {
           Trie.PositionStrategy.byCode(parent.childrenStrategy)
               .lookup(targetLabel, access, positionBytesStartFp, positionBytes, minLabel);
     }
+    long finishLookup = System.nanoTime();
 
     if (position < 0) {
       return null;
@@ -219,7 +222,19 @@ class TrieReader {
     final long pos = positionBytesStartFp + positionBytes + (long) codeBytes * position;
     final long fp = parent.fp - (access.readLong(pos) & BYTES_MINUS_1_MASK[codeBytes - 1]);
     child.label = targetLabel;
+    long startLoad = System.nanoTime();
     load(child, fp);
+    long end = System.nanoTime();
+
+    System.out.println(
+        "node has output: " + child.hasOutput()
+        + ", node has floor: " + child.isFloor()
+        + ", prepare: " + (startLookup - start)
+        + ", lookup: " + (finishLookup - startLookup)
+        + ", readfp: " + (startLoad - finishLookup)
+        + ", load: " + (end - startLoad)
+        + ", total: " + (end - start)
+    );
 
     return child;
   }
