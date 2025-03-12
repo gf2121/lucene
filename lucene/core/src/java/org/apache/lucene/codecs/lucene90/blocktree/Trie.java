@@ -39,6 +39,12 @@ class Trie {
 
   record Output(long fp, boolean hasTerms, BytesRef floorData) {}
 
+  enum Status {
+    UNSAVED,
+    SAVED,
+    DESTROYED
+  }
+
   private static class Node {
     final int label;
     final LinkedList<Node> children;
@@ -52,6 +58,7 @@ class Trie {
     }
   }
 
+  Status status = Status.UNSAVED;
   final Node root = new Node(0, null, new LinkedList<>());
 
   Trie(BytesRef k, Output v) {
@@ -70,6 +77,10 @@ class Trie {
   }
 
   void putAll(Trie trie) {
+    if (status != Status.UNSAVED || trie.status != Status.UNSAVED) {
+      throw new IllegalStateException("tries should be unsaved");
+    }
+    trie.status = Status.DESTROYED;
     putAll(this.root, trie.root);
   }
 
@@ -120,6 +131,10 @@ class Trie {
   }
 
   void save(DataOutput meta, IndexOutput index) throws IOException {
+    if (status != Status.UNSAVED) {
+      throw new IllegalStateException("only unsaved trie can be saved");
+    }
+    status = Status.SAVED;
     meta.writeVLong(index.getFilePointer());
     saveNodes(index);
     meta.writeVLong(root.fp);
