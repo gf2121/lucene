@@ -39,7 +39,7 @@ public final class DocIdsWriter {
   // These signs are legacy, should no longer be used in the writing side.
   private static final byte LEGACY_DELTA_VINT = (byte) 0;
 
-  private static final int[] BATCHES = new int[] {128};
+  private static final int[] BATCHES = new int[] {512};
 
   private final int[] scratch;
 
@@ -347,20 +347,49 @@ public final class DocIdsWriter {
   }
 
   private void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
-    int k = 0;
+    if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
+      // Same format, but enabling the JVM to specialize the decoding logic for the default number
+      // of points per node proved to help on benchmarks
+      doReadInts24(in, 512, docIDs);
+    } else {
+      doReadInts24(in, count, docIDs);
+    }
+  }
+
+  private void doReadInts24(IndexInput in, int count, int[] docIDs) throws IOException {
+    // Read the first (count - count % 4) values
+    int quarter = count >> 2;
+    int numInts = quarter * 3;
+    in.readInts(scratch, 0, numInts);
+    for (int i = 0; i < numInts; ++i) {
+      docIDs[i] = scratch[i] >>> 8;
+    }
+    for (int i = 0; i < quarter; ++i) {
+      docIDs[numInts + i] = (scratch[i] & 0xFF)
+          | ((scratch[quarter + i] & 0xFF) << 8)
+          | ((scratch[2 * quarter + i] & 0xFF) << 16);
+    }
+    // Now read the remaining 0, 1, 2 or 3 values
+    for (int i = quarter << 2; i < count; ++i) {
+      docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
+    }
+  }
+
+//  private void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
+//    int k = 0;
 //    for (int bound = count - 511; k < bound; k += 512) {
 //      in.readInts(scratch, k, 384);
 //      shift(k, docIDs, scratch, 384);
 //      // Can be inlined to make offsets consistent so that loop get auto-vectorized.
 //      remainder24(k, docIDs, scratch, 128, 256, 384);
 //    }
-    for (int bound = count - 127; k < bound; k += 128) {
-      in.readInts(scratch, k, 96);
-      shift(k, docIDs, scratch, 96);
-      remainder24(k, docIDs, scratch, 32, 64, 96);
-    }
-    readScalarInts24(in, count - k, docIDs, k);
-  }
+//    for (int bound = count - 127; k < bound; k += 128) {
+//      in.readInts(scratch, k, 96);
+//      shift(k, docIDs, scratch, 96);
+//      remainder24(k, docIDs, scratch, 32, 64, 96);
+//    }
+//    readScalarInts24(in, count - k, docIDs, k);
+//  }
 
   private static void shift(int k, int[] docIds, int[] scratch, int halfAndQuarter) {
     for (int i = k, to = k + halfAndQuarter; i < to; i++) {
