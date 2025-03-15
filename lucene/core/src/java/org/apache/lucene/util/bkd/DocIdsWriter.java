@@ -322,31 +322,36 @@ public final class DocIdsWriter {
   }
 
   private void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
+    specializedRemainderMaskInRemainder(in, count, docIDs, scratch);
+  }
+
+  private static void specializedRemainderMaskInRemainder(IndexInput in, int count, int[] docIDs, int[] scratch) throws IOException {
+    int quarter = count >> 2;
+    int numBytes = quarter * 3;
+    in.readInts(scratch, 0, numBytes);
+    for (int i = 0; i < numBytes; ++i) {
+      docIDs[i] = scratch[i] >>> 8;
+    }
     if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
-      // Same format, but enabling the JVM to specialize the decoding logic for the default number
-      // of points per node proved to help on benchmarks
-      doReadInts24(in, 512, docIDs);
+      remainder24WithMask(docIDs,
+          scratch,
+          BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4,
+          (BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4) * 3);
     } else {
-      doReadInts24(in, count, docIDs);
+      remainder24WithMask(docIDs, scratch, quarter, numBytes);
+      // Now read the remaining 0, 1, 2 or 3 values
+      for (int i = quarter << 2; i < count; ++i) {
+        docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
+      }
     }
   }
 
-  private void doReadInts24(IndexInput in, int count, int[] docIDs) throws IOException {
-    // Read the first (count - count % 4) values
-    int quarter = count >> 2;
-    int numInts = quarter * 3;
-    in.readInts(scratch, 0, numInts);
-    for (int i = 0; i < numInts; ++i) {
-      docIDs[i] = scratch[i] >>> 8;
-    }
-    for (int i = 0; i < quarter; ++i) {
-      docIDs[numInts + i] = (scratch[i] & 0xFF)
-          | ((scratch[quarter + i] & 0xFF) << 8)
-          | ((scratch[2 * quarter + i] & 0xFF) << 16);
-    }
-    // Now read the remaining 0, 1, 2 or 3 values
-    for (int i = quarter << 2; i < count; ++i) {
-      docIDs[i] = (in.readShort() & 0xFFFF) | ((in.readByte() & 0xFF) << 16);
+  private static void remainder24WithMask(int[] docIds, int[] scratch, int quarter, int numInts) {
+    for (int i = 0; i < quarter; i++) {
+      docIds[i + numInts] =
+          (scratch[i] & 0xFF)
+              | ((scratch[i + quarter] & 0xFF) << 8)
+              | ((scratch[i + quarter * 2] & 0xFF)  << 16);
     }
   }
 
