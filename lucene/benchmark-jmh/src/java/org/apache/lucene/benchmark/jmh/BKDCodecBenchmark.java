@@ -48,9 +48,9 @@ import org.openjdk.jmh.infra.Blackhole;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-@Warmup(iterations = 3, time = 1)
-@Measurement(iterations = 5, time = 1)
-@Fork(value = 1)
+@Warmup(iterations = 3, time = 3)
+@Measurement(iterations = 5, time = 3)
+@Fork(value = 10)
 public class BKDCodecBenchmark {
 
   private static final int SIZE = BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE;
