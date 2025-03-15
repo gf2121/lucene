@@ -356,7 +356,7 @@ public final class DocIdsWriter {
 //    }
     for (int bound = count - 127; k < bound; k += 128) {
       in.readInts(scratch, k, 96);
-      shift(k, docIDs, scratch, 96);
+//      shift(k, docIDs, scratch, 96);
       remainder24(k, docIDs, scratch, 32, 64, 96);
     }
     readScalarInts24(in, count - k, docIDs, k);
@@ -371,6 +371,9 @@ public final class DocIdsWriter {
   private static void remainder24(
       int k, int[] docIds, int[] scratch, int quarter, int half, int halfAndQuarter) {
     for (int i = k, to = k + quarter; i < to; i++) {
+      docIds[i] = scratch[i] >>> 8;
+      docIds[i + quarter] = scratch[i + quarter] >>> 8;
+      docIds[i + half] = scratch[i + half] >>> 8;
       docIds[i + halfAndQuarter] =
           ((scratch[i] & 0xFF) << 16)
               | ((scratch[i + quarter] & 0xFF) << 8)
