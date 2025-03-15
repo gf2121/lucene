@@ -14,7 +14,6 @@ import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -28,6 +27,9 @@ import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * NO COMMIT: remove before merge
+ */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
@@ -69,12 +71,12 @@ public class InnerLoopDecodingBenchmark {
   }
 
   private int count(int iter) {
-    return iter % 500 == 0 ? SIZE - 1 : SIZE;
+    return iter % 20 == 0 ? SIZE - 1 : SIZE;
   }
 
   @Benchmark
   public void hybridInnerLoop(Blackhole bh) throws IOException {
-    for (int i = 0; i <= 1000; i++) {
+    for (int i = 0; i <= 100; i++) {
       int count = count(i);
       hybridInnerLoop(in, count, docs, scratch);
       bh.consume(docs);
@@ -138,7 +140,7 @@ public class InnerLoopDecodingBenchmark {
 
   @Benchmark
   public void specializedRead(Blackhole bh) throws IOException {
-    for (int i = 0; i <= 1000; i++) {
+    for (int i = 0; i <= 100; i++) {
       int count = count(i);
       specializedRead(in, count, docs, scratch);
       bh.consume(docs);
@@ -177,30 +179,26 @@ public class InnerLoopDecodingBenchmark {
   }
 
   @Benchmark
-  public void specializedRemainder(Blackhole bh) throws IOException {
-    for (int i = 0; i <= 1000; i++) {
+  public void specializedDecode(Blackhole bh) throws IOException {
+    for (int i = 0; i <= 100; i++) {
       int count = count(i);
-      specializedRemainder(in, count, docs, scratch);
+      specializedDecode(in, count, docs, scratch);
       bh.consume(docs);
       setupInvocation();
     }
   }
 
-  private static void specializedRemainder(IndexInput in, int count, int[] docIDs, int[] scratch) throws IOException {
+  private static void specializedDecode(IndexInput in, int count, int[] docIDs, int[] scratch) throws IOException {
     int quarter = count >> 2;
     int numBytes = quarter * 3;
     in.readInts(scratch, 0, numBytes);
-    for (int i = 0; i < numBytes; ++i) {
-      docIDs[i] = scratch[i] >>> 8;
-      scratch[i] &= 0xFF;
-    }
     if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
-      remainder24(docIDs,
+      decode24(docIDs,
           scratch,
           BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4,
           BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4 * 3);
     } else {
-      remainder24(docIDs, scratch, quarter, numBytes);
+      decode24(docIDs, scratch, quarter, numBytes);
       // Now read the remaining 0, 1, 2 or 3 values
       for (int i = quarter << 2; i < count; ++i) {
         docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
@@ -208,7 +206,11 @@ public class InnerLoopDecodingBenchmark {
     }
   }
 
-  private static void remainder24(int[] docIds, int[] scratch, int quarter, int numInts) {
+  private static void decode24(int[] docIds, int[] scratch, int quarter, int numInts) {
+    for (int i = 0; i < numInts; ++i) {
+      docIds[i] = scratch[i] >>> 8;
+      scratch[i] &= 0xFF;
+    }
     for (int i = 0; i < quarter; i++) {
       docIds[i + numInts] =
           (scratch[i] << 16)
@@ -218,29 +220,26 @@ public class InnerLoopDecodingBenchmark {
   }
 
   @Benchmark
-  public void specializedRemainderMaskInRemainder(Blackhole bh) throws IOException {
-    for (int i = 0; i <= 1000; i++) {
+  public void specializedDecodeMaskInRemainder(Blackhole bh) throws IOException {
+    for (int i = 0; i <= 100; i++) {
       int count = count(i);
-      specializedRemainderMaskInRemainder(in, count, docs, scratch);
+      specializedDecodeMaskInRemainder(in, count, docs, scratch);
       bh.consume(docs);
       setupInvocation();
     }
   }
 
-  private static void specializedRemainderMaskInRemainder(IndexInput in, int count, int[] docIDs, int[] scratch) throws IOException {
+  private static void specializedDecodeMaskInRemainder(IndexInput in, int count, int[] docIDs, int[] scratch) throws IOException {
     int quarter = count >> 2;
     int numBytes = quarter * 3;
     in.readInts(scratch, 0, numBytes);
-    for (int i = 0; i < numBytes; ++i) {
-      docIDs[i] = scratch[i] >>> 8;
-    }
     if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
-      remainder24WithMask(docIDs,
+      decode24MaskInRemainder(docIDs,
           scratch,
           BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4,
           BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4 * 3);
     } else {
-      remainder24WithMask(docIDs, scratch, quarter, numBytes);
+      decode24MaskInRemainder(docIDs, scratch, quarter, numBytes);
       // Now read the remaining 0, 1, 2 or 3 values
       for (int i = quarter << 2; i < count; ++i) {
         docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
@@ -248,7 +247,10 @@ public class InnerLoopDecodingBenchmark {
     }
   }
 
-  private static void remainder24WithMask(int[] docIds, int[] scratch, int quarter, int numInts) {
+  private static void decode24MaskInRemainder(int[] docIds, int[] scratch, int quarter, int numInts) {
+    for (int i = 0; i < numInts; ++i) {
+      docIds[i] = scratch[i] >>> 8;
+    }
     for (int i = 0; i < quarter; i++) {
       docIds[i + numInts] =
           ((scratch[i] & 0xFF) << 16)

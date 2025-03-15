@@ -329,16 +329,13 @@ public final class DocIdsWriter {
     int quarter = count >> 2;
     int numBytes = quarter * 3;
     in.readInts(scratch, 0, numBytes);
-    for (int i = 0; i < numBytes; ++i) {
-      docIDs[i] = scratch[i] >>> 8;
-    }
     if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
-      remainder24WithMask(docIDs,
+      decode24(docIDs,
           scratch,
           BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4,
           (BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4) * 3);
     } else {
-      remainder24WithMask(docIDs, scratch, quarter, numBytes);
+      decode24(docIDs, scratch, quarter, numBytes);
       // Now read the remaining 0, 1, 2 or 3 values
       for (int i = quarter << 2; i < count; ++i) {
         docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
@@ -346,7 +343,10 @@ public final class DocIdsWriter {
     }
   }
 
-  private static void remainder24WithMask(int[] docIds, int[] scratch, int quarter, int numInts) {
+  private static void decode24(int[] docIds, int[] scratch, int quarter, int numInts) {
+    for (int i = 0; i < numInts; ++i) {
+      docIds[i] = scratch[i] >>> 8;
+    }
     for (int i = 0; i < quarter; i++) {
       docIds[i + numInts] =
           (scratch[i] & 0xFF)
