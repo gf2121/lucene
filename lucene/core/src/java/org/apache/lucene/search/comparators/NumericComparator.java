@@ -294,7 +294,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         return;
       }
       pointValues.intersect(visitor);
-      System.out.println("filtered: " + filtered[0] + ", collected: " + collected);
+      System.out.println("filtered: " + filtered[0] + ", collected: " + collected[0]);
       competitiveIterator = result.build().iterator();
       iteratorCost = competitiveIterator.cost();
       updateSkipInterval(true);
