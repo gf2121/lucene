@@ -249,25 +249,18 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
               }
             }
 
-//            @Override
-//            public void visit(IntsRef ref) {
-//              final int[] docs = ref.ints;
-//              for (int i = ref.offset, to = ref.offset + ref.length; i < to; i++) {
-//                int docID = docs[i];
-//                if (docID > maxDocVisited) {
-//                  result.set(docID);
-//                }
-//              }
-//            }
-//
-//            @Override
-//            public void visit(DocIdSetIterator iterator) throws IOException {
-//              iterator.advance(maxDocVisited + 1);
-//              if (iterator.docID() != DocIdSetIterator.NO_MORE_DOCS) {
-//                result.set(iterator.docID());
-//                iterator.intoBitSet(DocIdSetIterator.NO_MORE_DOCS, result, 0);
-//              }
-//            }
+            @Override
+            public void visit(IntsRef ref) {
+              final int[] docs = ref.ints;
+              for (int i = ref.offset, to = ref.offset + ref.length; i < to; i++) {
+                result.set(docs[i]);
+              }
+            }
+
+            @Override
+            public void visit(DocIdSetIterator iterator) throws IOException {
+              result.or(iterator);
+            }
 
             @Override
             public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
