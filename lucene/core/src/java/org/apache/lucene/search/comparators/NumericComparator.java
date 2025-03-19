@@ -29,6 +29,7 @@ import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
@@ -201,6 +202,10 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
       updateCompetitiveIterator();
     }
 
+    private static int BITSET_COUNT = 0;
+    private static int ARRAY_COUNT = 0;
+    private static int VISITING_ITERATOR = 0;
+
     // update its iterator to include possibly only docs that are "stronger" than the current bottom
     // entry
     private void updateCompetitiveIterator() throws IOException {
@@ -259,6 +264,8 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
             @Override
             public void visit(DocIdSetIterator iterator) throws IOException {
+              System.out.println(iterator.getClass().getSimpleName());
+              VISITING_ITERATOR++;
               adder.add(iterator);
             }
 
@@ -298,6 +305,12 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
       }
       pointValues.intersect(visitor);
       competitiveIterator = result.build().iterator();
+      if (competitiveIterator instanceof BitSetIterator) {
+        BITSET_COUNT++;
+      } else {
+        ARRAY_COUNT++;
+      }
+      System.out.println("bitset count: " + BITSET_COUNT + ", array count: " + ARRAY_COUNT + ", visiting iter: " + VISITING_ITERATOR);
       iteratorCost = competitiveIterator.cost();
       updateSkipInterval(true);
     }
