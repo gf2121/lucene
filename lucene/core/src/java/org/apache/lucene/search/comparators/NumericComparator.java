@@ -25,6 +25,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FilterDocIdSetIterator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Scorable;
@@ -253,12 +254,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
             }
 
             @Override
-            public void visit(IntsRef ref) {
-              adder.add(ref);
-            }
-
-            @Override
             public void visit(DocIdSetIterator iterator) throws IOException {
+              iterator.advance(maxDocVisited + 1);
+              adder.add(iterator.docID());
               adder.add(iterator);
             }
 

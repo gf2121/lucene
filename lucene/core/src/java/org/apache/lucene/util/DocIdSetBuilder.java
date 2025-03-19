@@ -65,7 +65,8 @@ public final class DocIdSetBuilder {
 
     @Override
     public void add(DocIdSetIterator iterator) throws IOException {
-      bitSet.or(iterator);
+      iterator.nextDoc();
+      iterator.intoBitSet(DocIdSetIterator.NO_MORE_DOCS, bitSet, 0);
     }
   }
 
