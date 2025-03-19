@@ -279,6 +279,9 @@ public final class DocIdSetBuilder {
         return new BitDocIdSet(bitSet, cost);
       } else {
         Buffer concatenated = concat(buffers);
+        if (concatenated.length == 0) {
+          return DocIdSet.EMPTY;
+        }
         int[] array = concatenated.array;
         int min = concatenated.array[0], max = concatenated.array[0];
         for (int i = 0, to = concatenated.length; i < to; i++) {
