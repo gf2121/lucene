@@ -253,16 +253,6 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
             }
 
             @Override
-            public void visit(IntsRef ref) {
-              adder.add(ref);
-            }
-
-            @Override
-            public void visit(DocIdSetIterator iterator) throws IOException {
-              adder.add(iterator);
-            }
-
-            @Override
             public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
               long min = sortableBytesToLong(minPackedValue);
               long max = sortableBytesToLong(maxPackedValue);

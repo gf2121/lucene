@@ -288,9 +288,9 @@ public final class DocIdSetBuilder {
         int base = min & 0xFFFFFFC0;
         int distance = max - base + 1;
         if ((distance >> 7) < concatenated.length) {
-          System.out.println(true + " " + (distance / concatenated.length));
+          System.out.println("true " + (distance / concatenated.length));
         } else {
-          System.out.println(false + " " + (distance / concatenated.length));
+          System.out.println("false " + (distance / concatenated.length));
         }
         LSBRadixSorter sorter = new LSBRadixSorter();
         sorter.sort(PackedInts.bitsRequired(max), concatenated.array, concatenated.length);
