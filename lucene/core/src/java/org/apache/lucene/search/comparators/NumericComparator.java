@@ -30,6 +30,7 @@ import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
@@ -117,6 +118,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
     private int currentSkipInterval = MIN_SKIP_INTERVAL;
     // helps to be conservative about increasing the sampling interval
     private int tryUpdateFailCount = 0;
+    private FixedBitSet result;
 
     public NumericLeafComparator(LeafReaderContext context) throws IOException {
       this.context = context;
@@ -224,22 +226,16 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         encodeBottom();
       }
 
-      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
+
       PointValues.IntersectVisitor visitor =
           new PointValues.IntersectVisitor() {
-            DocIdSetBuilder.BulkAdder adder;
-
-            @Override
-            public void grow(int count) {
-              adder = result.grow(count);
-            }
 
             @Override
             public void visit(int docID) {
               if (docID <= maxDocVisited) {
                 return; // Already visited or skipped
               }
-              adder.add(docID);
+              result.set(docID);
             }
 
             @Override
@@ -249,29 +245,29 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
               }
               long l = sortableBytesToLong(packedValue);
               if (l >= minValueAsLong && l <= maxValueAsLong) {
-                adder.add(docID); // doc is competitive
+                result.set(docID); // doc is competitive
               }
             }
 
-            @Override
-            public void visit(IntsRef ref) {
-              final int[] docs = ref.ints;
-              for (int i = ref.offset, to = ref.offset + ref.length; i < to; i++) {
-                int docID = docs[i];
-                if (docID > maxDocVisited) {
-                  adder.add(docID);
-                }
-              }
-            }
-
-            @Override
-            public void visit(DocIdSetIterator iterator) throws IOException {
-              iterator.advance(maxDocVisited + 1);
-              if (iterator.docID() != DocIdSetIterator.NO_MORE_DOCS) {
-                adder.add(iterator.docID());
-                adder.add(iterator);
-              }
-            }
+//            @Override
+//            public void visit(IntsRef ref) {
+//              final int[] docs = ref.ints;
+//              for (int i = ref.offset, to = ref.offset + ref.length; i < to; i++) {
+//                int docID = docs[i];
+//                if (docID > maxDocVisited) {
+//                  result.set(docID);
+//                }
+//              }
+//            }
+//
+//            @Override
+//            public void visit(DocIdSetIterator iterator) throws IOException {
+//              iterator.advance(maxDocVisited + 1);
+//              if (iterator.docID() != DocIdSetIterator.NO_MORE_DOCS) {
+//                result.set(iterator.docID());
+//                iterator.intoBitSet(DocIdSetIterator.NO_MORE_DOCS, result, 0);
+//              }
+//            }
 
             @Override
             public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
@@ -307,8 +303,13 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         }
         return;
       }
+      if (result == null) {
+        result = new FixedBitSet(maxDoc);
+      } else {
+        result.clear();
+      }
       pointValues.intersect(visitor);
-      competitiveIterator = result.build().iterator();
+      competitiveIterator = new BitSetIterator(result, result.approximateCardinality());
       iteratorCost = competitiveIterator.cost();
       updateSkipInterval(true);
     }
