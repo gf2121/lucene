@@ -260,8 +260,10 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
             @Override
             public void visit(DocIdSetIterator iterator) throws IOException {
               iterator.advance(maxDocVisited + 1);
-              adder.add(iterator.docID());
-              adder.add(iterator);
+              if (iterator.docID() != DocIdSetIterator.NO_MORE_DOCS) {
+                adder.add(iterator.docID());
+                adder.add(iterator);
+              }
             }
 
             @Override
