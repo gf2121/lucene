@@ -223,6 +223,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         encodeBottom();
       }
 
+      int[] filtered = {0};
+      int[] collected = {0};
+
       DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
       PointValues.IntersectVisitor visitor =
           new PointValues.IntersectVisitor() {
@@ -236,16 +239,20 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
             @Override
             public void visit(int docID) {
               if (docID <= maxDocVisited) {
+                filtered[0]++;
                 return; // Already visited or skipped
               }
+              collected[0]++;
               adder.add(docID);
             }
 
             @Override
             public void visit(int docID, byte[] packedValue) {
               if (docID <= maxDocVisited) {
+                filtered[0]++;
                 return; // already visited or skipped
               }
+              collected[0]++;
               long l = sortableBytesToLong(packedValue);
               if (l >= minValueAsLong && l <= maxValueAsLong) {
                 adder.add(docID); // doc is competitive
@@ -287,6 +294,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         return;
       }
       pointValues.intersect(visitor);
+      System.out.println("filtered: " + filtered[0] + ", collected: " + collected);
       competitiveIterator = result.build().iterator();
       iteratorCost = competitiveIterator.cost();
       updateSkipInterval(true);
