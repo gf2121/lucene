@@ -279,8 +279,21 @@ public final class DocIdSetBuilder {
         return new BitDocIdSet(bitSet, cost);
       } else {
         Buffer concatenated = concat(buffers);
+        int[] array = concatenated.array;
+        int min = concatenated.array[0], max = concatenated.array[0];
+        for (int i = 0, to = concatenated.length; i < to; i++) {
+          min = Math.min(array[i], min);
+          max = Math.max(array[i], max);
+        }
+        int base = min & 0xFFFFFFC0;
+        int distance = max - base + 1;
+        if ((distance >> 7) < concatenated.length) {
+          System.out.println(true + " " + (distance / concatenated.length));
+        } else {
+          System.out.println(false + " " + (distance / concatenated.length));
+        }
         LSBRadixSorter sorter = new LSBRadixSorter();
-        sorter.sort(PackedInts.bitsRequired(maxDoc - 1), concatenated.array, concatenated.length);
+        sorter.sort(PackedInts.bitsRequired(max), concatenated.array, concatenated.length);
         final int l;
         if (multivalued) {
           l = dedup(concatenated.array, concatenated.length);
@@ -291,6 +304,7 @@ public final class DocIdSetBuilder {
         assert l <= concatenated.length;
         concatenated.array[l] = DocIdSetIterator.NO_MORE_DOCS;
         return new IntArrayDocIdSet(concatenated.array, l);
+
       }
     } finally {
       this.buffers = null;
