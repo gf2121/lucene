@@ -225,6 +225,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         encodeBottom();
       }
 
+      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
       Function<DocIdSetBuilder.BulkAdder, PointValues.IntersectVisitor> visitorSupplier =
           bulkAdder -> new PointValues.IntersectVisitor() {
             DocIdSetBuilder.BulkAdder adder = bulkAdder;
@@ -299,7 +300,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         }
         return;
       }
-      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
+
       DocIdSetBuilder.BulkAdder adder = result.grow(Math.toIntExact(estimatedPointCount));
       pointValues.intersect(visitorSupplier.apply(adder));
       competitiveIterator = result.build().iterator();
