@@ -18,6 +18,8 @@
 package org.apache.lucene.search.comparators;
 
 import java.io.IOException;
+import java.util.function.Function;
+
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
@@ -223,10 +225,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         encodeBottom();
       }
 
-      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
-      PointValues.IntersectVisitor visitor =
-          new PointValues.IntersectVisitor() {
-            DocIdSetBuilder.BulkAdder adder;
+      Function<DocIdSetBuilder.BulkAdder, PointValues.IntersectVisitor> visitorSupplier =
+          bulkAdder -> new PointValues.IntersectVisitor() {
+            DocIdSetBuilder.BulkAdder adder = bulkAdder;
 
             @Override
             public void grow(int count) {
@@ -286,9 +287,8 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
           };
 
       final long threshold = iteratorCost >>> 3;
-
-      if (PointValues.isEstimatedPointCountGreaterThanOrEqualTo(
-          visitor, getPointTree(), threshold)) {
+      long estimatedPointCount = PointValues.estimatePointCount(visitorSupplier.apply(null), getPointTree(), threshold);
+      if (estimatedPointCount >= threshold) {
         // the new range is not selective enough to be worth materializing, it doesn't reduce number
         // of docs at least 8x
         updateSkipInterval(false);
@@ -299,7 +299,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
         }
         return;
       }
-      pointValues.intersect(visitor);
+      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
+      DocIdSetBuilder.BulkAdder adder = result.grow(Math.toIntExact(estimatedPointCount));
+      pointValues.intersect(visitorSupplier.apply(adder));
       competitiveIterator = result.build().iterator();
       iteratorCost = competitiveIterator.cost();
       updateSkipInterval(true);
