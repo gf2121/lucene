@@ -191,7 +191,6 @@ final class BooleanScorer extends BulkScorer {
           // This doesn't apply live docs, so we'll need to apply them later
           it.intoBitSet(max, matching, base);
           upTo = nextUnsetBit(upTo - base) + base;
-          System.out.println(upTo - base);
         }
       } else {
         for (; doc < max; doc = it.nextDoc()) {

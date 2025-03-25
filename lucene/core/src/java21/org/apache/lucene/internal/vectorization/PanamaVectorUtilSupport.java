@@ -769,7 +769,7 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
 
   // Experiments suggest that we need at least 8 lanes so that the overhead of going with the vector
   // approach and counting trues on vector masks pays off.
-  private static final boolean ENABLE_FIND_NEXT_GEQ_VECTOR_OPTO = INT_SPECIES.length() >= 8;
+  private static final boolean ENABLE_FIND_NEXT_GEQ_VECTOR_OPTO = INT_SPECIES.length() >= 16;
 
   @Override
   public int findNextGEQ(int[] buffer, int target, int from, int to) {
