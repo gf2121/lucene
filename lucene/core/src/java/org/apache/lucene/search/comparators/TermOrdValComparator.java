@@ -594,6 +594,7 @@ public class TermOrdValComparator extends FieldComparator<BytesRef> {
      */
     private void init(int minOrd, int maxOrd) throws IOException {
       final int size = Math.max(0, maxOrd - minOrd + 1);
+      System.out.println("init size: " + size);
       postings = new ArrayDeque<>(size);
       if (size > 0) {
         docValuesTerms.seekExact(minOrd);
