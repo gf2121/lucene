@@ -275,6 +275,25 @@ public final class FixedBitSet extends BitSet {
     return val;
   }
 
+  public int nextUnsetBit(int index) {
+    assert index >= 0 && index < numBits : "index=" + index + ", numBits=" + numBits;
+    int i = index >> 6;
+    long word = bits[i] >> index; // skip all the bits to the right of index
+
+    if (word != 0) {
+      return index + Long.numberOfTrailingZeros(word);
+    }
+
+    while (++i < numWords) {
+      word = bits[i];
+      if (word != -1L) {
+        return (i << 6) + Long.numberOfTrailingZeros(~word);
+      }
+    }
+
+    return DocIdSetIterator.NO_MORE_DOCS;
+  }
+
   @Override
   public int nextSetBit(int index) {
     // Override with a version that skips the bound check on the result since we know it will not

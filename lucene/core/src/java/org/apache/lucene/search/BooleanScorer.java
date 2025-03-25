@@ -176,24 +176,21 @@ final class BooleanScorer extends BulkScorer {
       DisiWrapper[] scorers,
       int numScorers)
       throws IOException {
-    int upTo = min - base;
-    assert upTo >= 0;
+    int upTo = min;
     for (int i = 0; i < numScorers; ++i) {
       final DisiWrapper w = scorers[i];
       assert w.doc < max;
 
       DocIdSetIterator it = w.iterator;
       int doc = w.doc;
-      if (doc < upTo + base) {
-        doc = it.advance(upTo + base);
+      if (doc < upTo) {
+        doc = it.advance(upTo);
       }
       if (buckets == null) {
-        // This doesn't apply live docs, so we'll need to apply them later
-        it.intoBitSet(max, matching, base);
-        upTo = firstUnsetMatchingBit(upTo >> 6);
-        if (upTo + base >= max) {
-          w.doc = it.docID();
-          break;
+        if (upTo < max) {
+          // This doesn't apply live docs, so we'll need to apply them later
+          it.intoBitSet(max, matching, base);
+          upTo = nextUnsetBit(upTo - base) + base;
         }
       } else {
         for (; doc < max; doc = it.nextDoc()) {
@@ -223,11 +220,19 @@ final class BooleanScorer extends BulkScorer {
     matching.clear();
   }
 
-  private int firstUnsetMatchingBit(int startWord) {
-    long[] words = matching.getBits();
-    for (int i = startWord, len = words.length; i < len; i++) {
-      long word = words[i];
-      if (word != -1) {
+  private int nextUnsetBit(int index) {
+    assert index >= 0 && index < SIZE;
+    int i = index >> 6;
+    long[] bits = matching.getBits();
+    long word = (~bits[i]) >>> index;
+
+    if (word != 0) {
+      return index + Long.numberOfTrailingZeros(word);
+    }
+
+    while (++i < FixedBitSet.bits2words(SIZE)) {
+      word = bits[i];
+      if (word != -1L) {
         return (i << 6) + Long.numberOfTrailingZeros(~word);
       }
     }

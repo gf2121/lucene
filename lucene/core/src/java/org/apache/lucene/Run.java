@@ -6,27 +6,36 @@ public class Run {
 
   public static void main(String[] args) {
     FixedBitSet bitSet = new FixedBitSet(4096);
-    for (int i=0;i<4096;i++) {
+    for (int i = 0; i < 4096; i++) {
       for (int x = 0; x < i; x++) {
         bitSet.set(x);
       }
-      int f = firstUnsetMatchingBit(bitSet);
-      if (i != f) {
-        System.out.println(i + " vs " + f);
-        throw new RuntimeException();
+      for (int j=0; j < 64; j++) {
+        int f = nextUnsetBit(bitSet, j);
+        if (f != Math.max(i, j)) {
+          throw new RuntimeException(f + " vs " + i + " vs " + j);
+        }
       }
       bitSet.clear();
     }
   }
 
-  private static int firstUnsetMatchingBit(FixedBitSet matching) {
-    long[] words = matching.getBits();
-    for (int i = 0, len = words.length; i < len; i++) {
-      long word = words[i];
-      if (word != -1) {
+  private static int nextUnsetBit(FixedBitSet bitSet, int index) {
+    assert index >= 0 && index < bitSet.length();
+    int i = index >> 6;
+    long[] bits = bitSet.getBits();
+    long word = (~bits[i]) >>> index;
+
+    if (word != 0) {
+      return index + Long.numberOfTrailingZeros(word);
+    }
+
+    while (++i < FixedBitSet.bits2words(4096)) {
+      word = bits[i];
+      if (word != -1L) {
         return (i << 6) + Long.numberOfTrailingZeros(~word);
       }
     }
-    return matching.length();
+    return 4096;
   }
 }
