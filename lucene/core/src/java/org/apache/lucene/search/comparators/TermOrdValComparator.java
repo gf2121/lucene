@@ -544,7 +544,7 @@ public class TermOrdValComparator extends FieldComparator<BytesRef> {
           doc = upTo;
         }
       } else if (disjunction.size() < 16) {
-        System.out.println(disjunction.size());
+        System.out.println("into bitset: " + disjunction.size());
         for (PostingsEnumAndOrd postingsEnumAndOrd : disjunction) {
           postingsEnumAndOrd.postings.intoBitSet(upTo, bitSet, offset);
         }
@@ -583,6 +583,7 @@ public class TermOrdValComparator extends FieldComparator<BytesRef> {
         }
         disjunction.clear();
         disjunction.addAll(postings);
+        System.out.println("update: " + disjunction.size());
       }
     }
 
