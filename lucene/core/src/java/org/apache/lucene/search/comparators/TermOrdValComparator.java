@@ -544,6 +544,7 @@ public class TermOrdValComparator extends FieldComparator<BytesRef> {
           doc = upTo;
         }
       } else if (disjunction.size() < 16) {
+        System.out.println(disjunction.size());
         for (PostingsEnumAndOrd postingsEnumAndOrd : disjunction) {
           postingsEnumAndOrd.postings.intoBitSet(upTo, bitSet, offset);
         }
