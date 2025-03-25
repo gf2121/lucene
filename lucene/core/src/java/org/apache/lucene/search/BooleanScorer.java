@@ -17,8 +17,11 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.LongStream;
+
 import org.apache.lucene.internal.hppc.LongArrayList;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -173,18 +176,25 @@ final class BooleanScorer extends BulkScorer {
       DisiWrapper[] scorers,
       int numScorers)
       throws IOException {
+    int upTo = min - base;
+    assert upTo >= 0;
     for (int i = 0; i < numScorers; ++i) {
       final DisiWrapper w = scorers[i];
       assert w.doc < max;
 
       DocIdSetIterator it = w.iterator;
       int doc = w.doc;
-      if (doc < min) {
-        doc = it.advance(min);
+      if (doc < upTo + base) {
+        doc = it.advance(upTo + base);
       }
       if (buckets == null) {
         // This doesn't apply live docs, so we'll need to apply them later
         it.intoBitSet(max, matching, base);
+        upTo = firstUnsetMatchingBit(upTo >> 6);
+        if (upTo + base >= max) {
+          w.doc = it.docID();
+          break;
+        }
       } else {
         for (; doc < max; doc = it.nextDoc()) {
           if (acceptDocs == null || acceptDocs.get(doc)) {
@@ -211,6 +221,17 @@ final class BooleanScorer extends BulkScorer {
     collector.collect(docIdStreamView);
 
     matching.clear();
+  }
+
+  private int firstUnsetMatchingBit(int startWord) {
+    long[] words = matching.getBits();
+    for (int i = startWord, len = words.length; i < len; i++) {
+      long word = words[i];
+      if (word != -1) {
+        return (i << 6) + Long.numberOfTrailingZeros(~word);
+      }
+    }
+    return SIZE;
   }
 
   private DisiWrapper advance(int min) throws IOException {
