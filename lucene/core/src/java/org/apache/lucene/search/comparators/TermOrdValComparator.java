@@ -543,6 +543,10 @@ public class TermOrdValComparator extends FieldComparator<BytesRef> {
           bitSet.set(doc - offset, upTo - offset);
           doc = upTo;
         }
+      } else if (disjunction.size() < 16) {
+        for (PostingsEnumAndOrd postingsEnumAndOrd : disjunction) {
+          postingsEnumAndOrd.postings.intoBitSet(upTo, bitSet, offset);
+        }
       } else {
         super.intoBitSet(upTo, bitSet, offset);
       }
