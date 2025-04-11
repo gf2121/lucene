@@ -226,6 +226,47 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
     IOUtils.close(docIn, posIn, payIn);
   }
 
+  public void decodeTerm(
+      VNumbers.Reader in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
+      throws IOException {
+    final IntBlockTermState termState = (IntBlockTermState) _termState;
+    if (absolute) {
+      termState.docStartFP = 0;
+      termState.posStartFP = 0;
+      termState.payStartFP = 0;
+    }
+
+    final long l = in.readVLong();
+    if ((l & 0x01) == 0) {
+      termState.docStartFP += l >>> 1;
+      if (termState.docFreq == 1) {
+        termState.singletonDocID = in.readVInt();
+      } else {
+        termState.singletonDocID = -1;
+      }
+    } else {
+      assert absolute == false;
+      assert termState.singletonDocID != -1;
+      termState.singletonDocID += BitUtil.zigZagDecode(l >>> 1);
+    }
+
+    if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
+      termState.posStartFP += in.readVLong();
+      if (fieldInfo
+                  .getIndexOptions()
+                  .compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS)
+              >= 0
+          || fieldInfo.hasPayloads()) {
+        termState.payStartFP += in.readVLong();
+      }
+      if (termState.totalTermFreq > BLOCK_SIZE) {
+        termState.lastPosBlockOffset = in.readVLong();
+      } else {
+        termState.lastPosBlockOffset = -1;
+      }
+    }
+  }
+
   @Override
   public void decodeTerm(
       DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)

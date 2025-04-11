@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsWriterBase;
+import org.apache.lucene.codecs.lucene103.VNumbers;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -527,16 +528,16 @@ public final class Lucene103BlockTreeTermsWriter extends FieldsConsumer {
         singletonCount++;
       } else {
         finish();
-        out.writeVInt(df << 1);
+        VNumbers.writeVInt(out, df << 1);
         if (hasFreqs) {
-          out.writeVLong(ttf - df);
+          VNumbers.writeVLong(out, ttf - df);
         }
       }
     }
 
     void finish() throws IOException {
       if (singletonCount > 0) {
-        out.writeVInt(((singletonCount - 1) << 1) | 1);
+        VNumbers.writeVInt(out, ((singletonCount - 1) << 1) | 1);
         singletonCount = 0;
       }
     }

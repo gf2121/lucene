@@ -19,6 +19,8 @@ package org.apache.lucene.codecs.lucene103.blocktree;
 import java.io.IOException;
 import java.util.Arrays;
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.codecs.lucene103.Lucene103PostingsReader;
+import org.apache.lucene.codecs.lucene103.VNumbers;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.store.ByteArrayDataInput;
@@ -52,7 +54,7 @@ final class IntersectTermsEnumFrame {
 
   byte[] statBytes = new byte[64];
   int statsSingletonRunLength = 0;
-  final ByteArrayDataInput statsReader = new ByteArrayDataInput();
+  final VNumbers.Reader statsReader = new VNumbers.Reader();
 
   long floorDataPos;
   IndexInput floorDataReader;
@@ -87,7 +89,7 @@ final class IntersectTermsEnumFrame {
   // metadata buffer
   byte[] bytes = new byte[32];
 
-  final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
+  final VNumbers.Reader bytesReader = new VNumbers.Reader();
 
   int startBytePos;
   int suffix;
@@ -204,11 +206,7 @@ final class IntersectTermsEnumFrame {
 
     // stats
     int numBytes = ite.in.readVInt();
-    if (statBytes.length < numBytes) {
-      statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-    }
-    ite.in.readBytes(statBytes, 0, numBytes);
-    statsReader.reset(statBytes, 0, numBytes);
+    statsReader.reset(ite.in, numBytes);
     statsSingletonRunLength = 0;
     metaDataUpto = 0;
 
@@ -217,11 +215,7 @@ final class IntersectTermsEnumFrame {
 
     // metadata
     numBytes = ite.in.readVInt();
-    if (bytes.length < numBytes) {
-      bytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-    }
-    ite.in.readBytes(bytes, 0, numBytes);
-    bytesReader.reset(bytes, 0, numBytes);
+    bytesReader.reset(ite.in, numBytes);
 
     if (!isLastInFloor) {
       // Sub-blocks of a single floor block are always
@@ -314,7 +308,8 @@ final class IntersectTermsEnumFrame {
         }
       }
       // metadata
-      ite.fr.parent.postingsReader.decodeTerm(bytesReader, ite.fr.fieldInfo, termState, absolute);
+      ((Lucene103PostingsReader) ite.fr.parent.postingsReader)
+          .decodeTerm(bytesReader, ite.fr.fieldInfo, termState, absolute);
 
       metaDataUpto++;
       absolute = false;

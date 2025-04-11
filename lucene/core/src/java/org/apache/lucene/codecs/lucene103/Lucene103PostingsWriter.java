@@ -668,23 +668,23 @@ public class Lucene103PostingsWriter extends PushPostingsWriterBase {
       // encode the delta
       // between consecutive doc IDs to save space.
       final long delta = (long) state.singletonDocID - lastState.singletonDocID;
-      out.writeVLong((BitUtil.zigZagEncode(delta) << 1) | 0x01);
+      VNumbers.writeVLong(out, (BitUtil.zigZagEncode(delta) << 1) | 0x01);
     } else {
-      out.writeVLong((state.docStartFP - lastState.docStartFP) << 1);
+      VNumbers.writeVLong(out, (state.docStartFP - lastState.docStartFP) << 1);
       if (state.singletonDocID != -1) {
-        out.writeVInt(state.singletonDocID);
+        VNumbers.writeVInt(out, state.singletonDocID);
       }
     }
 
     if (writePositions) {
-      out.writeVLong(state.posStartFP - lastState.posStartFP);
+      VNumbers.writeVLong(out, state.posStartFP - lastState.posStartFP);
       if (writePayloads || writeOffsets) {
-        out.writeVLong(state.payStartFP - lastState.payStartFP);
+        VNumbers.writeVLong(out, state.payStartFP - lastState.payStartFP);
       }
     }
     if (writePositions) {
       if (state.lastPosBlockOffset != -1) {
-        out.writeVLong(state.lastPosBlockOffset);
+        VNumbers.writeVLong(out, state.lastPosBlockOffset);
       }
     }
     lastState = state;
