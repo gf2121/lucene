@@ -427,13 +427,14 @@ final class DocIdsWriter {
           docIDs,
           scratch,
           BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4,
-          BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4 * 3);
+          BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4 * 3,
+          bitSet);
     } else {
-      decode24(docIDs, scratch, quarter, numInts);
+      decode24(docIDs, scratch, quarter, numInts, bitSet);
     }
     // Now read the remaining 0, 1, 2 or 3 values
     for (int i = quarter << 2; i < count; ++i) {
-      docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
+      bitSet.set((in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16);
     }
   }
 
