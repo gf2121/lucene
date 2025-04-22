@@ -412,6 +412,46 @@ final class DocIdsWriter {
     }
   }
 
+  private void readInts24(IndexInput in, int count, int[] docIDs, FixedBitSet bitSet) throws IOException {
+    int quarter = count >> 2;
+    int numInts = quarter * 3;
+    in.readInts(scratch, 0, numInts);
+    if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
+      // Same format, but enabling the JVM to specialize the decoding logic for the default number
+      // of points per node proved to help on benchmarks
+      assert floorToMultipleOf16(quarter) == quarter
+          : "We are relying on the fact that quarter of BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE"
+          + " is a multiple of 16 to vectorize the decoding loop,"
+          + " please check performance issue if you want to break this assumption.";
+      decode24(
+          docIDs,
+          scratch,
+          BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4,
+          BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE / 4 * 3);
+    } else {
+      decode24(docIDs, scratch, quarter, numInts);
+    }
+    // Now read the remaining 0, 1, 2 or 3 values
+    for (int i = quarter << 2; i < count; ++i) {
+      docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
+    }
+  }
+
+  private static void decode24(int[] docIDs, int[] scratch, int quarter, int numInts, FixedBitSet bitSet) {
+    for (int i = 0; i < numInts; ++i) {
+      bitSet.set(scratch[i] >>> 8);
+    }
+    for (int i = 0; i < quarter; i++) {
+      docIDs[i + numInts] =
+          (scratch[i] & 0xFF)
+              | ((scratch[i + quarter] & 0xFF) << 8)
+              | ((scratch[i + quarter * 2] & 0xFF) << 16);
+    }
+    for (int i = numInts, to = numInts + quarter; i < to; i++) {
+      bitSet.set(docIDs[i]);
+    }
+  }
+
   private static void readScalarInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int i;
     for (i = 0; i < count - 7; i += 8) {
@@ -511,10 +551,14 @@ final class DocIdsWriter {
 
   private void readInts24(IndexInput in, int count, IntersectVisitor visitor, int[] buffer)
       throws IOException {
-    readInts24(in, count, buffer);
-    scratchIntsRef.ints = buffer;
-    scratchIntsRef.length = count;
-    visitor.visit(scratchIntsRef);
+    if (visitor.bitset() != null) {
+      readInts24(in, count, buffer, visitor.bitset());
+    } else {
+      readInts24(in, count, buffer);
+      scratchIntsRef.ints = buffer;
+      scratchIntsRef.length = count;
+      visitor.visit(scratchIntsRef);
+    }
   }
 
   private void readScalarInts24(IndexInput in, int count, IntersectVisitor visitor)

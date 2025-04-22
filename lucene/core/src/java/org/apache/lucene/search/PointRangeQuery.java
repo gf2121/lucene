@@ -192,6 +192,11 @@ public abstract class PointRangeQuery extends Query {
           }
 
           @Override
+          public FixedBitSet bitset() {
+            return adder.bitset();
+          }
+
+          @Override
           public void visit(int docID, byte[] packedValue) {
             if (matches(packedValue)) {
               visit(docID);

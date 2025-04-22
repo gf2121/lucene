@@ -49,6 +49,10 @@ public final class DocIdSetBuilder {
     void add(DocIdSetIterator iterator) throws IOException;
 
     void add(IntsRef docs, int docLowerBoundInclusive);
+
+    default FixedBitSet bitset() {
+      return null;
+    }
   }
 
   private record FixedBitSetAdder(FixedBitSet bitSet) implements BulkAdder {
@@ -79,6 +83,11 @@ public final class DocIdSetBuilder {
           bitSet.set(doc);
         }
       }
+    }
+
+    @Override
+    public FixedBitSet bitset() {
+      return bitSet;
     }
   }
 

@@ -31,6 +31,7 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ArrayUtil.ByteArrayComparator;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.bkd.BKDConfig;
 
@@ -310,6 +311,10 @@ public abstract class PointValues {
       for (int i = ref.offset; i < ref.length + ref.offset; i++) {
         visit(ref.ints[i]);
       }
+    }
+
+    default FixedBitSet bitset() {
+      return null;
     }
 
     /**
