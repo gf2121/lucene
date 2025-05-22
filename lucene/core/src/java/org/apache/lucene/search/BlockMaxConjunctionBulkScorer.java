@@ -119,6 +119,7 @@ final class BlockMaxConjunctionBulkScorer extends BulkScorer {
         docAndScoreBuffer.size > 0;
         scorers[0].nextDocsAndScores(max, acceptDocs, docAndScoreBuffer)) {
 
+      int maxOtherDoc = lead1.docID();
       docAndScoreAccBuffer.copyFrom(docAndScoreBuffer);
 
       for (int i = 1; i < scorers.length; ++i) {
@@ -131,20 +132,17 @@ final class BlockMaxConjunctionBulkScorer extends BulkScorer {
         }
 
         ScorerUtil.applyRequiredClause(docAndScoreAccBuffer, iterators[i], scorables[i]);
+        maxOtherDoc = Math.max(maxOtherDoc, iterators[i].docID());
       }
 
       for (int i = 0; i < docAndScoreAccBuffer.size; ++i) {
         scorable.score = (float) docAndScoreAccBuffer.scores[i];
         collector.collect(docAndScoreAccBuffer.docs[i]);
       }
-    }
 
-    int maxOtherDoc = -1;
-    for (int i = 0; i < iterators.length; ++i) {
-      maxOtherDoc = Math.max(iterators[i].docID(), maxOtherDoc);
-    }
-    if (lead1.docID() < maxOtherDoc) {
-      lead1.advance(maxOtherDoc);
+      if (lead1.docID() < maxOtherDoc) {
+        lead1.advance(maxOtherDoc);
+      }
     }
   }
 
