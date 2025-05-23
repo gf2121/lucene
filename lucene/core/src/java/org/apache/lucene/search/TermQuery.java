@@ -169,12 +169,12 @@ public class TermQuery extends Query {
 
         @Override
         public BulkScorer bulkScorer() throws IOException {
-          if (scoreMode.needsScores() == false) {
+          if (scoreMode.needsScores() == false || getTermsEnum() == null) {
             DocIdSetIterator iterator = get(Long.MAX_VALUE).iterator();
             int maxDoc = context.reader().maxDoc();
             return ConstantScoreScorerSupplier.fromIterator(iterator, 0f, scoreMode, maxDoc)
                 .bulkScorer();
-          } else if (scoreMode.isExhaustive() && getTermsEnum() != null) {
+          } else if (scoreMode.isExhaustive()) {
             return new BulkScorer() {
               final SimpleScorable scorable = new SimpleScorable();
               final PostingsEnum postingsEnum = getTermsEnum().postings(null, PostingsEnum.FREQS);

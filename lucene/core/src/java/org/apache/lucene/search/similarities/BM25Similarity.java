@@ -251,37 +251,6 @@ public class BM25Similarity extends Similarity {
     }
 
     @Override
-    public void score(DocAndFreqBuffer buffer, NumericDocValues norms, float[] scores)
-        throws IOException {
-      if (norms == null) {
-        float normInverse = cache[1];
-        // The below loop should auto-vectorize.
-        for (int i = 0; i < buffer.size; ++i) {
-          scores[i] = doScore(buffer.freqs[i], normInverse);
-        }
-      } else {
-        // Use the scores array to store norm inverses.
-        float[] normInverses = scores;
-
-        for (int i = 0; i < buffer.size; ++i) {
-          if (norms.advanceExact(buffer.docs[i])) {
-            // If norms#longValue gets inlined, the JVM compiler should hopefully detect that a byte
-            // is expanded to a long and then casted back to the same original byte, and ignore
-            // these operations.
-            normInverses[i] = cache[((byte) norms.longValue()) & 0xFF];
-          } else {
-            normInverses[i] = cache[1];
-          }
-        }
-
-        // The below loop should auto-vectorize
-        for (int i = 0; i < buffer.size; ++i) {
-          scores[i] = doScore(buffer.freqs[i], normInverses[i]);
-        }
-      }
-    }
-
-    @Override
     public Explanation explain(Explanation freq, long encodedNorm) {
       List<Explanation> subs = new ArrayList<>(explainConstantFactors());
       Explanation tfExpl = explainTF(freq, encodedNorm);
