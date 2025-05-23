@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 
 /**
@@ -173,7 +174,35 @@ public class TermQuery extends Query {
             return ConstantScoreScorerSupplier.fromIterator(iterator, 0f, scoreMode, maxDoc)
                 .bulkScorer();
           }
-          return super.bulkScorer();
+          return new BulkScorer() {
+            final SimpleScorable scorable = new SimpleScorable();
+            final TermScorer termScorer = (TermScorer) get(Integer.MAX_VALUE);
+            final DocAndScoreBuffer docAndScoreBuffer = new DocAndScoreBuffer();
+
+            @Override
+            public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
+                throws IOException {
+              collector.setScorer(scorable);
+              DocIdSetIterator iterator = termScorer.iterator();
+              if (iterator.docID() < min) {
+                iterator.advance(min);
+              }
+              for (termScorer.nextDocsAndScores(max, acceptDocs, docAndScoreBuffer);
+                  docAndScoreBuffer.size > 0;
+                  termScorer.nextDocsAndScores(max, acceptDocs, docAndScoreBuffer)) {
+                for (int i = 0, size = docAndScoreBuffer.size; i < size; i++) {
+                  scorable.score = docAndScoreBuffer.scores[i];
+                  collector.collect(docAndScoreBuffer.docs[i]);
+                }
+              }
+              return termScorer.docID();
+            }
+
+            @Override
+            public long cost() {
+              return termScorer.iterator().cost();
+            }
+          };
         }
 
         @Override
