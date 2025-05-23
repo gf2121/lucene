@@ -215,7 +215,7 @@ public class TermQuery extends Query {
                      buffer.size > 0;
                      scorer.nextDocsAndScores(max, acceptDocs, buffer)) {
                   for (int i = 0, size = buffer.size; i < size; i++) {
-                    float score = buffer.scores[i];
+                    float score = scores[0] = buffer.scores[i];
                     if (score >= scores[1]) {
                       collector.collect(buffer.docs[i]);
                     }
