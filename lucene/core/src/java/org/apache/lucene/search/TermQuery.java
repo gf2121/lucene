@@ -30,6 +30,8 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 
 /**
@@ -167,13 +169,66 @@ public class TermQuery extends Query {
 
         @Override
         public BulkScorer bulkScorer() throws IOException {
-          if (scoreMode.needsScores() == false) {
+          if (scoreMode.needsScores() == false || getTermsEnum() == null) {
             DocIdSetIterator iterator = get(Long.MAX_VALUE).iterator();
             int maxDoc = context.reader().maxDoc();
             return ConstantScoreScorerSupplier.fromIterator(iterator, 0f, scoreMode, maxDoc)
                 .bulkScorer();
-          }
-          return super.bulkScorer();
+          } else
+            return new BulkScorer() {
+              final Scorer scorer = get(Long.MAX_VALUE);
+              final DocAndScoreBuffer buffer = new DocAndScoreBuffer();
+              // two float, first pass to collector, second is minCompetitive score.
+              final float[] scores = new float[2];
+
+              @Override
+              public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
+                  throws IOException {
+                // Use a FilterScorer instead of FilterScorable so that collectors like dynamic pruning can get cost.
+                collector.setScorer(new FilterScorer(scorer) {
+                  @Override
+                  public float getMaxScore(int upTo) throws IOException {
+                    return in.getMaxScore(upTo);
+                  }
+
+                  @Override
+                  public int advanceShallow(int target) throws IOException {
+                    return in.advanceShallow(target);
+                  }
+
+                  @Override
+                  public float score() {
+                    return scores[0];
+                  }
+
+                  @Override
+                  public void setMinCompetitiveScore(float minScore) throws IOException {
+                    scores[1] = minScore;
+                    in.setMinCompetitiveScore(minScore);
+                  }
+                });
+
+                if (scorer.docID() < min) {
+                  scorer.iterator().advance(min);
+                }
+                for (scorer.nextDocsAndScores(max, acceptDocs, buffer);
+                     buffer.size > 0;
+                     scorer.nextDocsAndScores(max, acceptDocs, buffer)) {
+                  for (int i = 0, size = buffer.size; i < size; i++) {
+                    float score = buffer.scores[i];
+                    if (score > scores[1]) {
+                      collector.collect(buffer.docs[i]);
+                    }
+                  }
+                }
+                return scorer.docID();
+              }
+
+              @Override
+              public long cost() {
+                return scorer.iterator().cost();
+              }
+            };
         }
 
         @Override
