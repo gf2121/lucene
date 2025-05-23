@@ -233,6 +233,16 @@ public class BM25Similarity extends Similarity {
     }
 
     @Override
+    public void score(int[] freqs, long[] norms, float[] result, int size) {
+      for (int i = 0; i < size; ++i) {
+        result[i] = cache[((byte) norms[i]) & 0xFF];
+      }
+      for (int i = 0; i < size; ++i) {
+        result[i] = weight - weight / (1f + freqs[i] * result[i]);
+      }
+    }
+
+    @Override
     public Explanation explain(Explanation freq, long encodedNorm) {
       List<Explanation> subs = new ArrayList<>(explainConstantFactors());
       Explanation tfExpl = explainTF(freq, encodedNorm);

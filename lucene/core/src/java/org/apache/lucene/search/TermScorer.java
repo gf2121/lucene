@@ -169,10 +169,6 @@ public final class TermScorer extends Scorer {
     buffer.growNoCopy(size);
     buffer.size = size;
     System.arraycopy(docAndFreqBuffer.docs, 0, buffer.docs, 0, size);
-    for (int i = 0; i < size; ++i) {
-      // Unless SimScorer#score is megamorphic, SimScorer#score should inline and (part of) score
-      // computations should auto-vectorize.
-      buffer.scores[i] = scorer.score(docAndFreqBuffer.freqs[i], normValues[i]);
-    }
+    scorer.score(docAndFreqBuffer.freqs, normValues, buffer.scores, size);
   }
 }
