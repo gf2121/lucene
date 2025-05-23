@@ -365,6 +365,17 @@ public final class ArrayUtil {
     } else return array;
   }
 
+  /**
+   * Returns an array whose size is at least {@code minSize}, generally over-allocating
+   * exponentially, and it will not copy the origin data to the new array
+   */
+  public static float[] growNoCopy(float[] array, int minSize) {
+    assert minSize >= 0 : "size must be positive (got " + minSize + "): likely integer overflow?";
+    if (array.length < minSize) {
+      return new float[oversize(minSize, Float.BYTES)];
+    } else return array;
+  }
+
   /** Returns a larger array, generally over-allocating exponentially */
   public static int[] grow(int[] array) {
     return grow(array, 1 + array.length);

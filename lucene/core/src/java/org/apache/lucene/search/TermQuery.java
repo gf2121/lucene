@@ -30,6 +30,7 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOSupplier;
 
@@ -173,36 +174,42 @@ public class TermQuery extends Query {
             int maxDoc = context.reader().maxDoc();
             return ConstantScoreScorerSupplier.fromIterator(iterator, 0f, scoreMode, maxDoc)
                 .bulkScorer();
-          }
-          return new BulkScorer() {
-            final SimpleScorable scorable = new SimpleScorable();
-            final TermScorer termScorer = (TermScorer) get(Integer.MAX_VALUE);
-            final DocAndScoreBuffer docAndScoreBuffer = new DocAndScoreBuffer();
+          } else if (scoreMode.isExhaustive() && getTermsEnum() != null) {
+            return new BulkScorer() {
+              final SimpleScorable scorable = new SimpleScorable();
+              final PostingsEnum postingsEnum = getTermsEnum().postings(null, PostingsEnum.FREQS);
+              final DocAndFreqBuffer docAndFreqBuffer = new DocAndFreqBuffer();
+              final NumericDocValues norms = context.reader().getNormValues(term.field());
+              float[] scores = new float[0];
 
-            @Override
-            public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
-                throws IOException {
-              collector.setScorer(scorable);
-              DocIdSetIterator iterator = termScorer.iterator();
-              if (iterator.docID() < min) {
-                iterator.advance(min);
-              }
-              for (termScorer.nextDocsAndScores(max, acceptDocs, docAndScoreBuffer);
-                  docAndScoreBuffer.size > 0;
-                  termScorer.nextDocsAndScores(max, acceptDocs, docAndScoreBuffer)) {
-                for (int i = 0, size = docAndScoreBuffer.size; i < size; i++) {
-                  scorable.score = docAndScoreBuffer.scores[i];
-                  collector.collect(docAndScoreBuffer.docs[i]);
+              @Override
+              public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
+                  throws IOException {
+                collector.setScorer(scorable);
+                if (postingsEnum.docID() < min) {
+                  postingsEnum.advance(min);
                 }
+                for (postingsEnum.nextPostings(max, docAndFreqBuffer);
+                     docAndFreqBuffer.size > 0;
+                     postingsEnum.nextPostings(max, docAndFreqBuffer)) {
+                  docAndFreqBuffer.apply(acceptDocs);
+                  scores = ArrayUtil.growNoCopy(scores, docAndFreqBuffer.size);
+                  simScorer.score(docAndFreqBuffer, norms, scores);
+                  for (int i = 0, size = docAndFreqBuffer.size; i < size; i++) {
+                    scorable.score = scores[i];
+                    collector.collect(docAndFreqBuffer.docs[i]);
+                  }
+                }
+                return postingsEnum.docID();
               }
-              return termScorer.docID();
-            }
 
-            @Override
-            public long cost() {
-              return termScorer.iterator().cost();
-            }
-          };
+              @Override
+              public long cost() {
+                return postingsEnum.cost();
+              }
+            };
+          }
+          return super.bulkScorer();
         }
 
         @Override
