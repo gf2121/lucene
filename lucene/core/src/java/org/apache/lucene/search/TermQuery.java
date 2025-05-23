@@ -192,7 +192,9 @@ public class TermQuery extends Query {
                 for (postingsEnum.nextPostings(max, docAndFreqBuffer);
                      docAndFreqBuffer.size > 0;
                      postingsEnum.nextPostings(max, docAndFreqBuffer)) {
-                  docAndFreqBuffer.apply(acceptDocs);
+                  if (acceptDocs != null) {
+                    docAndFreqBuffer.apply(acceptDocs);
+                  }
                   scores = ArrayUtil.growNoCopy(scores, docAndFreqBuffer.size);
                   simScorer.score(docAndFreqBuffer, norms, scores);
                   for (int i = 0, size = docAndFreqBuffer.size; i < size; i++) {
