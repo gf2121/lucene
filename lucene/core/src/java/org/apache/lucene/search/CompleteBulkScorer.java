@@ -51,11 +51,11 @@ class CompleteBulkScorer extends BulkScorer {
           collector.collect(buffer.docs[i]);
         }
       }
-      scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
       if (collected < SPARSE_THRESHOLD) {
         collectSparseCompetitive(collector, acceptDocs, max);
         break;
       }
+      scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
     }
     return scorer.docID();
   }
