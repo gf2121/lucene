@@ -25,10 +25,11 @@ import org.apache.lucene.util.Bits;
  */
 class CompleteBulkScorer extends BulkScorer {
 
-  private static final int SPARSE_THRESHOLD = 8;
+  private static final int SPARSE_THRESHOLD = 16;
   private final SimpleScorable scorable = new SimpleScorable();
   private final DocAndScoreBuffer buffer = new DocAndScoreBuffer();
   private final Scorer scorer;
+  private boolean competitiveSparse = false;
 
   CompleteBulkScorer(Scorer scorer) {
     this.scorer = scorer;
@@ -36,10 +37,14 @@ class CompleteBulkScorer extends BulkScorer {
 
   @Override
   public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
-    collector.setScorer(scorable);
     if (scorer.docID() < min) {
       scorer.iterator().advance(min);
     }
+    if (competitiveSparse) {
+      collectSparseCompetitive(collector, acceptDocs, max);
+      return scorer.docID();
+    }
+    collector.setScorer(scorable);
     for (scorer.nextDocsAndScores(max, acceptDocs, buffer);
         buffer.size > 0;
         scorer.nextDocsAndScores(max, acceptDocs, buffer)) {
@@ -53,6 +58,7 @@ class CompleteBulkScorer extends BulkScorer {
       }
       scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
       if (collected < SPARSE_THRESHOLD) {
+        competitiveSparse = true;
         collectSparseCompetitive(collector, acceptDocs, max);
         break;
       }
