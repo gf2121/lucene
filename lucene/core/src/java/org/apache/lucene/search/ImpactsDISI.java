@@ -30,9 +30,8 @@ public final class ImpactsDISI extends FilterDocIdSetIterator {
   private final MaxScoreCache maxScoreCache;
   private float minCompetitiveScore = 0;
   private int upTo = DocIdSetIterator.NO_MORE_DOCS;
-  private float maxScore = Float.MAX_VALUE;
 
-  /**
+    /**
    * Sole constructor.
    *
    * @param in the iterator, typically an ImpactsEnum
@@ -46,6 +45,10 @@ public final class ImpactsDISI extends FilterDocIdSetIterator {
   /** Get the {@link MaxScoreCache}. */
   public MaxScoreCache getMaxScoreCache() {
     return maxScoreCache;
+  }
+
+  float getMinCompetitiveScore() {
+    return minCompetitiveScore;
   }
 
   /**
@@ -72,7 +75,7 @@ public final class ImpactsDISI extends FilterDocIdSetIterator {
     }
 
     upTo = maxScoreCache.advanceShallow(target);
-    maxScore = maxScoreCache.getMaxScoreForLevelZero();
+      float maxScore = maxScoreCache.getMaxScoreForLevelZero();
 
     while (true) {
       assert upTo >= target;

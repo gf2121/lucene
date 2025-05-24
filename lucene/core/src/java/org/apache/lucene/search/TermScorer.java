@@ -129,6 +129,11 @@ public final class TermScorer extends Scorer {
     if (docAndFreqBuffer == null) {
       docAndFreqBuffer = new DocAndFreqBuffer();
     }
+    if (impactsDisi != null && impactsDisi.getMinCompetitiveScore() > 0) {
+      if (score() < impactsDisi.getMinCompetitiveScore()) {
+        impactsDisi.nextDoc();
+      }
+    }
 
     for (; ; ) {
       postingsEnum.nextPostings(upTo, docAndFreqBuffer);
