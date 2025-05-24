@@ -25,11 +25,9 @@ import org.apache.lucene.util.Bits;
  */
 class CompleteBulkScorer extends BulkScorer {
 
-  private static final int SPARSE_THRESHOLD = 16;
   private final SimpleScorable scorable = new SimpleScorable();
   private final DocAndScoreBuffer buffer = new DocAndScoreBuffer();
   private final Scorer scorer;
-  private boolean competitiveSparse = false;
 
   CompleteBulkScorer(Scorer scorer) {
     this.scorer = scorer;
@@ -40,40 +38,21 @@ class CompleteBulkScorer extends BulkScorer {
     if (scorer.docID() < min) {
       scorer.iterator().advance(min);
     }
-    if (competitiveSparse) {
-      collectSparseCompetitive(collector, acceptDocs, max);
-      return scorer.docID();
-    }
     collector.setScorer(scorable);
+    scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
+
     for (scorer.nextDocsAndScores(max, acceptDocs, buffer);
         buffer.size > 0;
         scorer.nextDocsAndScores(max, acceptDocs, buffer)) {
-      int collected = 0;
       for (int i = 0, size = buffer.size; i < size; i++) {
         float score = scorable.score = buffer.scores[i];
         if (score >= scorable.minCompetitiveScore) {
-          collected ++;
           collector.collect(buffer.docs[i]);
         }
       }
       scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
-      if (collected < SPARSE_THRESHOLD) {
-        competitiveSparse = true;
-        collectSparseCompetitive(collector, acceptDocs, max);
-        break;
-      }
     }
     return scorer.docID();
-  }
-
-  private void collectSparseCompetitive(LeafCollector collector, Bits acceptDocs, int max) throws IOException {
-    DocIdSetIterator iterator = scorer.iterator();
-    collector.setScorer(scorer);
-    for (int doc = iterator.docID(); doc < max; doc = iterator.nextDoc()) {
-      if (acceptDocs == null || acceptDocs.get(doc)) {
-        collector.collect(doc);
-      }
-    }
   }
 
   @Override
