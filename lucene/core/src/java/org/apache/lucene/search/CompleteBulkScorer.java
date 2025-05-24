@@ -53,6 +53,7 @@ class CompleteBulkScorer extends BulkScorer {
       }
       scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
     }
+
     return scorer.docID();
   }
 

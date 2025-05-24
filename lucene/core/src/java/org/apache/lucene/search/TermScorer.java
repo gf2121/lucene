@@ -133,9 +133,7 @@ public final class TermScorer extends Scorer {
     if (impactsDisi != null
         && docID() != DocIdSetIterator.NO_MORE_DOCS
         && impactsDisi.getMinCompetitiveScore() > 0) {
-      if (score() < impactsDisi.getMinCompetitiveScore()) {
-        impactsDisi.nextDoc();
-      }
+      impactsDisi.advance(docID());
     }
 
     for (; ; ) {
