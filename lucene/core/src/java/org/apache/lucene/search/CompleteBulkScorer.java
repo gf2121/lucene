@@ -62,10 +62,10 @@ class CompleteBulkScorer extends BulkScorer {
 
   private void collectSparseCompetitive(LeafCollector collector, Bits acceptDocs, int max) throws IOException {
     DocIdSetIterator iterator = scorer.iterator();
+    collector.setScorer(scorer);
     for (int doc = iterator.docID(); doc < max; doc = iterator.nextDoc()) {
       if (acceptDocs == null || acceptDocs.get(doc)) {
         collector.collect(doc);
-        scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
       }
     }
   }
