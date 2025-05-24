@@ -25,7 +25,7 @@ import org.apache.lucene.util.Bits;
  */
 class CompleteBulkScorer extends BulkScorer {
 
-  private static final int SPARSE_THRESHOLD = 16;
+  private static final int SPARSE_THRESHOLD = 64;
   private final SimpleScorable scorable = new SimpleScorable();
   private final DocAndScoreBuffer buffer = new DocAndScoreBuffer();
   private final Scorer scorer;
