@@ -46,10 +46,8 @@ class CompleteBulkScorer extends BulkScorer {
         buffer.size > 0;
         scorer.nextDocsAndScores(max, acceptDocs, buffer)) {
       for (int i = 0, size = buffer.size; i < size; i++) {
-        float score = scorable.score = buffer.scores[i];
-        if (score >= scorable.minCompetitiveScore) {
-          collector.collect(buffer.docs[i]);
-        }
+        scorable.score = buffer.scores[i];
+        collector.collect(buffer.docs[i]);
       }
       scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
     }
