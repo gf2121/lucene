@@ -135,7 +135,7 @@ public final class TermScorer extends Scorer {
         && doc != DocIdSetIterator.NO_MORE_DOCS) {
       int nextCompetitive = impactsDisi.advanceTarget(doc);
       if (nextCompetitive != doc) {
-        impactsDisi.advance(nextCompetitive);
+        postingsEnum.advance(nextCompetitive);
       }
     }
 
