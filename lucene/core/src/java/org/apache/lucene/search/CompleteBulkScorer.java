@@ -25,7 +25,7 @@ import org.apache.lucene.util.Bits;
  */
 class CompleteBulkScorer extends BulkScorer {
 
-  private static final int SPARSE_THRESHOLD = 64;
+  private static final int SPARSE_THRESHOLD = 8;
   private final SimpleScorable scorable = new SimpleScorable();
   private final DocAndScoreBuffer buffer = new DocAndScoreBuffer();
   private final Scorer scorer;
@@ -51,11 +51,11 @@ class CompleteBulkScorer extends BulkScorer {
           collector.collect(buffer.docs[i]);
         }
       }
+      scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
       if (collected < SPARSE_THRESHOLD) {
         collectSparseCompetitive(collector, acceptDocs, max);
         break;
       }
-      scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
     }
     return scorer.docID();
   }
