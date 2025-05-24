@@ -35,11 +35,12 @@ class CompleteBulkScorer extends BulkScorer {
 
   @Override
   public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+    collector.setScorer(scorable);
+    scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
+
     if (scorer.docID() < min) {
       scorer.iterator().advance(min);
     }
-    collector.setScorer(scorable);
-    scorer.setMinCompetitiveScore(scorable.minCompetitiveScore);
 
     for (scorer.nextDocsAndScores(max, acceptDocs, buffer);
         buffer.size > 0;
