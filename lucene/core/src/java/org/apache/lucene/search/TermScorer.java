@@ -130,10 +130,13 @@ public final class TermScorer extends Scorer {
       docAndFreqBuffer = new DocAndFreqBuffer();
     }
 
+    int doc = docID();
     if (impactsDisi != null
-        && docID() != DocIdSetIterator.NO_MORE_DOCS
-        && impactsDisi.getMinCompetitiveScore() > 0) {
-      impactsDisi.advance(docID());
+        && doc != DocIdSetIterator.NO_MORE_DOCS) {
+      int nextCompetitive = impactsDisi.advanceTarget(doc);
+      if (nextCompetitive != doc) {
+        impactsDisi.advance(nextCompetitive);
+      }
     }
 
     for (; ; ) {
