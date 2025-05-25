@@ -34,11 +34,13 @@ public class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   private final ScoreDoc after;
   final int totalHitsThreshold;
   final MaxScoreAccumulator minScoreAcc;
+  final HitQueue hitQueue;
 
   // prevents instantiation
   TopScoreDocCollector(
       int numHits, ScoreDoc after, int totalHitsThreshold, MaxScoreAccumulator minScoreAcc) {
     super(new HitQueue(numHits, true));
+    this.hitQueue = (HitQueue) pq;
     this.after = after;
     this.totalHitsThreshold = totalHitsThreshold;
     this.minScoreAcc = minScoreAcc;
@@ -141,7 +143,7 @@ public class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       private void collectCompetitiveHit(int doc, float score) throws IOException {
         pqTop.doc = doc + docBase;
         pqTop.score = score;
-        pqTop = pq.updateTop();
+        pqTop = hitQueue.doUpdateTop();
         updateMinCompetitiveScore(scorer);
       }
 

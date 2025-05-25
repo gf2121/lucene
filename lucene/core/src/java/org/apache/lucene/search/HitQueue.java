@@ -80,4 +80,25 @@ public final class HitQueue extends PriorityQueue<ScoreDoc> {
     }
     return cmp < 0;
   }
+
+  public ScoreDoc doUpdateTop() {
+      int i = 1;
+      ScoreDoc node = heap[i]; // save top node
+      int j = i << 1; // find smaller child
+      int k = j + 1;
+      if (k <= size && lessThan(heap[k], heap[j])) {
+          j = k;
+      }
+      while (j <= size && lessThan(heap[j], node)) {
+          heap[i] = heap[j]; // shift up child
+          i = j;
+          j = i << 1;
+          k = j + 1;
+          if (k <= size && lessThan(heap[k], heap[j])) {
+              j = k;
+          }
+      }
+      heap[i] = node;
+      return heap[1];
+  }
 }

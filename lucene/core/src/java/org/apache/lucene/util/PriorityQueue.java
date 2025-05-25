@@ -34,9 +34,9 @@ import java.util.function.Supplier;
  * @lucene.internal
  */
 public abstract class PriorityQueue<T> implements Iterable<T> {
-  private int size = 0;
-  private final int maxSize;
-  private final T[] heap;
+  protected int size = 0;
+  protected final int maxSize;
+  protected final T[] heap;
 
   /** Create an empty priority queue of the configured size. */
   public PriorityQueue(int maxSize) {
