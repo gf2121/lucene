@@ -27,6 +27,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.NullableLongBuffer;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.internal.hppc.IntObjectHashMap;
@@ -34,6 +35,8 @@ import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.FileTypeHint;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /** Reader for {@link Lucene90NormsFormat} */
@@ -390,9 +393,24 @@ final class Lucene90NormsProducer extends NormsProducer implements Cloneable {
       switch (entry.bytesPerNorm) {
         case 1:
           return new DenseNormsIterator(maxDoc) {
+
+            byte[] bytes = BytesRef.EMPTY_BYTES;
+
             @Override
             public long longValue() throws IOException {
               return slice.readByte(doc);
+            }
+
+            @Override
+            public void nextValues(int[] docs, int size, NullableLongBuffer buffer)
+                throws IOException {
+              buffer.bitSet = null;
+              buffer.growNoCopy(size);
+              bytes = ArrayUtil.growNoCopy(bytes, size);
+              slice.readBytes(doc, bytes, 0, size);
+              for (int i = 0; i < size; i++) {
+                buffer.values[i] = bytes[i];
+              }
             }
           };
         case 2:

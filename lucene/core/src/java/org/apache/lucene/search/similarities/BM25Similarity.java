@@ -19,12 +19,12 @@ package org.apache.lucene.search.similarities;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.lucene.index.NullableLongBuffer;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocAndFreqBuffer;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.SmallFloat;
 
 /**
@@ -211,8 +211,7 @@ public class BM25Similarity extends Similarity {
     /** weight (idf * boost) */
     private final float weight;
 
-    /** Temporary array to store norm factors to help auto-vectorization. */
-    private float[] normInverses;
+    private final NullableLongBuffer normBuffer = new NullableLongBuffer();
 
     BM25Scorer(float boost, float k1, float b, Explanation idf, float avgdl, float[] cache) {
       this.boost = boost;
@@ -262,18 +261,19 @@ public class BM25Similarity extends Similarity {
           scores[i] = score(buffer.freqs[i], normInverse);
         }
       } else {
-        if (normInverses == null || normInverses.length < buffer.size) {
-          normInverses = new float[ArrayUtil.oversize(buffer.size, Float.BYTES)];
-        }
-
-        for (int i = 0; i < buffer.size; ++i) {
-          if (norms.advanceExact(buffer.docs[i])) {
-            // If norms#longValue gets inlined, the JVM compiler should hopefully detect that a byte
-            // is expanded to a long and then casted back to the same original byte, and ignore
-            // these operations.
-            normInverses[i] = cache[((byte) norms.longValue()) & 0xFF];
-          } else {
-            normInverses[i] = cache[1];
+        float[] normInverses = scores;
+        norms.nextValues(buffer.docs, buffer.size, normBuffer);
+        if (normBuffer.bitSet == null) {
+          for (int i = 0; i < buffer.size; ++i) {
+            normInverses[i] = cache[((byte) normBuffer.values[i]) & 0xFF];
+          }
+        } else {
+          for (int i = 0; i < buffer.size; ++i) {
+            if (normBuffer.bitSet.get(i)) {
+              normInverses[i] = cache[((byte) normBuffer.values[i]) & 0xFF];
+            } else {
+              normInverses[i] = cache[1];
+            }
           }
         }
 
