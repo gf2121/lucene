@@ -61,7 +61,7 @@ class DocScoreEncoder {
   }
 
   /**
-   * Score is non-negative float so wo use floatToRawIntBits instead of {@link
+   * Score is non-negative float so we use floatToRawIntBits instead of {@link
    * NumericUtils#floatToSortableInt}. We do not assert score >= 0 here to allow pass negative float
    * to indicate totally non-competitive, e.g. {@link #LEAST_COMPETITIVE_CODE}.
    */
