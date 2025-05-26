@@ -394,8 +394,6 @@ final class Lucene90NormsProducer extends NormsProducer implements Cloneable {
         case 1:
           return new DenseNormsIterator(maxDoc) {
 
-            byte[] bytes = BytesRef.EMPTY_BYTES;
-
             @Override
             public long longValue() throws IOException {
               return slice.readByte(doc);
@@ -406,10 +404,8 @@ final class Lucene90NormsProducer extends NormsProducer implements Cloneable {
                 throws IOException {
               buffer.bitSet = null;
               buffer.growNoCopy(size);
-              bytes = ArrayUtil.growNoCopy(bytes, size);
-              slice.readBytes(doc, bytes, 0, size);
               for (int i = 0; i < size; i++) {
-                buffer.values[i] = bytes[i];
+                buffer.values[i] = slice.readByte(docs[i]);
               }
             }
           };
