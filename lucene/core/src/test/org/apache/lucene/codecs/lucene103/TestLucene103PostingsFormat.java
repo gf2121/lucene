@@ -145,10 +145,9 @@ public class TestLucene103PostingsFormat extends BasePostingsFormatTestCase {
       }
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
         int bytes = Math.toIntExact(in.length());
-        MutableImpactList impacts2 = new MutableImpactList(
-            bytes  + random().nextInt(3)
-            , impacts.size() + random().nextInt(3)
-        );
+        MutableImpactList impacts2 =
+            new MutableImpactList(
+                bytes + random().nextInt(3), impacts.size() + random().nextInt(3));
         impacts2.reset(in, bytes);
         assertEquals(impacts, impacts2.build());
       }
