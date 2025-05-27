@@ -86,7 +86,7 @@ final class BlockMaxConjunctionBulkScorer extends BulkScorer {
     while (windowMin < max) {
       // Use impacts of the least costly scorer to compute windows
       // NOTE: windowMax is inclusive
-      int windowMax = Math.min(scorers[0].advanceShallow(windowMin), windowMin + MAX_WINDOW_SIZE);
+      int windowMax = (int) Math.min(scorers[0].advanceShallow(windowMin), (long) windowMin + MAX_WINDOW_SIZE);
       windowMax = Math.min(windowMax, max - 1);
 
       float maxWindowScore = Float.POSITIVE_INFINITY;
