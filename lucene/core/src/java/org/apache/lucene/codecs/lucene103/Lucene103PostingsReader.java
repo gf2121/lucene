@@ -1423,11 +1423,12 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
     long fp = -1;
     int length;
 
-    void reset(IndexInput docIn, int serializedBytes) {
+    void reset(IndexInput docIn, int serializedBytes) throws IOException {
       assert serializedBytes <= bytes.length;
       this.docIn = docIn;
       this.fp = docIn.getFilePointer();
       this.serializedBytes = serializedBytes;
+      docIn.skipBytes(serializedBytes);
     }
 
     MutableImpactList(int maxSerialized, int capacity) {
