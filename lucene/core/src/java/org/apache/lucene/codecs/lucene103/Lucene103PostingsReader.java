@@ -48,7 +48,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.internal.vectorization.PostingDecodingUtil;
 import org.apache.lucene.internal.vectorization.VectorizationProvider;
 import org.apache.lucene.search.DocAndFreqBuffer;
-import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.FileDataHint;
@@ -1415,17 +1414,16 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
   }
 
   static class MutableImpactList extends AbstractList<Impact> implements RandomAccess {
-    final ByteArrayDataInput in = new ByteArrayDataInput();
     final Impact[] impacts;
     final byte[] bytes;
-    IndexInput docIn;
+    IndexInput in;
     int serializedBytes;
     long fp = -1;
     int length;
 
     void reset(IndexInput docIn, int serializedBytes) throws IOException {
       assert serializedBytes <= bytes.length;
-      this.docIn = docIn;
+      this.in = docIn;
       this.fp = docIn.getFilePointer();
       this.serializedBytes = serializedBytes;
       docIn.skipBytes(serializedBytes);
@@ -1444,16 +1442,13 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
         return this;
       }
       try {
-        long stash = docIn.getFilePointer();
-        docIn.seek(fp);
-        docIn.readBytes(bytes, 0, serializedBytes);
-        docIn.seek(stash);
-        in.reset(bytes, 0, serializedBytes);
-
+        long stash = in.getFilePointer();
+        in.seek(fp);
         int freq = 0;
         long norm = 0;
         int length = 0;
-        while (in.getPosition() < in.length()) {
+        long endFp = fp + serializedBytes;
+        while (in.getFilePointer() < endFp) {
           int freqDelta = in.readVInt();
           if ((freqDelta & 0x01) != 0) {
             freq += 1 + (freqDelta >>> 1);
@@ -1469,6 +1464,7 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
         }
         this.length = length;
         this.fp = -1;
+        in.seek(stash);
         return this;
       } catch (IOException e) {
         throw new UncheckedIOException(e);
