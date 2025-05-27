@@ -144,13 +144,13 @@ public class TestLucene103PostingsFormat extends BasePostingsFormatTestCase {
         Lucene103PostingsWriter.writeImpacts(acc.getCompetitiveFreqNormPairs(), out);
       }
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
-        byte[] b = new byte[Math.toIntExact(in.length())];
-        in.readBytes(b, 0, b.length);
-        List<Impact> impacts2 =
-            Lucene103PostingsReader.readImpacts(
-                new ByteArrayDataInput(b),
-                new MutableImpactList(impacts.size() + random().nextInt(3)));
-        assertEquals(impacts, impacts2);
+        int bytes = Math.toIntExact(in.length());
+        MutableImpactList impacts2 = new MutableImpactList(
+            bytes  + random().nextInt(3)
+            , impacts.size() + random().nextInt(3)
+        );
+        impacts2.reset(in, bytes);
+        assertEquals(impacts, impacts2.build());
       }
     }
   }

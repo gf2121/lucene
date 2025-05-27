@@ -27,6 +27,7 @@ import static org.apache.lucene.codecs.lucene103.Lucene103PostingsFormat.VERSION
 import static org.apache.lucene.codecs.lucene103.Lucene103PostingsFormat.VERSION_START;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -405,7 +406,6 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
     private int level0BlockPosUpto;
     private long level0PayEndFP;
     private int level0BlockPayUpto;
-    private final BytesRef level0SerializedImpacts;
     private final MutableImpactList level0Impacts;
 
     // level 1 skip data
@@ -413,7 +413,6 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
     private int level1BlockPosUpto;
     private long level1PayEndFP;
     private int level1BlockPayUpto;
-    private final BytesRef level1SerializedImpacts;
     private final MutableImpactList level1Impacts;
 
     // true if we shallow-advanced to a new block that we have not decoded yet
@@ -444,13 +443,9 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
       }
 
       if (needsFreq && needsImpacts) {
-        level0SerializedImpacts = new BytesRef(maxImpactNumBytesAtLevel0);
-        level1SerializedImpacts = new BytesRef(maxImpactNumBytesAtLevel1);
-        level0Impacts = new MutableImpactList(maxNumImpactsAtLevel0);
-        level1Impacts = new MutableImpactList(maxNumImpactsAtLevel1);
+        level0Impacts = new MutableImpactList(maxImpactNumBytesAtLevel0, maxNumImpactsAtLevel0);
+        level1Impacts = new MutableImpactList(maxImpactNumBytesAtLevel1, maxNumImpactsAtLevel1);
       } else {
-        level0SerializedImpacts = null;
-        level1SerializedImpacts = null;
         level0Impacts = null;
         level1Impacts = null;
       }
@@ -700,8 +695,7 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
           long skip1EndFP = docIn.readShort() + docIn.getFilePointer();
           int numImpactBytes = docIn.readShort();
           if (needsImpacts && level1LastDocID >= target) {
-            docIn.readBytes(level1SerializedImpacts.bytes, 0, numImpactBytes);
-            level1SerializedImpacts.length = numImpactBytes;
+            level1Impacts.reset(docIn, numImpactBytes);
           } else {
             docIn.skipBytes(numImpactBytes);
           }
@@ -749,8 +743,7 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
         if (indexHasFreq) {
           int numImpactBytes = docIn.readVInt();
           if (needsImpacts) {
-            docIn.readBytes(level0SerializedImpacts.bytes, 0, numImpactBytes);
-            level0SerializedImpacts.length = numImpactBytes;
+            level0Impacts.reset(docIn, numImpactBytes);
           } else {
             docIn.skipBytes(numImpactBytes);
           }
@@ -848,8 +841,7 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
             } else {
               int numImpactBytes = docIn.readVInt();
               if (needsImpacts && found) {
-                docIn.readBytes(level0SerializedImpacts.bytes, 0, numImpactBytes);
-                level0SerializedImpacts.length = numImpactBytes;
+                level0Impacts.reset(docIn, numImpactBytes);
               } else {
                 docIn.skipBytes(numImpactBytes);
               }
@@ -1346,8 +1338,6 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
     private final Impacts impacts =
         new Impacts() {
 
-          private final ByteArrayDataInput scratch = new ByteArrayDataInput();
-
           @Override
           public int numLevels() {
             return indexHasFreq == false || level1LastDocID == NO_MORE_DOCS ? 1 : 2;
@@ -1370,19 +1360,12 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
               return DUMMY_IMPACTS_NO_FREQS;
             }
             if (level == 0 && level0LastDocID != NO_MORE_DOCS) {
-              return readImpacts(level0SerializedImpacts, level0Impacts);
+              return level0Impacts.build();
             }
             if (level == 1) {
-              return readImpacts(level1SerializedImpacts, level1Impacts);
+              return level1Impacts.build();
             }
             return DUMMY_IMPACTS;
-          }
-
-          private List<Impact> readImpacts(BytesRef serialized, MutableImpactList impactsList) {
-            var scratch = this.scratch;
-            scratch.reset(serialized.bytes, 0, serialized.length);
-            Lucene103PostingsReader.readImpacts(scratch, impactsList);
-            return impactsList;
           }
         };
 
@@ -1432,13 +1415,62 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
   }
 
   static class MutableImpactList extends AbstractList<Impact> implements RandomAccess {
-    int length;
+    final ByteArrayDataInput in = new ByteArrayDataInput();
     final Impact[] impacts;
+    final byte[] bytes;
+    IndexInput docIn;
+    int serializedBytes;
+    long fp = -1;
+    int length;
 
-    MutableImpactList(int capacity) {
+    void reset(IndexInput docIn, int serializedBytes) {
+      assert serializedBytes <= bytes.length;
+      this.docIn = docIn;
+      this.fp = docIn.getFilePointer();
+      this.serializedBytes = serializedBytes;
+    }
+
+    MutableImpactList(int maxSerialized, int capacity) {
+      bytes = new byte[maxSerialized];
       impacts = new Impact[capacity];
       for (int i = 0; i < capacity; ++i) {
         impacts[i] = new Impact(Integer.MAX_VALUE, 1L);
+      }
+    }
+
+    MutableImpactList build() {
+      if (fp == -1) {
+        return this;
+      }
+      try {
+        long stash = docIn.getFilePointer();
+        docIn.seek(fp);
+        docIn.readBytes(bytes, 0, serializedBytes);
+        docIn.seek(stash);
+        in.reset(bytes, 0, serializedBytes);
+
+        int freq = 0;
+        long norm = 0;
+        int length = 0;
+        while (in.getPosition() < in.length()) {
+          int freqDelta = in.readVInt();
+          if ((freqDelta & 0x01) != 0) {
+            freq += 1 + (freqDelta >>> 1);
+            norm += 1 + in.readZLong();
+          } else {
+            freq += 1 + (freqDelta >>> 1);
+            norm++;
+          }
+          Impact impact = impacts[length];
+          impact.freq = freq;
+          impact.norm = norm;
+          length++;
+        }
+        this.length = length;
+        this.fp = -1;
+        return this;
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
       }
     }
 
@@ -1451,32 +1483,6 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
     public int size() {
       return length;
     }
-  }
-
-  static MutableImpactList readImpacts(ByteArrayDataInput in, MutableImpactList reuse) {
-    int freq = 0;
-    long norm = 0;
-    int length = 0;
-    while (in.getPosition() < in.length()) {
-      int freqDelta = in.readVInt();
-      if ((freqDelta & 0x01) != 0) {
-        freq += 1 + (freqDelta >>> 1);
-        try {
-          norm += 1 + in.readZLong();
-        } catch (IOException e) {
-          throw new RuntimeException(e); // cannot happen on a BADI
-        }
-      } else {
-        freq += 1 + (freqDelta >>> 1);
-        norm++;
-      }
-      Impact impact = reuse.impacts[length];
-      impact.freq = freq;
-      impact.norm = norm;
-      length++;
-    }
-    reuse.length = length;
-    return reuse;
   }
 
   @Override
