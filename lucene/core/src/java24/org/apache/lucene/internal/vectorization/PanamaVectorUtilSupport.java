@@ -774,33 +774,39 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
 
   @Override
   public int findNextGEQ(int[] buffer, int target, int from, int to) {
-    if (ENABLE_FIND_NEXT_GEQ_VECTOR_OPTO) {
-      // This effectively implements the V1 intersection algorithm from
-      // D. Lemire, L. Boytsov, N. Kurz SIMD Compression and the Intersection of Sorted Integers
-      // with T = INT_SPECIES.length(), ie. T=8 with AVX2 and T=16 with AVX-512
-      // https://arxiv.org/pdf/1401.6399
-      final int firstBlock = from + INT_SPECIES.length();
-      if (firstBlock < to && buffer[firstBlock] >= target) {
-        IntVector vector = IntVector.fromArray(INT_SPECIES, buffer, from);
-        VectorMask<Integer> mask = vector.compare(VectorOperators.LT, target);
-        return from + mask.trueCount();
+    @Override
+    public int findNextGEQ(int[] buffer, int target, int from, int to) {
+      if (buffer[from] >= target) { // common case, we do not to need check bound.
+        return from;
       }
-      for (from = firstBlock + 1; from + FIND_NEXT_GEQ_STEP < to; from += FIND_NEXT_GEQ_STEP + 1) {
-        if (buffer[from + FIND_NEXT_GEQ_STEP] >= target) {
-          IntVector vector1 = IntVector.fromArray(INT_SPECIES, buffer, from);
-          IntVector vector2 = IntVector.fromArray(INT_SPECIES, buffer, from + INT_SPECIES.length());
-          VectorMask<Integer> mask1 = vector1.compare(VectorOperators.LT, target);
-          VectorMask<Integer> mask2 = vector2.compare(VectorOperators.LT, target);
-          return from + mask1.trueCount() + mask2.trueCount();
+      int firstBlock = (++from) + INT_SPECIES.length();
+      if (ENABLE_FIND_NEXT_GEQ_VECTOR_OPTO && firstBlock < to) {
+        // This effectively implements the V1 intersection algorithm from
+        // D. Lemire, L. Boytsov, N. Kurz SIMD Compression and the Intersection of Sorted Integers
+        // with T = INT_SPECIES.length(), ie. T=8 with AVX2 and T=16 with AVX-512
+        // https://arxiv.org/pdf/1401.6399
+        if (buffer[firstBlock] >= target) {
+          IntVector vector = IntVector.fromArray(INT_SPECIES, buffer, from);
+          VectorMask<Integer> mask = vector.compare(VectorOperators.LT, target);
+          return from + mask.trueCount();
+        }
+        for (from = firstBlock + 1; from + FIND_NEXT_GEQ_STEP < to; from += FIND_NEXT_GEQ_STEP + 1) {
+          if (buffer[from + FIND_NEXT_GEQ_STEP] >= target) {
+            IntVector vector1 = IntVector.fromArray(INT_SPECIES, buffer, from);
+            IntVector vector2 = IntVector.fromArray(INT_SPECIES, buffer, from + INT_SPECIES.length());
+            VectorMask<Integer> mask1 = vector1.compare(VectorOperators.LT, target);
+            VectorMask<Integer> mask2 = vector2.compare(VectorOperators.LT, target);
+            return from + mask1.trueCount() + mask2.trueCount();
+          }
         }
       }
-    }
-    for (int i = from; i < to; ++i) {
-      if (buffer[i] >= target) {
-        return i;
+      for (int i = from; i < to; ++i) {
+        if (buffer[i] >= target) {
+          return i;
+        }
       }
+      return to;
     }
-    return to;
   }
 
   @Override
