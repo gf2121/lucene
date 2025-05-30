@@ -931,6 +931,10 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
           doAdvanceShallow(target);
         }
         refillDocs();
+        if (encoding == DeltaEncoding.PACKED && (doc = docBuffer[0]) >= target) {
+          docBufferUpto = 1;
+          return doc;
+        }
         needsRefilling = false;
       }
 
