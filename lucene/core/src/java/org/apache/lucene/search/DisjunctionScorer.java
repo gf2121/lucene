@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.PriorityQueue;
 
 /** Base class for Scorers that score disjunctions. */
@@ -175,6 +177,11 @@ abstract class DisjunctionScorer extends Scorer {
 
   /** Compute the score for the given linked list of scorers. */
   protected abstract float score(DisiWrapper topList) throws IOException;
+
+  @Override
+  public final void nextDocsAndScores(int upTo, Bits liveDocs, DocAndScoreBuffer buffer) throws IOException {
+    super.nextDocsAndScores(upTo, liveDocs, buffer);
+  }
 
   @Override
   public final Collection<ChildScorable> getChildren() throws IOException {
