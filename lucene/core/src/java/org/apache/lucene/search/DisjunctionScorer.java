@@ -180,7 +180,18 @@ abstract class DisjunctionScorer extends Scorer {
 
   @Override
   public final void nextDocsAndScores(int upTo, Bits liveDocs, DocAndScoreBuffer buffer) throws IOException {
-    super.nextDocsAndScores(upTo, liveDocs, buffer);
+    int batchSize = 64; // arbitrary
+    buffer.growNoCopy(batchSize);
+    int size = 0;
+    DocIdSetIterator iterator = iterator();
+    for (int doc = docID(); doc < upTo && size < batchSize; doc = iterator.nextDoc()) {
+      if (liveDocs == null || liveDocs.get(doc)) {
+        buffer.docs[size] = doc;
+        buffer.scores[size] = score(getSubMatches());
+        ++size;
+      }
+    }
+    buffer.size = size;
   }
 
   @Override

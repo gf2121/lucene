@@ -452,7 +452,17 @@ public final class CombinedFieldQuery extends Query implements Accountable {
 
     @Override
     public final void nextDocsAndScores(int upTo, Bits liveDocs, DocAndScoreBuffer buffer) throws IOException {
-      super.nextDocsAndScores(upTo, liveDocs, buffer);
+      int batchSize = 64; // arbitrary
+      buffer.growNoCopy(batchSize);
+      int size = 0;
+      for (int doc = docID(); doc < upTo && size < batchSize; doc = iterator.nextDoc()) {
+        if (liveDocs == null || liveDocs.get(doc)) {
+          buffer.docs[size] = doc;
+          buffer.scores[size] = simScorer.score(doc, freq());
+          ++size;
+        }
+      }
+      buffer.size = size;
     }
 
     @Override
