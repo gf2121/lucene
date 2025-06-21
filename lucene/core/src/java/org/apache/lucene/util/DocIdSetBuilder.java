@@ -149,6 +149,10 @@ public final class DocIdSetBuilder {
     this(maxDoc, -1, -1);
   }
 
+  public DocIdSetBuilder(int maxDoc, int shift) {
+    this(maxDoc, -1, -1, shift);
+  }
+
   /**
    * Create a {@link DocIdSetBuilder} instance that is optimized for accumulating docs that match
    * the given {@link Terms}.
@@ -166,6 +170,10 @@ public final class DocIdSetBuilder {
   }
 
   DocIdSetBuilder(int maxDoc, int docCount, long valueCount) {
+    this(maxDoc, docCount, valueCount, 7);
+  }
+
+  DocIdSetBuilder(int maxDoc, int docCount, long valueCount, int shift) {
     this.maxDoc = maxDoc;
     this.multivalued = docCount < 0 || docCount != valueCount;
     if (docCount <= 0 || valueCount < 0) {
@@ -183,7 +191,7 @@ public final class DocIdSetBuilder {
     // maxDoc >>> 7 is a good value if you want to save memory, lower values
     // such as maxDoc >>> 11 should provide faster building but at the expense
     // of using a full bitset even for quite sparse data
-    this.threshold = maxDoc >>> 7;
+    this.threshold = maxDoc >>> shift;
 
     this.bitSet = null;
   }

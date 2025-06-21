@@ -366,7 +366,7 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
     @Override
     void doUpdateCompetitiveIterator() throws IOException {
-      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc);
+      DocIdSetBuilder result = new DocIdSetBuilder(maxDoc, 5);
       PointValues.IntersectVisitor visitor =
           new PointValues.IntersectVisitor() {
             DocIdSetBuilder.BulkAdder adder;
