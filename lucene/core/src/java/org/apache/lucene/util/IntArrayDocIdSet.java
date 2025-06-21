@@ -18,9 +18,11 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.stream.IntStream;
 import org.apache.lucene.search.AbstractDocIdSetIterator;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.packed.PackedInts;
 
 final class IntArrayDocIdSet extends DocIdSet {
 
@@ -29,25 +31,15 @@ final class IntArrayDocIdSet extends DocIdSet {
 
   private final int[] docs;
   private final int length;
+  private final int maxDoc;
 
-  IntArrayDocIdSet(int[] docs, int length) {
+  IntArrayDocIdSet(int[] docs, int length, int maxDoc) {
     if (docs[length] != DocIdSetIterator.NO_MORE_DOCS) {
       throw new IllegalArgumentException();
     }
     this.docs = docs;
-    assert assertArraySorted(docs, length)
-        : "IntArrayDocIdSet need docs to be sorted"
-            + Arrays.toString(ArrayUtil.copyOfSubArray(docs, 0, length));
     this.length = length;
-  }
-
-  private static boolean assertArraySorted(int[] docs, int length) {
-    for (int i = 1; i < length; i++) {
-      if (docs[i] < docs[i - 1]) {
-        return false;
-      }
-    }
-    return true;
+    this.maxDoc = maxDoc;
   }
 
   @Override
@@ -57,57 +49,183 @@ final class IntArrayDocIdSet extends DocIdSet {
 
   @Override
   public DocIdSetIterator iterator() {
-    return new IntArrayDocIdSetIterator(docs, length);
+    if (length == 0) {
+      return DocIdSetIterator.empty();
+    }
+    return new ArrayDocIdSetIterator(docs, length, maxDoc);
   }
 
-  static class IntArrayDocIdSetIterator extends AbstractDocIdSetIterator {
+  /**
+   * A DocIdSetIterator implementation that sorts documents on-demand. Documents are partitioned
+   * into 256 buckets by their Most Significant Byte. Each bucket is sorted only when needed during
+   * iteration.
+   */
+  private static class ArrayDocIdSetIterator extends AbstractDocIdSetIterator {
 
+    private static final int INSERTION_SORT_THRESHOLD = 30;
+    private static final int HISTOGRAM_SIZE = 256;
+
+    private final int[] buckets = new int[HISTOGRAM_SIZE];
+    private final int[] histogram = new int[HISTOGRAM_SIZE];
+    private final int bucketShift;
     private final int[] docs;
     private final int length;
-    private int i = 0;
+    private final int maxDoc;
+    private final int[] buffer;
 
-    IntArrayDocIdSetIterator(int[] docs, int length) {
+    private int nextBucket = -1;
+    private int i = 0;
+    private int bucketFrom = 0;
+    private int bucketTo = 0;
+
+    ArrayDocIdSetIterator(int[] docs, int length, int maxDoc) {
+      if (docs[length] != DocIdSetIterator.NO_MORE_DOCS) {
+        throw new IllegalArgumentException();
+      }
+
       this.docs = docs;
       this.length = length;
+      this.maxDoc = maxDoc;
+      this.bucketShift = PackedInts.bitsRequired(maxDoc - 1) - 8;
+      this.buffer = new int[length];
+
+      buildHistogram(docs, 0, length, buckets, bucketShift);
+      sumHistogram(0, buckets);
+      reorder(docs, 0, length, buckets, bucketShift, buffer);
+      assert buckets[HISTOGRAM_SIZE - 1] == length;
     }
 
     @Override
-    public int nextDoc() throws IOException {
-      return doc = docs[i++];
+    public int nextDoc() {
+      return advance(doc + 1);
     }
 
     @Override
-    public int advance(int target) throws IOException {
-      int bound = 1;
-      // given that we use this for small arrays only, this is very unlikely to overflow
-      while (i + bound < length && docs[i + bound] < target) {
-        bound *= 2;
+    public int advance(int target) {
+      if (moveTo(target) == false) {
+        return doc = DocIdSetIterator.NO_MORE_DOCS;
       }
-      i = Arrays.binarySearch(docs, i + bound / 2, Math.min(i + bound + 1, length), target);
-      if (i < 0) {
-        i = -1 - i;
+
+      i = VectorUtil.findNextGEQ(docs, target, i, bucketTo);
+
+      if (i == bucketTo) {
+        return advance(nextBucket);
       }
+
       return doc = docs[i++];
     }
 
     @Override
     public void intoBitSet(int upTo, FixedBitSet bitSet, int offset) throws IOException {
-      if (doc >= upTo) {
-        return;
-      }
-
-      int from = i - 1;
-      int to = VectorUtil.findNextGEQ(docs, upTo, from, length);
-      for (int i = from; i < to; ++i) {
-        bitSet.set(docs[i] - offset);
-      }
-      doc = docs[to];
-      i = to + 1;
+      // TODO we can skip sort if whole block into bitset, but could that really happen?
+      super.intoBitSet(upTo, bitSet, offset);
     }
 
     @Override
     public long cost() {
       return length;
+    }
+
+    private boolean moveTo(int target) {
+      if (target >= nextBucket) {
+        int bucket = target >>> bucketShift;
+        while (bucketEmpty(bucket)) {
+          bucket++;
+        }
+
+        if (bucket >= HISTOGRAM_SIZE) {
+          return false;
+        }
+
+        i = bucketFrom = bucket == 0 ? 0 : buckets[bucket - 1];
+        bucketTo = buckets[bucket];
+        sort();
+        nextBucket = (bucket + 1) << bucketShift;
+      }
+      return true;
+    }
+
+    private boolean bucketEmpty(int bucket) {
+      if (bucket == 0) {
+        return buckets[0] == 0;
+      } else {
+        return bucket < HISTOGRAM_SIZE && buckets[bucket] == buckets[bucket - 1];
+      }
+    }
+
+    private void sort() {
+      if (bucketTo - bucketFrom < INSERTION_SORT_THRESHOLD) {
+        insertionSort(buffer, bucketFrom, bucketTo);
+        System.arraycopy(buffer, bucketFrom, docs, bucketFrom, bucketTo - bucketFrom);
+      } else {
+
+        // LSB Radix Sort
+        int[] arr = buffer;
+        int[] buf = docs;
+
+        for (int shift = 0; shift < bucketShift; shift += 8) {
+          if (sort(arr, bucketFrom, bucketTo, histogram, shift, buf)) {
+            int[] tmp = arr;
+            arr = buf;
+            buf = tmp;
+          }
+        }
+
+        if (docs == buf) {
+          System.arraycopy(arr, bucketFrom, docs, bucketFrom, bucketTo - bucketFrom);
+        }
+      }
+    }
+
+    private static boolean sort(
+        int[] array, int from, int to, int[] histogram, int shift, int[] dest) {
+      Arrays.fill(histogram, 0);
+      buildHistogram(array, from, to, histogram, shift);
+      if (histogram[0] == to - from) {
+        return false;
+      }
+      sumHistogram(from, histogram);
+      reorder(array, from, to, histogram, shift, dest);
+      return true;
+    }
+
+    private static void buildHistogram(int[] array, int from, int to, int[] histogram, int shift) {
+      for (int i = from; i < to; ++i) {
+        final int b = (array[i] >>> shift) & 0xFF;
+        histogram[b] += 1;
+      }
+    }
+
+    private static void sumHistogram(int base, int[] histogram) {
+      int accum = base;
+      for (int i = 0; i < HISTOGRAM_SIZE; ++i) {
+        final int count = histogram[i];
+        histogram[i] = accum;
+        accum += count;
+      }
+    }
+
+    private static void reorder(
+        int[] array, int from, int to, int[] histogram, int shift, int[] dest) {
+      for (int i = from; i < to; ++i) {
+        final int v = array[i];
+        final int b = (v >>> shift) & 0xFF;
+        dest[histogram[b]++] = v;
+      }
+    }
+
+    private static void insertionSort(int[] array, int from, int to) {
+      for (int i = from + 1; i < to; ++i) {
+        for (int j = i; j > from; --j) {
+          if (array[j - 1] > array[j]) {
+            int tmp = array[j - 1];
+            array[j - 1] = array[j];
+            array[j] = tmp;
+          } else {
+            break;
+          }
+        }
+      }
     }
   }
 }

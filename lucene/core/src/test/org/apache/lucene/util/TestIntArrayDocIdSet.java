@@ -33,6 +33,6 @@ public class TestIntArrayDocIdSet extends BaseDocIdSetTestCase<IntArrayDocIdSet>
     }
     docs = ArrayUtil.grow(docs, length + 1);
     docs[l] = DocIdSetIterator.NO_MORE_DOCS;
-    return new IntArrayDocIdSet(docs, l);
+    return new IntArrayDocIdSet(docs, l, bs.length());
   }
 }

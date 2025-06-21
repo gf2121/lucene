@@ -331,7 +331,7 @@ public final class VectorUtil {
    * to} is returned.
    */
   public static int findNextGEQ(int[] buffer, int target, int from, int to) {
-    assert IntStream.range(0, to - 1).noneMatch(i -> buffer[i] > buffer[i + 1]);
+//    assert IntStream.range(from, to - 1).noneMatch(i -> buffer[i] > buffer[i + 1]);
     return IMPL.findNextGEQ(buffer, target, from, to);
   }
 

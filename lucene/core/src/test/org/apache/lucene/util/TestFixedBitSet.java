@@ -489,7 +489,7 @@ public class TestFixedBitSet extends BaseBitSetTestCase<FixedBitSet> {
       int[] sorted = new int[bits1.length + 1];
       System.arraycopy(bits1, 0, sorted, 0, bits1.length);
       sorted[bits1.length] = DocIdSetIterator.NO_MORE_DOCS;
-      DocIdSetIterator disi = new IntArrayDocIdSet.IntArrayDocIdSetIterator(sorted, count1);
+      DocIdSetIterator disi = new IntArrayDocIdSet(sorted, count1, numBits1).iterator();
       fixedBitSet2.andNot(disi);
       doGet(bitSet2, fixedBitSet2);
     }

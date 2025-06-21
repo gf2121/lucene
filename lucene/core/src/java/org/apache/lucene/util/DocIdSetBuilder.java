@@ -23,7 +23,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * A builder of {@link DocIdSet}s. At first it uses a sparse structure to gather documents, and then
@@ -304,18 +303,8 @@ public final class DocIdSetBuilder {
         return new BitDocIdSet(bitSet, cost);
       } else {
         Buffer concatenated = concat(buffers);
-        LSBRadixSorter sorter = new LSBRadixSorter();
-        sorter.sort(PackedInts.bitsRequired(maxDoc - 1), concatenated.array, concatenated.length);
-        final int l;
-        if (multivalued) {
-          l = dedup(concatenated.array, concatenated.length);
-        } else {
-          assert noDups(concatenated.array, concatenated.length);
-          l = concatenated.length;
-        }
-        assert l <= concatenated.length;
-        concatenated.array[l] = DocIdSetIterator.NO_MORE_DOCS;
-        return new IntArrayDocIdSet(concatenated.array, l);
+        concatenated.array[concatenated.length] = DocIdSetIterator.NO_MORE_DOCS;
+        return new IntArrayDocIdSet(concatenated.array, concatenated.length, maxDoc);
       }
     } finally {
       this.buffers = null;
