@@ -44,6 +44,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -382,6 +383,11 @@ public abstract class PointInSetQuery extends Query implements Accountable {
     @Override
     public void visit(int docID) {
       adder.add(docID);
+    }
+
+    @Override
+    public void visit(IntsRef ref) throws IOException {
+      adder.add(ref);
     }
 
     @Override
