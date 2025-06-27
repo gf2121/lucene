@@ -142,8 +142,8 @@ final class BlockMaxConjunctionBulkScorer extends BulkScorer {
           collector.collect(doc);
           counter = 0;
         } else if (scorable.minCompetitiveScore > 0) {
-          if (++counter > 32) {
-            // we have continuous 32 docs that not competitive, move to score first;
+          if (++counter > 8) {
+            // we have continuous 8 docs that not competitive, move to score first;
             return lead.nextDoc();
           }
         }
