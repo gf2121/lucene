@@ -24,13 +24,16 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
+import org.apache.lucene.internal.hppc.LongHashSet;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ArrayUtil.ByteArrayComparator;
@@ -207,6 +210,25 @@ public abstract class PointInSetQuery extends Query implements Accountable {
 
             @Override
             public Scorer get(long leadCost) throws IOException {
+              NumericDocValues numericDocValues = reader.getNumericDocValues(field);
+              if (numericDocValues != null && (bytesPerDim == 4 || bytesPerDim == 8)) {
+                LongHashSet set = valuesAsSet();
+                DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values);
+                intersectApproximately(new MergePointVisitor(sortedPackedPoints.iterator(), result), values.getPointTree());
+                return new ConstantScoreScorer(score(), scoreMode, new TwoPhaseIterator(result.build().iterator()) {
+                  @Override
+                  public boolean matches() throws IOException {
+                    numericDocValues.advanceExact(approximation.docID());
+                    return set.contains(numericDocValues.longValue());
+                  }
+
+                  @Override
+                  public float matchCost() {
+                    return 1;
+                  }
+                });
+              }
+
               DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values);
               values.intersect(new MergePointVisitor(sortedPackedPoints.iterator(), result));
               DocIdSetIterator iterator = result.build().iterator();
@@ -280,6 +302,53 @@ public abstract class PointInSetQuery extends Query implements Accountable {
         return true;
       }
     };
+  }
+
+  private static void intersectApproximately(IntersectVisitor visitor, PointValues.PointTree pointTree) throws IOException {
+    while (true) {
+      Relation compare =
+          visitor.compare(pointTree.getMinPackedValue(), pointTree.getMaxPackedValue());
+      if (compare == Relation.CELL_INSIDE_QUERY) {
+        // This cell is fully inside the query shape: recursively add all points in this cell
+        // without filtering
+        pointTree.visitDocIDs(visitor);
+      } else if (compare == Relation.CELL_CROSSES_QUERY) {
+        // The cell crosses the shape boundary, or the cell fully contains the query, so we fall
+        // through and do full filtering:
+        if (pointTree.moveToChild()) {
+          continue;
+        }
+        pointTree.visitDocIDs(visitor);
+      }
+      while (pointTree.moveToSibling() == false) {
+        if (pointTree.moveToParent() == false) {
+          return;
+        }
+      }
+    }
+  }
+
+  private LongHashSet valuesAsSet() {
+    TermIterator termIterator = sortedPackedPoints.iterator();
+    LongHashSet set = new LongHashSet(Math.toIntExact(sortedPackedPoints.size()));
+    BytesRef term;
+    switch (bytesPerDim) {
+      case 4:
+        while ((term = termIterator.next()) != null) {
+          assert term.length == 4;
+          set.add(IntPoint.decodeDimension(term.bytes, term.offset));
+        }
+        break;
+      case 8:
+        while ((term = termIterator.next()) != null) {
+          assert term.length == 8;
+          set.add(LongPoint.decodeDimension(term.bytes, term.offset));
+        }
+        break;
+      default:
+        throw new IllegalArgumentException();
+    }
+    return set;
   }
 
   /**
