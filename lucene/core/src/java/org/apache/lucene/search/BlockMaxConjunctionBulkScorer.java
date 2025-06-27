@@ -108,6 +108,7 @@ final class BlockMaxConjunctionBulkScorer extends BulkScorer {
    */
   private int scoreDocFirstUntilDynamicPruning(
       LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+    int counter = 0;
     int doc = lead.docID();
     if (doc < min) {
       doc = lead.advance(min);
@@ -133,9 +134,14 @@ final class BlockMaxConjunctionBulkScorer extends BulkScorer {
           score += scorable.score();
         }
         scorable.score = (float) score;
-        collector.collect(doc);
-        if (scorable.minCompetitiveScore > 0) {
-          return lead.nextDoc();
+        if (scorable.score > scorable.minCompetitiveScore) {
+          collector.collect(doc);
+          counter = 0;
+        } else if (scorable.minCompetitiveScore > 0) {
+          if (++counter > 32) {
+            // we have continuous 32 docs that not competitive, move to score first;
+            return lead.nextDoc();
+          }
         }
       }
       doc = lead.nextDoc();
