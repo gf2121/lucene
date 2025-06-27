@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -33,6 +35,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.internal.hppc.LongHashSet;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
@@ -210,7 +213,8 @@ public abstract class PointInSetQuery extends Query implements Accountable {
 
             @Override
             public Scorer get(long leadCost) throws IOException {
-              NumericDocValues numericDocValues = reader.getNumericDocValues(field);
+              NumericDocValues numericDocValues
+                  = DocValues.unwrapSingleton(reader.getSortedNumericDocValues(field));
               if (numericDocValues != null && (bytesPerDim == 4 || bytesPerDim == 8)) {
                 LongHashSet set = valuesAsSet();
                 DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values);
