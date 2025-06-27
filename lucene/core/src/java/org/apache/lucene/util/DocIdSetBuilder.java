@@ -23,7 +23,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * A builder of {@link DocIdSet}s. At first it uses a sparse structure to gather documents, and then
@@ -150,6 +149,10 @@ public final class DocIdSetBuilder {
     this(maxDoc, -1, -1);
   }
 
+  public DocIdSetBuilder(int maxDoc, int shift) {
+    this(maxDoc, -1, -1, shift);
+  }
+
   /**
    * Create a {@link DocIdSetBuilder} instance that is optimized for accumulating docs that match
    * the given {@link Terms}.
@@ -167,6 +170,10 @@ public final class DocIdSetBuilder {
   }
 
   DocIdSetBuilder(int maxDoc, int docCount, long valueCount) {
+    this(maxDoc, docCount, valueCount, 7);
+  }
+
+  DocIdSetBuilder(int maxDoc, int docCount, long valueCount, int shift) {
     this.maxDoc = maxDoc;
     this.multivalued = docCount < 0 || docCount != valueCount;
     if (docCount <= 0 || valueCount < 0) {
@@ -184,7 +191,7 @@ public final class DocIdSetBuilder {
     // maxDoc >>> 7 is a good value if you want to save memory, lower values
     // such as maxDoc >>> 11 should provide faster building but at the expense
     // of using a full bitset even for quite sparse data
-    this.threshold = maxDoc >>> 7;
+    this.threshold = maxDoc >>> shift;
 
     this.bitSet = null;
   }
@@ -304,18 +311,8 @@ public final class DocIdSetBuilder {
         return new BitDocIdSet(bitSet, cost);
       } else {
         Buffer concatenated = concat(buffers);
-        LSBRadixSorter sorter = new LSBRadixSorter();
-        sorter.sort(PackedInts.bitsRequired(maxDoc - 1), concatenated.array, concatenated.length);
-        final int l;
-        if (multivalued) {
-          l = dedup(concatenated.array, concatenated.length);
-        } else {
-          assert noDups(concatenated.array, concatenated.length);
-          l = concatenated.length;
-        }
-        assert l <= concatenated.length;
-        concatenated.array[l] = DocIdSetIterator.NO_MORE_DOCS;
-        return new IntArrayDocIdSet(concatenated.array, l);
+        concatenated.array[concatenated.length] = DocIdSetIterator.NO_MORE_DOCS;
+        return new IntArrayDocIdSet(concatenated.array, concatenated.length, maxDoc);
       }
     } finally {
       this.buffers = null;
