@@ -824,13 +824,13 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
 
     for (int i = from >> 6, end = to >> 6; i < end; ++i) {
       long word = bits[i];
-      offset = word2Array_512(word, from + base, array, offset);
+      offset = word2Array_512(word, base + (i << 6), array, offset);
     }
 
     // Now handle remaining bits in the last partial word
     if ((to & 0x3F) != 0) {
       long word = bits[to >> 6] & ((1L << to) - 1);
-      offset = word2Array_512(word, from + base, array, offset);
+      offset = word2Array_512(word, base + (to & ~0x3F), array, offset);
     }
 
     return offset;
