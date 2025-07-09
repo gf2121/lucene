@@ -9,6 +9,7 @@ import java.util.SplittableRandom;
 import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.VectorMask;
 import jdk.incubator.vector.VectorOperators;
+import jdk.incubator.vector.VectorSpecies;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IntsRef;
@@ -119,47 +120,6 @@ public class BitsetToArrayBenchmark {
     return size;
   }
 
-  public int denseBitsetToArray(FixedBitSet bitSet, int from, int to, int base, int[] array) {
-    Objects.checkFromToIndex(from, to, bitSet.length());
-
-    int offset = 0;
-    long[] bits = bitSet.getBits();
-    // First, align `from` with a word start, ie. a multiple of Long.SIZE (64)
-    if ((from & 0x3F) != 0) {
-      long word = bits[from >> 6] >>> from;
-      int numBitsTilNextWord = -from & 0x3F;
-      if (to - from < numBitsTilNextWord) {
-        // All bits are in a single word
-        word &= (1L << (to - from)) - 1L;
-        int bitCount = Long.bitCount(word);
-        word2Array_512(word, from + base, array, offset, bitCount);
-        return bitCount;
-      }
-      int bitCount = Long.bitCount(word);
-      word2Array_512(word, from + base, array, offset, bitCount);
-      offset += bitCount;
-      from += numBitsTilNextWord;
-      assert (from & 0x3F) == 0;
-    }
-
-    for (int i = from >> 6, end = to >> 6; i < end; ++i) {
-      long word = bits[i];
-      int bitCount = Long.bitCount(word);
-      word2Array_512(word, base + (i << 6), array, offset, bitCount);
-      offset += bitCount;
-    }
-
-    // Now handle remaining bits in the last partial word
-    if ((to & 0x3F) != 0) {
-      long word = bits[to >> 6] & ((1L << to) - 1);
-      int bitCount = Long.bitCount(word);
-      word2Array_512(word, base + (to & ~0x3F), array, offset, bitCount);
-      offset += bitCount;
-    }
-
-    return offset;
-  }
-
   @SuppressWarnings("fallthrough")
   private static void word2Array_512(long word, int base, int[] docs, int offset, int bitCount) {
     VectorMask<Byte> mask = VectorMask.fromLong(ByteVector.SPECIES_512, word);
@@ -238,6 +198,82 @@ public class BitsetToArrayBenchmark {
     for (int i = 0; i < IDENTITY_BYTES.length; i++) {
       IDENTITY_BYTES[i] = (byte) i;
     }
+  }
+
+  public int denseBitsetToArray(FixedBitSet bitSet, int from, int to, int base, int[] array) {
+    Objects.checkFromToIndex(from, to, bitSet.length());
+
+    int offset = 0;
+    long[] bits = bitSet.getBits();
+    // First, align `from` with a word start, ie. a multiple of Long.SIZE (64)
+    if ((from & 0x3F) != 0) {
+      long word = bits[from >> 6] >>> from;
+      int numBitsTilNextWord = -from & 0x3F;
+      if (to - from < numBitsTilNextWord) {
+        // All bits are in a single word
+        word &= (1L << (to - from)) - 1L;
+        return word2Array(word, from + base, array, offset);
+      }
+      offset = word2Array(word, from + base, array, offset);
+      from += numBitsTilNextWord;
+      assert (from & 0x3F) == 0;
+    }
+
+    for (int i = from >> 6, end = to >> 6; i < end; ++i) {
+      long word = bits[i];
+      offset = word2Array(word, base + (i << 6), array, offset);
+    }
+
+    // Now handle remaining bits in the last partial word
+    if ((to & 0x3F) != 0) {
+      long word = bits[to >> 6] & ((1L << to) - 1);
+      offset = word2Array(word, base + (to & ~0x3F), array, offset);
+    }
+
+    return offset;
+  }
+
+  private static final int PREFERRED_VECTOR_BITSIZE = 256;
+
+  private static int word2Array(long word, int base, int[] docs, int offset) {
+    if (PREFERRED_VECTOR_BITSIZE == 512) {
+      return word2Array(word, base, docs, offset, ByteVector.SPECIES_512);
+    } else if (PREFERRED_VECTOR_BITSIZE == 256) {
+      int start = offset;
+      offset = word2Array(word & 0xFFFFFFFFL, base, docs, offset, ByteVector.SPECIES_256);
+      return word2Array(word >>> 32, base + offset - start, docs, offset, ByteVector.SPECIES_256);
+    } else {
+      throw new IllegalStateException("Unsupported vector size: " + PREFERRED_VECTOR_BITSIZE);
+    }
+  }
+
+  @SuppressWarnings("fallthrough")
+  private static int word2Array(long word, int base, int[] docs, int offset, VectorSpecies<Byte> species) {
+    if (word == 0L) {
+      return offset;
+    }
+
+    int bitCount = Long.bitCount(word);
+
+    VectorMask<Byte> mask = VectorMask.fromLong(species, word);
+    ByteVector indices = ByteVector.fromArray(species, IDENTITY_BYTES, 0)
+        .compress(mask);
+
+    switch ((bitCount - 1) / species.length()) {
+      case 3:
+        indices.convert(VectorOperators.B2I, 3).reinterpretAsInts().add(base).intoArray(docs, offset + species.length() * 3);
+      case 2:
+        indices.convert(VectorOperators.B2I, 2).reinterpretAsInts().add(base).intoArray(docs, offset + species.length() * 2);
+      case 1:
+        indices.convert(VectorOperators.B2I, 1).reinterpretAsInts().add(base).intoArray(docs, offset + species.length());
+      case 0:
+        indices.convert(VectorOperators.B2I, 0).reinterpretAsInts().add(base).intoArray(docs, offset);
+        break;
+      default:
+        throw new IllegalStateException(bitCount + "");
+    }
+
+    return offset + bitCount;
   }
 
   public static void main(String[] args) {

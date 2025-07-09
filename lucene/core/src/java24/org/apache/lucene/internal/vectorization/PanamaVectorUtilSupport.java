@@ -815,46 +815,58 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
       if (to - from < numBitsTilNextWord) {
         // All bits are in a single word
         word &= (1L << (to - from)) - 1L;
-        return word2Array_512(word, from + base, array, offset);
+        return word2Array(word, from + base, array, offset);
       }
-      offset = word2Array_512(word, from + base, array, offset);
+      offset = word2Array(word, from + base, array, offset);
       from += numBitsTilNextWord;
       assert (from & 0x3F) == 0;
     }
 
     for (int i = from >> 6, end = to >> 6; i < end; ++i) {
       long word = bits[i];
-      offset = word2Array_512(word, base + (i << 6), array, offset);
+      offset = word2Array(word, base + (i << 6), array, offset);
     }
 
     // Now handle remaining bits in the last partial word
     if ((to & 0x3F) != 0) {
       long word = bits[to >> 6] & ((1L << to) - 1);
-      offset = word2Array_512(word, base + (to & ~0x3F), array, offset);
+      offset = word2Array(word, base + (to & ~0x3F), array, offset);
     }
 
     return offset;
   }
 
+  private static int word2Array(long word, int base, int[] docs, int offset) {
+    if (VECTOR_BITSIZE == 512) {
+      return word2Array(word, base, docs, offset, ByteVector.SPECIES_512);
+    } else if (VECTOR_BITSIZE == 256) {
+      int start = offset;
+      offset = word2Array(word & 0xFFFFFFFFL, base, docs, offset, ByteVector.SPECIES_256);
+      return word2Array(word >>> 32, base + offset - start, docs, offset, ByteVector.SPECIES_256);
+    } else {
+      throw new IllegalStateException("Unsupported vector size: " + VECTOR_BITSIZE);
+    }
+  }
+
   @SuppressWarnings("fallthrough")
-  private static int word2Array_512(long word, int base, int[] docs, int offset) {
+  private static int word2Array(long word, int base, int[] docs, int offset, VectorSpecies<Byte> species) {
     if (word == 0L) {
       return offset;
     }
 
     int bitCount = Long.bitCount(word);
 
-    VectorMask<Byte> mask = VectorMask.fromLong(ByteVector.SPECIES_512, word);
-    ByteVector indices = ByteVector.fromArray(ByteVector.SPECIES_512, IDENTITY_BYTES, 0)
+    VectorMask<Byte> mask = VectorMask.fromLong(species, word);
+    ByteVector indices = ByteVector.fromArray(species, IDENTITY_BYTES, 0)
         .compress(mask);
 
-    switch ((bitCount - 1) >>> 4) {
+    switch ((bitCount - 1) / species.length()) {
       case 3:
-        indices.convert(VectorOperators.B2I, 3).reinterpretAsInts().add(base).intoArray(docs, offset + 48);
+        indices.convert(VectorOperators.B2I, 3).reinterpretAsInts().add(base).intoArray(docs, offset + species.length() * 3);
       case 2:
-        indices.convert(VectorOperators.B2I, 2).reinterpretAsInts().add(base).intoArray(docs, offset + 32);
+        indices.convert(VectorOperators.B2I, 2).reinterpretAsInts().add(base).intoArray(docs, offset + species.length() * 2);
       case 1:
-        indices.convert(VectorOperators.B2I, 1).reinterpretAsInts().add(base).intoArray(docs, offset + 16);
+        indices.convert(VectorOperators.B2I, 1).reinterpretAsInts().add(base).intoArray(docs, offset + species.length());
       case 0:
         indices.convert(VectorOperators.B2I, 0).reinterpretAsInts().add(base).intoArray(docs, offset);
         break;
