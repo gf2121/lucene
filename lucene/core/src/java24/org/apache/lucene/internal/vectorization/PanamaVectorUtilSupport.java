@@ -860,7 +860,7 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
     ByteVector indices = ByteVector.fromArray(species, IDENTITY_BYTES, 0)
         .compress(mask);
 
-    switch ((bitCount - 1) / species.length()) {
+    switch ((bitCount - 1) / (species.length() / 4)) {
       case 3:
         indices.convert(VectorOperators.B2I, 3).reinterpretAsInts().add(base).intoArray(docs, offset + species.length() * 3);
       case 2:
