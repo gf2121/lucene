@@ -17,9 +17,11 @@
 
 package org.apache.lucene.util;
 
+import java.io.IOException;
 import java.util.stream.IntStream;
 import org.apache.lucene.internal.vectorization.VectorUtilSupport;
 import org.apache.lucene.internal.vectorization.VectorizationProvider;
+import org.apache.lucene.store.NIOFSDirectory;
 
 /**
  * Utilities for computations with numeric arrays, especially algebraic operations like vector dot
@@ -333,6 +335,21 @@ public final class VectorUtil {
   public static int findNextGEQ(int[] buffer, int target, int from, int to) {
     assert IntStream.range(0, to - 1).noneMatch(i -> buffer[i] > buffer[i + 1]);
     return IMPL.findNextGEQ(buffer, target, from, to);
+  }
+
+  /**
+   * Converts a {@link FixedBitSet} to an array of integers, where each integer represents the
+   * position of a set bit in the bitset.
+   *
+   * @param bitSet the FixedBitSet to convert
+   * @param from the starting index (inclusive)
+   * @param to the ending index (exclusive)
+   * @param base the base value for the positions
+   * @param array the destination array to fill with positions of set bits
+   * @return the number of set bits found in the range
+   */
+  public static int denseBitsetToArray(FixedBitSet bitSet, int from, int to, int base, int[] array) {
+    return IMPL.denseBitsetToArray(bitSet, from, to, base, array);
   }
 
   /**

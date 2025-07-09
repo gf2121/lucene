@@ -17,6 +17,8 @@
 
 package org.apache.lucene.internal.vectorization;
 
+import org.apache.lucene.util.FixedBitSet;
+
 /**
  * Interface for implementations of VectorUtil support.
  *
@@ -52,6 +54,9 @@ public interface VectorUtilSupport {
    * to} is returned.
    */
   int findNextGEQ(int[] buffer, int target, int from, int to);
+
+
+  int denseBitsetToArray(FixedBitSet bitSet, int from, int to, int base, int[] array);
 
   /**
    * Compute the dot product between a quantized int4 vector and a binary quantized vector. It is

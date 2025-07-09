@@ -19,7 +19,9 @@ package org.apache.lucene.internal.vectorization;
 
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SuppressForbidden;
+import java.io.IOException;
 
 final class DefaultVectorUtilSupport implements VectorUtilSupport {
 
@@ -207,6 +209,17 @@ final class DefaultVectorUtilSupport implements VectorUtilSupport {
       }
     }
     return to;
+  }
+
+  @Override
+  public int denseBitsetToArray(FixedBitSet bitSet, int from, int to, int base, int[] array) {
+    try {
+      int[] counter = new int[] {0};
+      bitSet.forEach(from, to, base, d -> array[counter[0]++] = d);
+      return counter[0];
+    } catch (IOException e) {
+      throw new AssertionError();
+    }
   }
 
   @Override
