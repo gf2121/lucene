@@ -815,40 +815,34 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
       if (to - from < numBitsTilNextWord) {
         // All bits are in a single word
         word &= (1L << (to - from)) - 1L;
-        int bitCount = Long.bitCount(word);
-        word2Array_512(word, from + base, array, offset, bitCount);
-        return bitCount;
+        return word2Array_512(word, from + base, array, offset);
       }
-      int bitCount = Long.bitCount(word);
-      word2Array_512(word, from + base, array, offset, bitCount);
-      offset += bitCount;
+      offset = word2Array_512(word, from + base, array, offset);
       from += numBitsTilNextWord;
       assert (from & 0x3F) == 0;
     }
 
     for (int i = from >> 6, end = to >> 6; i < end; ++i) {
       long word = bits[i];
-      int bitCount = Long.bitCount(word);
-      word2Array_512(word, base + (i << 6), array, offset, bitCount);
-      offset += bitCount;
+      offset = word2Array_512(word, from + base, array, offset);
     }
 
     // Now handle remaining bits in the last partial word
     if ((to & 0x3F) != 0) {
       long word = bits[to >> 6] & ((1L << to) - 1);
-      int bitCount = Long.bitCount(word);
-      word2Array_512(word, base + (to & ~0x3F), array, offset, bitCount);
-      offset += bitCount;
+      offset = word2Array_512(word, from + base, array, offset);
     }
 
     return offset;
   }
 
   @SuppressWarnings("fallthrough")
-  private static void word2Array_512(long word, int base, int[] docs, int offset, int bitCount) {
+  private static int word2Array_512(long word, int base, int[] docs, int offset) {
     if (word == 0L) {
-      return;
+      return offset;
     }
+
+    int bitCount = Long.bitCount(word);
 
     VectorMask<Byte> mask = VectorMask.fromLong(ByteVector.SPECIES_512, word);
     ByteVector indices = ByteVector.fromArray(ByteVector.SPECIES_512, IDENTITY_BYTES, 0)
@@ -867,6 +861,8 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
       default:
         throw new IllegalStateException(bitCount + "");
     }
+
+    return offset + bitCount;
   }
 
   @Override
