@@ -840,9 +840,8 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
     if (VECTOR_BITSIZE == 512) {
       return word2Array(word, base, docs, offset, ByteVector.SPECIES_512);
     } else if (VECTOR_BITSIZE == 256) {
-      int start = offset;
       offset = word2Array(word & 0xFFFFFFFFL, base, docs, offset, ByteVector.SPECIES_256);
-      return word2Array(word >>> 32, base + offset - start, docs, offset, ByteVector.SPECIES_256);
+      return word2Array(word >>> 32, base + 32, docs, offset, ByteVector.SPECIES_256);
     } else {
       throw new IllegalStateException("Unsupported vector size: " + VECTOR_BITSIZE);
     }
@@ -857,8 +856,7 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
     int bitCount = Long.bitCount(word);
 
     VectorMask<Byte> mask = VectorMask.fromLong(species, word);
-    ByteVector indices = ByteVector.fromArray(species, IDENTITY_BYTES, 0)
-        .compress(mask);
+    ByteVector indices = ByteVector.fromArray(species, IDENTITY_BYTES, 0).compress(mask);
 
     int intLanes = species.length() / 4;
 
