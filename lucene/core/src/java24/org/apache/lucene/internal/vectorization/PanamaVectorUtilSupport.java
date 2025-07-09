@@ -846,6 +846,10 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
 
   @SuppressWarnings("fallthrough")
   private static void word2Array_512(long word, int base, int[] docs, int offset, int bitCount) {
+    if (word == 0L) {
+      return;
+    }
+
     VectorMask<Byte> mask = VectorMask.fromLong(ByteVector.SPECIES_512, word);
     ByteVector indices = ByteVector.fromArray(ByteVector.SPECIES_512, IDENTITY_BYTES, 0)
         .compress(mask);
