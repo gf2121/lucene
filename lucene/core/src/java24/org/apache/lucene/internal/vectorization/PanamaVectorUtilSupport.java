@@ -838,10 +838,10 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
 
   private static int word2Array(long word, int base, int[] docs, int offset) {
     if (VECTOR_BITSIZE == 512) {
-      return word2Array(word, base, docs, offset, ByteVector.SPECIES_512);
+      return word2Array(word, base, docs, offset, ByteVector.SPECIES_512, 512 / Integer.BYTES);
     } else if (VECTOR_BITSIZE == 256) {
       int start = offset;
-      offset = word2Array(word & 0xFFFFFFFFL, base, docs, offset, ByteVector.SPECIES_256);
+      offset = word2Array(word & 0xFFFFFFFFL, base, docs, offset, ByteVector.SPECIES_256, 256 / Integer.BYTES);
       return word2Array(word >>> 32, base + offset - start, docs, offset, ByteVector.SPECIES_256);
     } else {
       throw new IllegalStateException("Unsupported vector size: " + VECTOR_BITSIZE);
@@ -849,7 +849,7 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
   }
 
   @SuppressWarnings("fallthrough")
-  private static int word2Array(long word, int base, int[] docs, int offset, VectorSpecies<Byte> species) {
+  private static int word2Array(long word, int base, int[] docs, int offset, VectorSpecies<Byte> species, int intLanes) {
     if (word == 0L) {
       return offset;
     }
@@ -860,13 +860,13 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
     ByteVector indices = ByteVector.fromArray(species, IDENTITY_BYTES, 0)
         .compress(mask);
 
-    switch ((bitCount - 1) / (species.length() / 4)) {
+    switch ((bitCount - 1) / intLanes) {
       case 3:
-        indices.convert(VectorOperators.B2I, 3).reinterpretAsInts().add(base).intoArray(docs, offset + species.length() * 3);
+        indices.convert(VectorOperators.B2I, 3).reinterpretAsInts().add(base).intoArray(docs, offset + intLanes * 3);
       case 2:
-        indices.convert(VectorOperators.B2I, 2).reinterpretAsInts().add(base).intoArray(docs, offset + species.length() * 2);
+        indices.convert(VectorOperators.B2I, 2).reinterpretAsInts().add(base).intoArray(docs, offset + intLanes * 2);
       case 1:
-        indices.convert(VectorOperators.B2I, 1).reinterpretAsInts().add(base).intoArray(docs, offset + species.length());
+        indices.convert(VectorOperators.B2I, 1).reinterpretAsInts().add(base).intoArray(docs, offset + intLanes);
       case 0:
         indices.convert(VectorOperators.B2I, 0).reinterpretAsInts().add(base).intoArray(docs, offset);
         break;
