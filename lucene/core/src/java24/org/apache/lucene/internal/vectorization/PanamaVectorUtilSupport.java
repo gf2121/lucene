@@ -840,8 +840,8 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
     if (VECTOR_BITSIZE == 512) {
       return word2Array(word, base, docs, offset, ByteVector.SPECIES_512);
     } else if (VECTOR_BITSIZE == 256) {
-      offset = word2Array(word & 0xFFFFFFFFL, base, docs, offset, ByteVector.SPECIES_256);
-      return word2Array(word >>> 32, base + 32, docs, offset, ByteVector.SPECIES_256);
+      offset = word2Array_256(word & 0xFFFFFFFFL, base, docs, offset);
+      return word2Array_256(word >>> 32, base + 32, docs, offset);
     } else {
       throw new IllegalStateException("Unsupported vector size: " + VECTOR_BITSIZE);
     }
@@ -867,6 +867,34 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
         indices.convert(VectorOperators.B2I, 2).reinterpretAsInts().add(base).intoArray(docs, offset + intLanes * 2);
       case 1:
         indices.convert(VectorOperators.B2I, 1).reinterpretAsInts().add(base).intoArray(docs, offset + intLanes);
+      case 0:
+        indices.convert(VectorOperators.B2I, 0).reinterpretAsInts().add(base).intoArray(docs, offset);
+        break;
+      default:
+        throw new IllegalStateException(bitCount + "");
+    }
+
+    return offset + bitCount;
+  }
+
+  @SuppressWarnings("fallthrough")
+  private static int word2Array_256(long word, int base, int[] docs, int offset) {
+    if (word == 0L) {
+      return offset;
+    }
+
+    int bitCount = Long.bitCount(word);
+
+    VectorMask<Byte> mask = VectorMask.fromLong(ByteVector.SPECIES_256, word);
+    ByteVector indices = ByteVector.fromArray(ByteVector.SPECIES_256, IDENTITY_BYTES, 0).compress(mask);
+
+    switch ((bitCount - 1) >> 3) {
+      case 3:
+        indices.convert(VectorOperators.B2I, 3).reinterpretAsInts().add(base).intoArray(docs, offset + 24);
+      case 2:
+        indices.convert(VectorOperators.B2I, 2).reinterpretAsInts().add(base).intoArray(docs, offset + 16);
+      case 1:
+        indices.convert(VectorOperators.B2I, 1).reinterpretAsInts().add(base).intoArray(docs, offset + 8);
       case 0:
         indices.convert(VectorOperators.B2I, 0).reinterpretAsInts().add(base).intoArray(docs, offset);
         break;
