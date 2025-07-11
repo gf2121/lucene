@@ -1125,7 +1125,7 @@ public final class Lucene103PostingsReader extends PostingsReaderBase {
     private static int word2Array(long word, int base, int[] docs, int offset, int[] scratch) {
       final int bitCount = Long.bitCount(word);
 
-      if (bitCount >= 32) {
+      if (bitCount >= 24) {
         final int lWord = (int) word;
         final int hWord = (int) (word >>> 32);
         // vectorized loop
