@@ -50,6 +50,7 @@ public class PanamaBitSetUtil extends BitSetUtil {
       offset += Integer.bitCount(lWord & MASK); // faster than mask.trueCount()
       lWord >>>= IntVector.SPECIES_PREFERRED.length();
     }
+    base += 32;
     for (int i = 0; i < Integer.SIZE; i += IntVector.SPECIES_PREFERRED.length()) {
       VectorMask<Integer> mask = IntVector.broadcast(IntVector.SPECIES_PREFERRED, hWord)
           .and(identityMask)

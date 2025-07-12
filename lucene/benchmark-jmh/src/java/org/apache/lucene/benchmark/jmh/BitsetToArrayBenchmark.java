@@ -391,6 +391,7 @@ public class BitsetToArrayBenchmark {
       offset += Integer.bitCount(lWord & MASK); // faster than mask.trueCount()
       lWord >>>= IntVector.SPECIES_PREFERRED.length();
     }
+    base += 32;
     for (int i = 0; i < Integer.SIZE; i += IntVector.SPECIES_PREFERRED.length()) {
       VectorMask<Integer> mask = IntVector.broadcast(IntVector.SPECIES_PREFERRED, hWord)
           .and(identityMask)
@@ -457,7 +458,7 @@ public class BitsetToArrayBenchmark {
         () -> _denseBranchLess(word, actual, 0, 0),
         () -> _denseBranchLessUnrolling(word, actual, 0, 0),
         () -> _denseBranchLessParallel(word, actual, 0, 0),
-//        () -> _denseBranchLessVectorized(word, actual, 0, 0),
+        () -> _denseBranchLessVectorized(word, actual, 0, 0),
         () -> _denseBranchLessCmov(word, actual, 0, 0),
         () -> _denseInvert(word, actual, 0, 0),
         () -> _hybrid(word, actual, 0, 0)
