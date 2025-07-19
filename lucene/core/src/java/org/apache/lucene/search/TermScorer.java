@@ -21,6 +21,7 @@ import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowImpactsEnum;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 import org.apache.lucene.util.Bits;
 
@@ -33,6 +34,7 @@ public final class TermScorer extends Scorer {
   private final PostingsEnum postingsEnum;
   private final DocIdSetIterator iterator;
   private final SimScorer scorer;
+  private final Similarity.BulkSimScorer bulkSimScorer;
   private final NumericDocValues norms;
   private final ImpactsDISI impactsDisi;
   private final MaxScoreCache maxScoreCache;
@@ -44,6 +46,7 @@ public final class TermScorer extends Scorer {
     maxScoreCache = new MaxScoreCache(impactsEnum, scorer);
     impactsDisi = null;
     this.scorer = scorer;
+    this.bulkSimScorer = scorer.bulkInstance();
     this.norms = norms;
   }
 
@@ -66,6 +69,7 @@ public final class TermScorer extends Scorer {
       iterator = impactsEnum;
     }
     this.scorer = scorer;
+    this.bulkSimScorer = scorer.bulkInstance();
     this.norms = norms;
   }
 
@@ -144,6 +148,6 @@ public final class TermScorer extends Scorer {
       break;
     }
 
-    scorer.score(buffer, norms);
+    bulkSimScorer.score(buffer, norms);
   }
 }

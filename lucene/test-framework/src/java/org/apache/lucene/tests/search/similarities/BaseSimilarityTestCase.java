@@ -532,6 +532,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
     CollectionStatistics corpus = newCorpus(random, hasNorms ? 1 : 0);
     TermStatistics term = newTerm(random, corpus);
     SimScorer scorer = similarity.scorer(random().nextFloat(5f), corpus, term);
+    Similarity.BulkSimScorer bulkSimScorer = scorer.bulkInstance();
     int freqUpperBound =
         Math.toIntExact(Math.min(term.totalTermFreq() - term.docFreq() + 1, Integer.MAX_VALUE));
     DocAndFloatFeatureBuffer buffer = new DocAndFloatFeatureBuffer();
@@ -605,7 +606,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       for (int i = 0; i < size; ++i) {
         expectedScores[i] = scorer.score(buffer.features[i], hasNorms ? norms[i] : 1L);
       }
-      scorer.score(buffer, normValues);
+      bulkSimScorer.score(buffer, normValues);
 
       assertArrayEquals(
           expectedScores, ArrayUtil.copyOfSubArray(buffer.features, 0, buffer.size), 0f);

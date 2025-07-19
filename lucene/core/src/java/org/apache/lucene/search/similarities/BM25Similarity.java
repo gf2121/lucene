@@ -211,12 +211,6 @@ public class BM25Similarity extends Similarity {
     /** weight (idf * boost) */
     private final float weight;
 
-    /**
-     * Temporary array to store norm inverses and help {@link #score(DocAndFloatFeatureBuffer,
-     * NumericDocValues)} auto-vectorize.
-     */
-    private float[] normInverses = null;
-
     BM25Scorer(float boost, float k1, float b, Explanation idf, float avgdl, float[] cache) {
       this.boost = boost;
       this.idf = idf;
@@ -258,34 +252,48 @@ public class BM25Similarity extends Similarity {
     }
 
     @Override
-    public void score(DocAndFloatFeatureBuffer buffer, NumericDocValues norms) throws IOException {
-      if (norms == null) {
-        float normInverse = cache[1];
-        // The below loop should auto-vectorize.
-        for (int i = 0; i < buffer.size; ++i) {
-          buffer.features[i] = doScore(buffer.features[i], normInverse);
-        }
-      } else {
-        if (normInverses == null || normInverses.length < buffer.size) {
-          normInverses = new float[ArrayUtil.oversize(buffer.size, Float.BYTES)];
-        }
+    public BulkSimScorer bulkInstance() {
+      return new BulkSimScorer() {
 
-        for (int i = 0; i < buffer.size; ++i) {
-          if (norms.advanceExact(buffer.docs[i])) {
-            // If norms#longValue gets inlined, the JVM compiler should hopefully detect that a byte
-            // is expanded to a long and then casted back to the same original byte, and ignore
-            // these operations.
-            normInverses[i] = cache[((byte) norms.longValue()) & 0xFF];
+        /**
+         * Temporary array to store norm inverses and help {@link #score(DocAndFloatFeatureBuffer,
+         * NumericDocValues)} auto-vectorize.
+         */
+        private float[] normInverses = null;
+
+        @Override
+        public void score(DocAndFloatFeatureBuffer buffer, NumericDocValues norms)
+            throws IOException {
+          if (norms == null) {
+            float normInverse = cache[1];
+            // The below loop should auto-vectorize.
+            for (int i = 0; i < buffer.size; ++i) {
+              buffer.features[i] = doScore(buffer.features[i], normInverse);
+            }
           } else {
-            normInverses[i] = cache[1];
+            if (normInverses == null || normInverses.length < buffer.size) {
+              normInverses = new float[ArrayUtil.oversize(buffer.size, Float.BYTES)];
+            }
+
+            for (int i = 0; i < buffer.size; ++i) {
+              if (norms.advanceExact(buffer.docs[i])) {
+                // If norms#longValue gets inlined, the JVM compiler should hopefully detect that a
+                // byte
+                // is expanded to a long and then casted back to the same original byte, and ignore
+                // these operations.
+                normInverses[i] = cache[((byte) norms.longValue()) & 0xFF];
+              } else {
+                normInverses[i] = cache[1];
+              }
+            }
+
+            // The below loop should auto-vectorize
+            for (int i = 0; i < buffer.size; ++i) {
+              buffer.features[i] = doScore(buffer.features[i], normInverses[i]);
+            }
           }
         }
-
-        // The below loop should auto-vectorize
-        for (int i = 0; i < buffer.size; ++i) {
-          buffer.features[i] = doScore(buffer.features[i], normInverses[i]);
-        }
-      }
+      };
     }
 
     @Override

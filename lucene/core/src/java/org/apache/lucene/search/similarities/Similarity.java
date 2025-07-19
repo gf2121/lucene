@@ -212,25 +212,33 @@ public abstract class Similarity {
     public abstract float score(float freq, long norm);
 
     /**
-     * Bulk computation of scores. For each entry in the given {@code buffer}, interpreting features
-     * as term frequencies, update features to record the score instead.
+     * Returns a bulk instance of this scorer, which may be more efficient than per-document scoring
+     * for some implementations.
      *
-     * <p><b>NOTE</b>: Doc IDs must be sorted, with no duplicates.
+     * <p>The bulk scorer allows processing multiple documents at once through the {@link
+     * BulkSimScorer#score(DocAndFloatFeatureBuffer, NumericDocValues)} method efficiently. Using a
+     * bulk scorer can improve performance when scoring large numbers of documents.
      *
-     * <p><b>NOTE</b>: {@code norms} may be null if norms are not indexed.
+     * <p>The default implementation uses this {@link SimScorer}'s single-document scoring method,
+     * but subclasses may provide more efficient bulk implementations.
      *
-     * @lucene.internal
+     * <p><b>Note</b>: The returned bulk instance is not thread-safe and should not be shared across
+     * threads.
+     *
+     * @return a bulk instance of this scorer for efficiently scoring multiple documents
      */
-    public void score(DocAndFloatFeatureBuffer buffer, NumericDocValues norms) throws IOException {
-      for (int i = 0; i < buffer.size; ++i) {
-        long norm;
-        if (norms == null || norms.advanceExact(buffer.docs[i]) == false) {
-          norm = 1L;
-        } else {
-          norm = norms.longValue();
+    public BulkSimScorer bulkInstance() {
+      return (buffer, norms) -> {
+        for (int i = 0; i < buffer.size; ++i) {
+          long norm;
+          if (norms == null || norms.advanceExact(buffer.docs[i]) == false) {
+            norm = 1L;
+          } else {
+            norm = norms.longValue();
+          }
+          buffer.features[i] = SimScorer.this.score(buffer.features[i], norm);
         }
-        buffer.features[i] = score(buffer.features[i], norm);
-      }
+      };
     }
 
     /**
@@ -247,5 +255,17 @@ public abstract class Similarity {
           "score(freq=" + freq.getValue() + "), with freq of:",
           Collections.singleton(freq));
     }
+  }
+
+  public interface BulkSimScorer {
+    /**
+     * Bulk computation of scores. For each entry in the given {@code buffer}, interpreting features
+     * as term frequencies, update features to record the score instead.
+     *
+     * <p><b>NOTE</b>: Doc IDs must be sorted, with no duplicates.
+     *
+     * <p><b>NOTE</b>: {@code norms} may be null if norms are not indexed.
+     */
+    void score(DocAndFloatFeatureBuffer buffer, NumericDocValues norms) throws IOException;
   }
 }

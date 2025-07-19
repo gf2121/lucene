@@ -89,19 +89,29 @@ public class AssertingSimilarity extends Similarity {
     }
 
     @Override
-    public void score(DocAndFloatFeatureBuffer buffer, NumericDocValues norms) throws IOException {
-      for (int i = 1; i < buffer.size; ++i) {
-        assert buffer.docs[i] > buffer.docs[i - 1];
-      }
-      for (int i = 0; i < buffer.size; ++i) {
-        assert buffer.features[i] > 0;
-      }
-      delegate.score(buffer, norms);
-      for (int i = 0; i < buffer.size; ++i) {
-        float score = buffer.features[i];
-        assert Float.isFinite(score);
-        assert score >= 0;
-      }
+    public BulkSimScorer bulkInstance() {
+      return new BulkSimScorer() {
+        final Thread thread = Thread.currentThread();
+        final BulkSimScorer delegateBulk = delegate.bulkInstance();
+
+        @Override
+        public void score(DocAndFloatFeatureBuffer buffer, NumericDocValues norms)
+            throws IOException {
+          assert Thread.currentThread() == thread;
+          for (int i = 1; i < buffer.size; ++i) {
+            assert buffer.docs[i] > buffer.docs[i - 1];
+          }
+          for (int i = 0; i < buffer.size; ++i) {
+            assert buffer.features[i] > 0;
+          }
+          delegateBulk.score(buffer, norms);
+          for (int i = 0; i < buffer.size; ++i) {
+            float score = buffer.features[i];
+            assert Float.isFinite(score);
+            assert score >= 0;
+          }
+        }
+      };
     }
 
     @Override
