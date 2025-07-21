@@ -69,9 +69,9 @@ public final class DocIdSetBuilder {
           bits[index >> 6] |= 1L << index;
           int index1 = doc[i + 1];
           bits[index1 >> 6] |= 1L << index1;
-          int index2 = doc[i + 1];
+          int index2 = doc[i + 2];
           bits[index2 >> 6] |= 1L << index2;
-          int index3 = doc[i + 1];
+          int index3 = doc[i + 3];
           bits[index3 >> 6] |= 1L << index3;
         }
         for (; i < docs.length; i++) {
