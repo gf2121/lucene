@@ -63,7 +63,8 @@ public final class DocIdSetBuilder {
       if (docs.offset == 0) {
         int[] doc = docs.ints;
         long[] bits = bitSet.getBits();
-        for (int i = 0, len = docs.length; i < len; i += 4) {
+        int i = 0;
+        for (int len = docs.length - 3; i < len; i += 4) {
           int index = doc[i];
           bits[index >> 6] |= 1L << index;
           int index1 = doc[i + 1];
@@ -72,6 +73,9 @@ public final class DocIdSetBuilder {
           bits[index2 >> 6] |= 1L << index2;
           int index3 = doc[i + 1];
           bits[index3 >> 6] |= 1L << index3;
+        }
+        for (; i < docs.length; i++) {
+          bitSet.set(doc[i]);
         }
       } else {
         for (int i = 0; i < docs.length; i++) {
