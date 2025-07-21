@@ -64,11 +64,23 @@ public final class DocIdSetBuilder {
         int[] doc = docs.ints;
         long[] bits = bitSet.getBits();
         int i = 0;
-        for (int len = docs.length - 3; i < len; i += 4) {
+        for (int len = docs.length - 3; i < len; i += 16) {
           bits[doc[i] >> 6] |= 1L << doc[i];
           bits[doc[i + 1] >> 6] |= 1L << doc[i + 1];
           bits[doc[i + 2] >> 6] |= 1L << doc[i + 2];
           bits[doc[i + 3] >> 6] |= 1L << doc[i + 3];
+          bits[doc[i + 4] >> 6] |= 1L << doc[i + 4];
+          bits[doc[i + 5] >> 6] |= 1L << doc[i + 5];
+          bits[doc[i + 6] >> 6] |= 1L << doc[i + 6];
+          bits[doc[i + 7] >> 6] |= 1L << doc[i + 7];
+          bits[doc[i + 8] >> 6] |= 1L << doc[i + 8];
+          bits[doc[i + 9] >> 6] |= 1L << doc[i + 9];
+          bits[doc[i + 10] >> 6] |= 1L << doc[i + 10];
+          bits[doc[i + 11] >> 6] |= 1L << doc[i + 11];
+          bits[doc[i + 12] >> 6] |= 1L << doc[i + 12];
+          bits[doc[i + 13] >> 6] |= 1L << doc[i + 13];
+          bits[doc[i + 14] >> 6] |= 1L << doc[i + 14];
+          bits[doc[i + 15] >> 6] |= 1L << doc[i + 15];
         }
         for (; i < docs.length; i++) {
           bitSet.set(doc[i]);
