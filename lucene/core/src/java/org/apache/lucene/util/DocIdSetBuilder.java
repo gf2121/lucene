@@ -65,14 +65,10 @@ public final class DocIdSetBuilder {
         long[] bits = bitSet.getBits();
         int i = 0;
         for (int len = docs.length - 3; i < len; i += 4) {
-          int index = doc[i];
-          bits[index >> 6] |= 1L << index;
-          int index1 = doc[i + 1];
-          bits[index1 >> 6] |= 1L << index1;
-          int index2 = doc[i + 2];
-          bits[index2 >> 6] |= 1L << index2;
-          int index3 = doc[i + 3];
-          bits[index3 >> 6] |= 1L << index3;
+          bits[doc[i] >> 6] |= 1L << doc[i];
+          bits[doc[i + 1] >> 6] |= 1L << doc[i + 1];
+          bits[doc[i + 2] >> 6] |= 1L << doc[i + 2];
+          bits[doc[i + 3] >> 6] |= 1L << doc[i + 3];
         }
         for (; i < docs.length; i++) {
           bitSet.set(doc[i]);
