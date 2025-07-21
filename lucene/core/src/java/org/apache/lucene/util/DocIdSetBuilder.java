@@ -73,7 +73,6 @@ public final class DocIdSetBuilder {
           bits[doc[i + 5] >> 6] |= 1L << doc[i + 5];
           bits[doc[i + 6] >> 6] |= 1L << doc[i + 6];
           bits[doc[i + 7] >> 6] |= 1L << doc[i + 7];
-          bits[doc[i + 8] >> 6] |= 1L << doc[i + 8];
         }
         for (; i < docs.length; i++) {
           bitSet.set(doc[i]);
