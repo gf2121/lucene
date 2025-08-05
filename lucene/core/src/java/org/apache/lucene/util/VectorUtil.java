@@ -397,4 +397,8 @@ public final class VectorUtil {
     }
     return IMPL.filterByScore(docBuffer, scoreBuffer, minScoreInclusive, upTo);
   }
+
+  public static int filterDocs(int[] docs, int offset, int length, int minDocInclusive) {
+    return IMPL.filterDocs(docs, offset, length, minDocInclusive);
+  }
 }

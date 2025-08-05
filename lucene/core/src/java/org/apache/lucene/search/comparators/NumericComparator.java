@@ -35,6 +35,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.VectorUtil;
 
 /**
  * Abstract numeric comparator for comparing numeric values. This comparator provides a skipping
@@ -405,7 +406,9 @@ public abstract class NumericComparator<T extends Number> extends FieldComparato
 
             @Override
             public void visit(IntsRef ref) {
-              adder.add(ref, maxDocVisited + 1);
+              ref.length =
+                  VectorUtil.filterDocs(ref.ints, ref.offset, ref.length, maxDocVisited + 1);
+              adder.add(ref);
             }
 
             @Override

@@ -325,4 +325,16 @@ final class DefaultVectorUtilSupport implements VectorUtilSupport {
     }
     return newSize;
   }
+
+  @Override
+  public int filterDocs(int[] docs, int offset, int length, int minDocInclusive) {
+    int newUpto = offset;
+    int i = offset;
+    for (int bound = offset + length; i < bound; ++i) {
+      if (docs[i] >= minDocInclusive) {
+        docs[newUpto++] = docs[i];
+      }
+    }
+    return newUpto;
+  }
 }

@@ -1103,4 +1103,28 @@ final class PanamaVectorUtilSupport implements VectorUtilSupport {
     }
     return newUpto;
   }
+
+  @SuppressForbidden(reason = "Uses compress and cast only where fast and carefully contained")
+  @Override
+  public int filterDocs(int[] docs, int offset, int length, int minDocInclusive) {
+    int newUpto = offset;
+    int i = offset;
+    if (Constants.HAS_FAST_COMPRESS_MASK_CAST) {
+      for (int bound = INT_SPECIES.loopBound(length) + offset;
+          i < bound;
+          i += INT_SPECIES.length()) {
+        IntVector docVector = IntVector.fromArray(INT_SPECIES, docs, i);
+        VectorMask<Integer> mask = docVector.compare(VectorOperators.GE, minDocInclusive);
+        docVector.compress(mask).intoArray(docs, newUpto);
+        newUpto += mask.trueCount();
+      }
+    }
+
+    for (int bound = offset + length; i < bound; ++i) {
+      if (docs[i] >= minDocInclusive) {
+        docs[newUpto++] = docs[i];
+      }
+    }
+    return newUpto;
+  }
 }

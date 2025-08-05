@@ -114,4 +114,6 @@ public interface VectorUtilSupport {
    * @return how many pairs left after filter
    */
   int filterByScore(int[] docBuffer, double[] scoreBuffer, double minScoreInclusive, int upTo);
+
+  int filterDocs(int[] docs, int offset, int length, int minDocInclusive);
 }
