@@ -254,6 +254,7 @@ public abstract class PointRangeQuery extends Query {
 
       @Override
       public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+        readTook = decodeTook = bitsetTook = 0L;
         LeafReader reader = context.reader();
 
         PointValues values = reader.getPointValues(field);
