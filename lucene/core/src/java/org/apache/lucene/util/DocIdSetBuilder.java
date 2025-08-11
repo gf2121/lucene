@@ -23,6 +23,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -60,9 +61,11 @@ public final class DocIdSetBuilder {
 
     @Override
     public void add(IntsRef docs) {
+      long start = System.currentTimeMillis();
       for (int i = docs.offset, to = docs.offset + docs.length; i < to; i++) {
         bitSet.set(docs.ints[i]);
       }
+      PointRangeQuery.bitsetTook += System.currentTimeMillis() - start;
     }
 
     @Override
@@ -106,8 +109,10 @@ public final class DocIdSetBuilder {
 
     @Override
     public void add(IntsRef docs) {
+      long start = System.currentTimeMillis();
       System.arraycopy(docs.ints, docs.offset, buffer.array, buffer.length, docs.length);
       buffer.length += docs.length;
+      PointRangeQuery.bitsetTook += System.currentTimeMillis() - start;
     }
 
     @Override

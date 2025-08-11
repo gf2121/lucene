@@ -59,6 +59,10 @@ public abstract class PointRangeQuery extends Query {
   final byte[] upperPoint;
   final ByteArrayComparator comparator;
 
+  public static long readTook = 0;
+  public static long decodeTook = 0;
+  public static long bitsetTook = 0;
+
   /**
    * Expert: create a multidimensional range query for point values.
    *
@@ -316,10 +320,16 @@ public abstract class PointRangeQuery extends Query {
                 // Flip the bit set and cost
                 result.flip(0, reader.maxDoc());
                 cost[0] = Math.max(0, reader.maxDoc() - cost[0]);
+                System.out.println("read took: " + readTook
+                    + ", decode took: " + decodeTook
+                    + ", bitset took: " + bitsetTook);
                 return new BitSetIterator(result, cost[0]);
               }
 
               values.intersect(visitor);
+              System.out.println("read took: " + readTook
+                  + ", decode took: " + decodeTook
+                  + ", bitset took: " + bitsetTook);
               return result.build().iterator();
             }
 

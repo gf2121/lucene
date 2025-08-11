@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -342,7 +343,11 @@ final class DocIdsWriter {
   private void readInts21(IndexInput in, int count, int[] docIDs) throws IOException {
     int oneThird = floorToMultipleOf16(count / 3);
     int numInts = oneThird << 1;
+    long start = System.currentTimeMillis();
     in.readInts(scratch, 0, numInts);
+    long afterRead = System.currentTimeMillis();
+    PointRangeQuery.readTook += afterRead - start;
+
     if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
       // Same format, but enabling the JVM to specialize the decoding logic for the default number
       // of points per node proved to help on benchmarks
@@ -364,6 +369,8 @@ final class DocIdsWriter {
     for (; i < count; ++i) {
       docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
     }
+    long afterDecode = System.currentTimeMillis();
+    PointRangeQuery.decodeTook += afterDecode - afterRead;
   }
 
   private static void decode21(int[] docIds, int[] scratch, int oneThird, int numInts) {
@@ -378,7 +385,11 @@ final class DocIdsWriter {
   private void readInts24(IndexInput in, int count, int[] docIDs) throws IOException {
     int quarter = count >> 2;
     int numInts = quarter * 3;
+    long start = System.currentTimeMillis();
     in.readInts(scratch, 0, numInts);
+    long afterRead = System.currentTimeMillis();
+    PointRangeQuery.readTook += afterRead - start;
+
     if (count == BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE) {
       // Same format, but enabling the JVM to specialize the decoding logic for the default number
       // of points per node proved to help on benchmarks
@@ -398,6 +409,8 @@ final class DocIdsWriter {
     for (int i = quarter << 2; i < count; ++i) {
       docIDs[i] = (in.readShort() & 0xFFFF) | (in.readByte() & 0xFF) << 16;
     }
+    long afterDecode = System.currentTimeMillis();
+    PointRangeQuery.decodeTook += afterDecode - afterRead;
   }
 
   private static void decode24(int[] docIDs, int[] scratch, int quarter, int numInts) {
